@@ -1,0 +1,7 @@
+schedule>=1.1.0
+logging == 0.4.9.6
+serial == 0.0.97
+astral == 3.2
+pyserial>=3.5
+pytest>=7.0.0
+pytest-mock>=3.10.0

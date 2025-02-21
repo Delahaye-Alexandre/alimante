@@ -1,0 +1,51 @@
+# Environnements virtuels
+env/
+venv/
+.venv/
+
+# Fichiers de logs
+*.log
+
+# Fichiers de cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Fichiers générés par l'IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Fichiers de test
+.tox/
+.nox/
+.coverage
+coverage.xml
+*.cover
+.hypothesis/
+
+# Fichiers de distribution
+dist/
+build/
+*.egg-info/
+
+# Fichiers temporaires
+*.tmp
+*.temp
+*.swp
+*.bak
+*.orig
+*.rej
+*.swo
+
+# Fichiers de base de données
+*.sqlite3
+
+
+# Fichiers de déploiement
+*.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
