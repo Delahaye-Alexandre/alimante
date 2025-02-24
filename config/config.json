@@ -1,19 +1,4 @@
 {
     "serial_port": "/dev/ttyAMA0",
     "baud_rate": 9600,
-    "temperature": {
-        "target": 25,
-        "tolerance": 2
-    },
-    "humidity": {
-        "target": 70,
-        "tolerance": 5
-    },
-    "location": {
-        "latitude": 48.8566,
-        "longitude": 2.3522
-    },
-    "feeding": {
-        "interval_days": 2
-    }
 }

@@ -13,6 +13,7 @@ from src.controllers.temperature_controller import TemperatureController
 from src.controllers.light_controller import LightController
 from src.controllers.humidity_controller import HumidityController
 from src.controllers.feeding_controller import FeedingController
+from src.utils.select_config import select_config
 
 class SystemInitError(Exception):
     """Custom exception for system initialization errors"""
@@ -57,7 +58,11 @@ def initialize_system(config: SystemConfig) -> dict:
 def main():
     try:
         setup_logging()
-        config = SystemConfig.from_json('config/config.json')
+        specific_config_path = select_config()
+        if not specific_config_path:
+            raise SystemInitError("Configuration non sélectionnée.")
+        common_config_path = 'config/config.json'
+        config = SystemConfig.from_json(common_config_path, specific_config_path)
         controllers = initialize_system(config)
         
         if not controllers:
