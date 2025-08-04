@@ -6,7 +6,7 @@ import logging
 
 @dataclass
 class SystemConfig:
-    """Configuration système pour Mantcare"""
+    """Configuration système pour Alimante"""
     serial_port: str
     baud_rate: int
     temperature: Dict[str, float]

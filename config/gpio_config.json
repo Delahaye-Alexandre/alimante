@@ -1,0 +1,57 @@
+{
+    "pins": {
+        "sensors": {
+            "temp_humidity": {
+                "pin": 4,
+                "type": "DHT22",
+                "description": "Capteur température et humidité"
+            },
+            "light": {
+                "pin": 17,
+                "type": "LDR",
+                "description": "Capteur de lumière"
+            }
+        },
+        "actuators": {
+            "heating_relay": {
+                "pin": 18,
+                "type": "relay",
+                "description": "Relais chauffage"
+            },
+            "humidity_relay": {
+                "pin": 23,
+                "type": "relay",
+                "description": "Relais pulvérisateur"
+            },
+            "feeding_servo": {
+                "pin": 12,
+                "type": "servo",
+                "frequency": 50,
+                "description": "Servo trappe alimentation"
+            },
+            "light_relay": {
+                "pin": 24,
+                "type": "relay",
+                "description": "Relais éclairage"
+            }
+        },
+        "status": {
+            "status_led": {
+                "pin": 25,
+                "type": "led",
+                "description": "LED de statut"
+            }
+        }
+    },
+    "servo_config": {
+        "feeding_trap": {
+            "open_angle": 90,
+            "close_angle": 0,
+            "open_duration": 5
+        }
+    },
+    "relay_config": {
+        "active_high": false,
+        "default_state": false
+    }
+} 

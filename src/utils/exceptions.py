@@ -1,11 +1,11 @@
-class MantcareException(Exception):
-    """Base exception class for Mantcare"""
+class AlimanteException(Exception):
+    """Base exception class for Alimante"""
     pass
 
-class SensorException(MantcareException):
+class SensorException(AlimanteException):
     """Raised when sensor readings fail"""
     pass
 
-class ConfigurationException(MantcareException):
+class ConfigurationException(AlimanteException):
     """Raised when configuration is invalid"""
     pass

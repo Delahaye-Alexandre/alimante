@@ -1,5 +1,24 @@
+# Backend Raspberry Pi
+fastapi>=0.104.0
+uvicorn>=0.24.0
+websockets>=12.0
+sqlalchemy>=2.0.0
+pydantic>=2.5.0
+python-multipart>=0.0.6
+
+# GPIO pour Raspberry Pi
+RPi.GPIO>=0.7.0
+adafruit-circuitpython-dht>=3.7.0
+
+# Monitoring et notifications
 schedule>=1.1.0
-astral==3.2
-pyserial>=3.5
+astral>=3.2
+requests>=2.31.0
+
+# Tests
 pytest>=7.0.0
 pytest-mock>=3.10.0
+pytest-asyncio>=0.21.0
+
+# Development
+python-dotenv>=1.0.0
