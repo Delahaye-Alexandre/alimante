@@ -1,18 +1,49 @@
 {
+    "species_name": "Mantis religiosa",
+    "common_name": "Mante religieuse européenne",
+    "classification": {
+        "cycle_type": "long",
+        "cycle_duration_days": 222,
+        "temperature_category": "modérée",
+        "humidity_category": "modérée",
+        "difficulty": "intermédiaire"
+    },
     "temperature": {
-        "target": 25,
-        "tolerance": 2
+        "optimal": 25.0,
+        "tolerance": 3.0,
+        "min": 18.0,
+        "max": 32.0
     },
     "humidity": {
-        "target": 60,
-        "tolerance": 5
+        "optimal": 60.0,
+        "tolerance": 10.0,
+        "min": 40.0,
+        "max": 80.0
     },
     "location": {
         "latitude": 48.8566,
         "longitude": 2.3522
     },
     "feeding": {
-        "interval_days": 2,
-        "feed_count": 5
+        "interval_days": 3,
+        "feed_count": 2,
+        "prey_type": "drosophila_melanogaster",
+        "notes": "Les adultes peuvent consommer des proies plus grosses comme des criquets"
+    },
+    "lighting": {
+        "day_hours": 12,
+        "uv_required": true,
+        "intensity": "medium"
+    },
+    "lifecycle": {
+        "egg_incubation_days": 42,
+        "nymph_stages": 7,
+        "adult_lifespan_days": 180
+    },
+    "enclosure": {
+        "min_height_cm": 30,
+        "min_width_cm": 20,
+        "min_depth_cm": 20,
+        "climbing_surfaces_required": true
     }
 }

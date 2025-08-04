@@ -69,3 +69,11 @@ class TemperatureController:
         """
         response = self.serial_manager.send_command("SWITCH_OFF")
         logging.info("Switch désactivé. Réponse Arduino : %s", response)
+
+    def check_status(self):
+        """Vérifie si le contrôleur est fonctionnel"""
+        try:
+            temp = self.read_temperature()
+            return temp is not None
+        except Exception:
+            return False

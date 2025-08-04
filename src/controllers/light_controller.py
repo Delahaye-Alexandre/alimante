@@ -7,8 +7,8 @@ Fonctionnalités :
 """
 
 import logging
-from utils import get_sunset_time_utc
-import datetime
+from src.utils.utils import get_sunset_time_utc
+from datetime import datetime
 
 class LightController:
     """

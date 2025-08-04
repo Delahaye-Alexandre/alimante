@@ -1,0 +1,45 @@
+{
+    "species_name": "Drosophila melanogaster",
+    "common_name": "Mouche du vinaigre",
+    "classification": {
+        "cycle_type": "court",
+        "cycle_duration_days": 10,
+        "temperature_category": "modérée",
+        "humidity_category": "modérée-élevée",
+        "difficulty": "très facile"
+    },
+    "temperature": {
+        "optimal": 24.0,
+        "tolerance": 3.0,
+        "min": 18.0,
+        "max": 30.0
+    },
+    "humidity": {
+        "optimal": 65.0,
+        "tolerance": 10.0,
+        "min": 50.0,
+        "max": 80.0
+    },
+    "feeding": {
+        "medium_type": "banana_agar",
+        "supplements": ["brewers_yeast"],
+        "notes": "Renouveler le milieu tous les 15 jours"
+    },
+    "lighting": {
+        "day_hours": 12,
+        "uv_required": false,
+        "intensity": "low"
+    },
+    "lifecycle": {
+        "egg_incubation_days": 1,
+        "larval_stages_days": 5,
+        "pupal_stage_days": 4,
+        "adult_lifespan_days": 30
+    },
+    "enclosure": {
+        "container_type": "plastic_bottle",
+        "min_volume_ml": 250,
+        "ventilation_required": true,
+        "medium_depth_cm": 1.5
+    }
+} 

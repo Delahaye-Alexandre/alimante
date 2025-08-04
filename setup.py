@@ -10,7 +10,7 @@ setup(
         'astral>=3.2',  # Pour le calcul du coucher du soleil
         'pytest>=7.0.0',  # Pour les tests
         'pytest-mock>=3.10.0',  # Pour les mocks dans les tests
-        'logging>=0.5.1.2',  # Pour la gestion des logs
+        # 'logging>=0.5.1.2',  # Problème: logging est un module standard
     ],
     author="Alexandre Delahaye",
     author_email="alexandre-delahaye@outmlook.fr",

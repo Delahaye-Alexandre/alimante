@@ -1,0 +1,45 @@
+{
+    "species_name": "Sphodromantis viridis",
+    "common_name": "Mante africaine",
+    "classification": {
+        "cycle_type": "long",
+        "cycle_duration_days": 285,
+        "temperature_category": "élevée",
+        "humidity_category": "modérée-élevée",
+        "difficulty": "intermédiaire"
+    },
+    "temperature": {
+        "optimal": 28.0,
+        "tolerance": 3.0,
+        "min": 22.0,
+        "max": 35.0
+    },
+    "humidity": {
+        "optimal": 65.0,
+        "tolerance": 10.0,
+        "min": 50.0,
+        "max": 85.0
+    },
+    "feeding": {
+        "interval_days": 3,
+        "feed_count": 3,
+        "prey_type": "tenebrio_molitor",
+        "notes": "Espèce vorace qui peut nécessiter des proies plus fréquentes"
+    },
+    "lighting": {
+        "day_hours": 12,
+        "uv_required": true,
+        "intensity": "high"
+    },
+    "lifecycle": {
+        "egg_incubation_days": 45,
+        "nymph_stages": 8,
+        "adult_lifespan_days": 240
+    },
+    "enclosure": {
+        "min_height_cm": 40,
+        "min_width_cm": 25,
+        "min_depth_cm": 25,
+        "climbing_surfaces_required": true
+    }
+} 

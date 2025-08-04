@@ -3,17 +3,18 @@ import json
 
 def select_config():
     """
-        Ce module permet de sélectionner une configuration système en fonction du type d'insectes que l'utilisateur souhaite s'occuper.
-
-        Pour cela, l'utilsateur choisira dans le dossier config une configuration trié entre l'ordre (ex: orthoptères, coléoptères, diptères, lépidoptères).
-
-        Ensuite, l'utilisateur selectionnera la configuration qui correspond à la famille (ex: mantidae, tenebrionidae, drosophilidae, saturniidae).
-
-        Enfin, l'utilisateur choisira la configuration qui correspond à l'espèce (ex: mantis religiosa, tenebrio molitor, drosophila melanogaster, saturnia pyri).
-
-        La configuration sélectionnée sera alors chargée et utilisée pour initialiser le système.
+    Sélectionne une configuration système en fonction du type d'insectes.
+    
+    L'utilisateur choisit:
+    1. L'ordre (ex: orthoptères, coléoptères, diptères, lépidoptères)
+    2. La famille (ex: mantidae, tenebrionidae, drosophilidae, saturniidae)
+    3. L'espèce (ex: mantis religiosa, tenebrio molitor, drosophila melanogaster, saturnia pyri)
+    
+    Returns:
+        str: Chemin vers le fichier de configuration sélectionné ou None si annulé
     """
 
+    # Définition des ordres disponibles
     orders = {
         "1": "orthopteres",
         "2": "coleopteres",
@@ -21,6 +22,7 @@ def select_config():
         "4": "lepidopteres"
     }
 
+    # Définition des familles par ordre
     families = {
         "orthopteres": {
             "1": "mantidae"
@@ -36,6 +38,7 @@ def select_config():
         }
     }
 
+    # Définition des espèces par famille
     species = {
         "mantidae": {
             "1": "mantis_religiosa"
@@ -51,6 +54,7 @@ def select_config():
         }
     }
 
+    # Sélection de l'ordre
     print("Sélectionnez l'ordre d'insectes :")
     for key, value in orders.items():
         print(f"{key}. {value.capitalize()}")
@@ -62,6 +66,7 @@ def select_config():
 
     selected_order = orders[order_choice]
 
+    # Sélection de la famille
     print(f"Sélectionnez la famille d'insectes dans l'ordre {selected_order} :")
     for key, value in families[selected_order].items():
         print(f"{key}. {value.capitalize()}")
@@ -73,6 +78,7 @@ def select_config():
 
     selected_family = families[selected_order][family_choice]
 
+    # Sélection de l'espèce
     print(f"Sélectionnez l'espèce d'insectes dans la famille {selected_family} :")
     for key, value in species[selected_family].items():
         print(f"{key}. {value.replace('_', ' ').capitalize()}")
@@ -84,43 +90,56 @@ def select_config():
 
     selected_species = species[selected_family][species_choice]
 
+    # Construction du chemin vers le fichier de configuration
     config_path = os.path.join("config", selected_order, selected_family, f"{selected_species}.json")
+    
+    # Vérification de l'existence du fichier
+    if not os.path.exists(config_path):
+        print(f"Erreur: Le fichier de configuration {config_path} n'existe pas.")
+        return None
+        
+    print(f"Configuration sélectionnée: {config_path}")
     return config_path
 
 def create_custom_config():
     """
     Permet à l'utilisateur de créer une configuration personnalisée.
+    
+    Returns:
+        str: Chemin vers le fichier de configuration créé ou None si annulé
     """
     config = {}
 
+    # Informations de base
+    config['species_name'] = input("Entrez le nom scientifique de l'espèce : ")
+    config['common_name'] = input("Entrez le nom commun de l'espèce : ")
+    
+    # Configuration de température
     config['temperature'] = {
-        'target': float(input("Entrez la température cible (en °C) : ")),
+        'optimal': float(input("Entrez la température optimale (en °C) : ")),
         'tolerance': float(input("Entrez la tolérance de température (en °C) : "))
     }
 
+    # Configuration d'humidité
     config['humidity'] = {
-        'target': float(input("Entrez le taux d'humidité cible (en %) : ")),
+        'optimal': float(input("Entrez le taux d'humidité optimal (en %) : ")),
         'tolerance': float(input("Entrez la tolérance d'humidité (en %) : "))
     }
 
-    config['location'] = {
-        'latitude': float(input("Entrez la latitude : ")),
-        'longitude': float(input("Entrez la longitude : "))
-    }
-
+    # Configuration d'alimentation
     config['feeding'] = {
         'interval_days': int(input("Entrez l'intervalle de jours entre les nourrissages : ")),
-        'feed_count': int(input("Entrez le nombre de mouches à libérer à chaque nourrissage : "))
+        'feed_count': int(input("Entrez la quantité de nourriture à distribuer : "))
     }
 
-    config['lighting'] = {
-        'sunrise': input("Entrez l'heure de lever du soleil (HH:MM) : "),
-        'sunset': input("Entrez l'heure de coucher du soleil (HH:MM) : ")
-    }
-
+    # Emplacement de sauvegarde
     filename = input("Entrez le nom du fichier de configuration (sans extension) : ")
-    filepath = os.path.join("config", f"{filename}.json")
+    filepath = os.path.join("config", "custom", f"{filename}.json")
+    
+    # Création du dossier custom s'il n'existe pas
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
 
+    # Sauvegarde du fichier
     with open(filepath, 'w', encoding='utf-8') as f:
         json.dump(config, f, ensure_ascii=False, indent=4)
 

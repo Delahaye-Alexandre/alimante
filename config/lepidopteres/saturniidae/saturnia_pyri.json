@@ -1,0 +1,62 @@
+{
+    "species_name": "Saturnia pyri",
+    "common_name": "Grand paon de nuit",
+    "classification": {
+        "cycle_type": "long",
+        "cycle_duration_days": 324,
+        "temperature_category": "modérée",
+        "humidity_category": "élevée",
+        "difficulty": "avancée",
+        "special_requirements": "diapause hivernale"
+    },
+    "temperature": {
+        "optimal": 22.0,
+        "tolerance": 4.0,
+        "min": 15.0,
+        "max": 30.0
+    },
+    "humidity": {
+        "optimal": 70.0,
+        "tolerance": 10.0,
+        "min": 55.0,
+        "max": 85.0
+    },
+    "feeding": {
+        "larval_food_plants": ["prunus_spinosa", "malus_domestica", "pyrus_communis"],
+        "adult_feeding": false,
+        "notes": "Les chenilles sont voraces et nécessitent un approvisionnement quotidien en feuilles fraîches"
+    },
+    "lighting": {
+        "day_hours": 12,
+        "uv_required": false,
+        "intensity": "low",
+        "notes": "Les adultes sont nocturnes"
+    },
+    "lifecycle": {
+        "egg_incubation_days": 14,
+        "larval_stages": 5,
+        "larval_duration_days": 60,
+        "pupal_stage_days": 240,
+        "adult_lifespan_days": 10,
+        "notes": "Diapause hivernale au stade de chrysalide"
+    },
+    "enclosure": {
+        "larval_enclosure": {
+            "min_height_cm": 40,
+            "min_width_cm": 30,
+            "min_depth_cm": 30,
+            "ventilation_required": true
+        },
+        "pupal_enclosure": {
+            "substrate_type": "vermiculite",
+            "substrate_depth_cm": 5,
+            "humidity_level": "moderate"
+        },
+        "adult_enclosure": {
+            "min_height_cm": 60,
+            "min_width_cm": 40,
+            "min_depth_cm": 40,
+            "perching_surfaces_required": true
+        }
+    }
+} 

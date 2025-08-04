@@ -1,0 +1,47 @@
+{
+    "species_name": "Hymenopus coronatus",
+    "common_name": "Mante orchidée",
+    "classification": {
+        "cycle_type": "long",
+        "cycle_duration_days": 240,
+        "temperature_category": "modérée-élevée",
+        "humidity_category": "très élevée",
+        "difficulty": "avancée",
+        "special_requirements": "plantes vivantes"
+    },
+    "temperature": {
+        "optimal": 26.0,
+        "tolerance": 2.0,
+        "min": 22.0,
+        "max": 30.0
+    },
+    "humidity": {
+        "optimal": 75.0,
+        "tolerance": 8.0,
+        "min": 65.0,
+        "max": 90.0
+    },
+    "feeding": {
+        "interval_days": 2,
+        "feed_count": 2,
+        "prey_type": "drosophila_melanogaster",
+        "notes": "Espèce délicate qui préfère les petites proies volantes"
+    },
+    "lighting": {
+        "day_hours": 12,
+        "uv_required": true,
+        "intensity": "medium"
+    },
+    "lifecycle": {
+        "egg_incubation_days": 60,
+        "nymph_stages": 7,
+        "adult_lifespan_days": 180
+    },
+    "enclosure": {
+        "min_height_cm": 35,
+        "min_width_cm": 25,
+        "min_depth_cm": 25,
+        "climbing_surfaces_required": true,
+        "special_requirements": "Plantes vivantes recommandées pour l'humidité et le camouflage"
+    }
+} 

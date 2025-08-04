@@ -1,0 +1,45 @@
+ {
+    "species_name": "Tenebrio molitor",
+    "common_name": "Ver de farine",
+    "classification": {
+        "cycle_type": "moyen",
+        "cycle_duration_days": 114,
+        "temperature_category": "modérée",
+        "humidity_category": "modérée",
+        "difficulty": "facile"
+    },
+    "temperature": {
+        "optimal": 25.0,
+        "tolerance": 5.0
+    },
+    "humidity": {
+        "optimal": 50.0,
+        "tolerance": 15.0
+    },
+    "feeding": {
+        "interval_days": 7,
+        "feed_count": 5,
+        "feed_type": "wheat_bran",
+        "supplements": ["carrot", "potato", "apple"],
+        "notes": "Fournir des légumes frais comme source d'humidité"
+    },
+    "lighting": {
+        "day_hours": 0,
+        "uv_required": false,
+        "intensity": "low",
+        "notes": "Préfère l'obscurité"
+    },
+    "lifecycle": {
+        "egg_incubation_days": 10,
+        "larval_stages_days": 90,
+        "pupal_stage_days": 14,
+        "adult_lifespan_days": 60
+    },
+    "enclosure": {
+        "min_height_cm": 15,
+        "min_width_cm": 30,
+        "min_depth_cm": 20,
+        "substrate_depth_cm": 5,
+        "substrate_type": "wheat_bran_mix"
+    }
+} 
