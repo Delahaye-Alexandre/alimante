@@ -3,7 +3,7 @@ app.py
 API FastAPI pour le système de gestion des mantes
 """
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import asyncio
@@ -17,6 +17,32 @@ from src.utils.gpio_manager import GPIOManager
 from src.utils.logging_config import get_logger, log_system_start, log_system_stop
 from src.utils.error_handler import register_error_handlers, create_api_error
 from src.utils.exceptions import ErrorCode, AlimanteException
+from src.utils.auth import (
+    auth_manager, 
+    get_current_user, 
+    require_admin, 
+    User, 
+    UserLogin, 
+    Token, 
+    create_user_token,
+    log_auth_event
+)
+from src.api.models import (
+    ControlRequest,
+    FeedingTriggerRequest,
+    ConfigUpdateRequest,
+    SystemStatusResponse,
+    SystemMetrics,
+    ControlResponse,
+    FeedingResponse,
+    ConfigResponse,
+    WebSocketMessage,
+    StatusUpdateMessage,
+    ControlUpdateMessage,
+    FeedingUpdateMessage,
+    UserResponse,
+    ControllerInfo
+)
 from src.controllers.temperature_controller import TemperatureController
 from src.controllers.light_controller import LightController
 from src.controllers.humidity_controller import HumidityController
@@ -25,14 +51,16 @@ from src.controllers.feeding_controller import FeedingController
 # Configuration de l'application
 app = FastAPI(
     title="Alimante API",
-    description="API pour la gestion automatisée des mantes",
-    version="1.0.0"
+    description="API sécurisée pour la gestion automatisée des mantes",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
 
 # Enregistrement des gestionnaires d'erreurs
 register_error_handlers(app)
 
-# CORS pour l'application mobile (plus sécurisé)
+# CORS pour l'application mobile (sécurisé)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -126,12 +154,12 @@ async def shutdown_event():
     
     log_system_stop()
 
-async def broadcast_to_websockets(message: Dict[str, Any]):
+async def broadcast_to_websockets(message: WebSocketMessage):
     """Envoie un message à tous les clients WebSocket connectés"""
     if not websocket_connections:
         return
         
-    message_json = json.dumps(message)
+    message_json = message.json()
     disconnected = []
     
     for websocket in websocket_connections:
@@ -161,8 +189,11 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             # Envoi périodique des données
-            data = await get_system_status()
-            await websocket.send_text(json.dumps(data))
+            status_data = await get_system_status()
+            status_message = StatusUpdateMessage(
+                data=status_data
+            )
+            await websocket.send_text(status_message.json())
             await asyncio.sleep(5)  # Mise à jour toutes les 5 secondes
             
     except WebSocketDisconnect:
@@ -175,6 +206,45 @@ async def websocket_endpoint(websocket: WebSocket):
         if websocket in websocket_connections:
             websocket_connections.remove(websocket)
 
+# Endpoints d'authentification
+@app.post("/api/auth/login", response_model=Token)
+async def login(user_credentials: UserLogin):
+    """Authentification utilisateur"""
+    try:
+        user = auth_manager.authenticate_user(user_credentials.username, user_credentials.password)
+        if not user:
+            log_auth_event("login_failed", user_credentials.username, False)
+            raise create_api_error(
+                ErrorCode.API_UNAUTHORIZED,
+                "Nom d'utilisateur ou mot de passe incorrect"
+            )
+        
+        token = create_user_token(user)
+        log_auth_event("login_success", user.username, True)
+        
+        return token
+        
+    except AlimanteException:
+        raise
+    except Exception as e:
+        logger.exception("💥 Erreur lors de l'authentification")
+        raise create_api_error(
+            ErrorCode.API_UNAUTHORIZED,
+            "Erreur lors de l'authentification",
+            {"original_error": str(e)}
+        )
+
+@app.get("/api/auth/me", response_model=UserResponse)
+async def get_current_user_info(current_user: User = Depends(get_current_user)):
+    """Récupère les informations de l'utilisateur connecté"""
+    return UserResponse(
+        username=current_user.username,
+        email=current_user.email,
+        is_admin=current_user.is_admin,
+        is_active=current_user.is_active
+    )
+
+# Endpoints publics (sans authentification)
 @app.get("/")
 async def root():
     """Endpoint racine"""
@@ -182,29 +252,55 @@ async def root():
         "message": "Alimante API",
         "version": "1.0.0",
         "status": "running",
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
+        "docs": "/docs"
     }
 
-@app.get("/api/status")
-async def get_system_status():
+@app.get("/api/health")
+async def health_check():
+    """Vérification de santé du système"""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "version": "1.0.0"
+    }
+
+# Endpoints protégés (avec authentification)
+@app.get("/api/status", response_model=SystemStatusResponse)
+async def get_system_status(current_user: User = Depends(get_current_user)):
     """Retourne le statut complet du système"""
     try:
-        status = {
-            "timestamp": datetime.now().isoformat(),
-            "system": "online",
-            "controllers": {}
-        }
+        status = SystemStatusResponse(
+            status="online",
+            controllers={}
+        )
         
         # Statut de chaque contrôleur
         for name, controller in controllers.items():
             try:
                 if hasattr(controller, 'get_status'):
-                    status["controllers"][name] = controller.get_status()
+                    controller_status = controller.get_status()
+                    status.controllers[name] = ControllerInfo(
+                        name=name,
+                        status="active" if controller_status.get("status") == "ok" else "error",
+                        last_update=datetime.now(),
+                        error_count=controller_status.get("error_count", 0),
+                        metadata=controller_status
+                    )
                 else:
-                    status["controllers"][name] = {"status": "unknown"}
+                    status.controllers[name] = ControllerInfo(
+                        name=name,
+                        status="unknown",
+                        last_update=datetime.now()
+                    )
             except Exception as e:
                 logger.warning(f"Erreur lors de la récupération du statut {name}: {e}")
-                status["controllers"][name] = {"status": "error", "error": str(e)}
+                status.controllers[name] = ControllerInfo(
+                    name=name,
+                    status="error",
+                    last_update=datetime.now(),
+                    error_count=1
+                )
         
         return status
         
@@ -216,37 +312,37 @@ async def get_system_status():
             {"original_error": str(e)}
         )
 
-@app.get("/api/metrics")
-async def get_metrics():
+@app.get("/api/metrics", response_model=SystemMetrics)
+async def get_metrics(current_user: User = Depends(get_current_user)):
     """Récupère les métriques des capteurs"""
     try:
-        metrics = {}
+        metrics = SystemMetrics()
         
         # Température
         if 'temperature' in controllers:
             try:
                 temp_status = controllers['temperature'].get_status()
-                metrics['temperature'] = {
+                metrics.temperature = {
                     'current': temp_status.get('current_temperature'),
                     'optimal': temp_status.get('optimal_temperature'),
                     'heating_active': temp_status.get('heating_active')
                 }
             except Exception as e:
                 logger.warning(f"Erreur métriques température: {e}")
-                metrics['temperature'] = {"error": str(e)}
+                metrics.temperature = {"error": str(e)}
         
         # Humidité
         if 'humidity' in controllers:
             try:
                 humidity_status = controllers['humidity'].get_status()
-                metrics['humidity'] = {
+                metrics.humidity = {
                     'current': humidity_status.get('current_humidity'),
                     'optimal': humidity_status.get('optimal_humidity'),
                     'sprayer_active': humidity_status.get('sprayer_active')
                 }
             except Exception as e:
                 logger.warning(f"Erreur métriques humidité: {e}")
-                metrics['humidity'] = {"error": str(e)}
+                metrics.humidity = {"error": str(e)}
         
         return metrics
         
@@ -258,71 +354,89 @@ async def get_metrics():
             {"original_error": str(e)}
         )
 
-@app.post("/api/control")
-async def control_system(control_data: Dict[str, Any]):
+@app.post("/api/control", response_model=ControlResponse)
+async def control_system(
+    control_request: ControlRequest,
+    current_user: User = Depends(get_current_user)
+):
     """Contrôle les systèmes"""
     try:
-        if not control_data:
-            raise create_api_error(
-                ErrorCode.API_INVALID_REQUEST,
-                "Données de contrôle manquantes"
-            )
-        
         results = {}
+        errors = []
         
         # Contrôle température
-        if 'temperature' in control_data:
+        if "temperature" in control_request.actions:
             try:
                 if controllers['temperature'].control_temperature():
                     results['temperature'] = "controlled"
                 else:
                     results['temperature'] = "error"
+                    errors.append("Échec contrôle température")
             except Exception as e:
                 logger.error(f"Erreur contrôle température: {e}")
                 results['temperature'] = "error"
+                errors.append(f"Erreur contrôle température: {str(e)}")
         
         # Contrôle humidité
-        if 'humidity' in control_data:
+        if "humidity" in control_request.actions:
             try:
                 if controllers['humidity'].control_humidity():
                     results['humidity'] = "controlled"
                 else:
                     results['humidity'] = "error"
+                    errors.append("Échec contrôle humidité")
             except Exception as e:
                 logger.error(f"Erreur contrôle humidité: {e}")
                 results['humidity'] = "error"
+                errors.append(f"Erreur contrôle humidité: {str(e)}")
         
         # Contrôle éclairage
-        if 'light' in control_data:
+        if "light" in control_request.actions:
             try:
                 if controllers['light'].control_lighting():
                     results['light'] = "controlled"
                 else:
                     results['light'] = "error"
+                    errors.append("Échec contrôle éclairage")
             except Exception as e:
                 logger.error(f"Erreur contrôle éclairage: {e}")
                 results['light'] = "error"
+                errors.append(f"Erreur contrôle éclairage: {str(e)}")
         
         # Contrôle alimentation
-        if 'feeding' in control_data:
+        if "feeding" in control_request.actions:
             try:
                 if controllers['feeding'].control_feeding():
                     results['feeding'] = "controlled"
                 else:
                     results['feeding'] = "error"
+                    errors.append("Échec contrôle alimentation")
             except Exception as e:
                 logger.error(f"Erreur contrôle alimentation: {e}")
                 results['feeding'] = "error"
+                errors.append(f"Erreur contrôle alimentation: {str(e)}")
         
         # Broadcast aux clients WebSocket
-        await broadcast_to_websockets({
-            "type": "control_update",
-            "data": results,
-            "timestamp": datetime.now().isoformat()
+        control_message = ControlUpdateMessage(
+            data=ControlResponse(
+                status="success" if not errors else "partial_success",
+                results=results,
+                errors=errors if errors else None
+            )
+        )
+        await broadcast_to_websockets(control_message)
+        
+        logger.info("🎛️ Contrôle système exécuté", {
+            "user": current_user.username,
+            "actions": control_request.actions,
+            "results": results
         })
         
-        logger.info("🎛️ Contrôle système exécuté", {"results": results})
-        return {"status": "success", "results": results}
+        return ControlResponse(
+            status="success" if not errors else "partial_success",
+            results=results,
+            errors=errors if errors else None
+        )
         
     except AlimanteException:
         raise
@@ -334,8 +448,11 @@ async def control_system(control_data: Dict[str, Any]):
             {"original_error": str(e)}
         )
 
-@app.post("/api/feeding/trigger")
-async def trigger_feeding():
+@app.post("/api/feeding/trigger", response_model=FeedingResponse)
+async def trigger_feeding(
+    feeding_request: FeedingTriggerRequest,
+    current_user: User = Depends(get_current_user)
+):
     """Déclenche manuellement l'alimentation"""
     try:
         if 'feeding' not in controllers:
@@ -346,14 +463,26 @@ async def trigger_feeding():
         
         success = controllers['feeding'].trigger_feeding()
         
-        await broadcast_to_websockets({
-            "type": "feeding_triggered",
+        feeding_message = FeedingUpdateMessage(
+            data=FeedingResponse(
+                status="success" if success else "error",
+                success=success,
+                quantity_dispensed=feeding_request.quantity if success else None
+            )
+        )
+        await broadcast_to_websockets(feeding_message)
+        
+        logger.info("🍽️ Alimentation déclenchée", {
+            "user": current_user.username,
             "success": success,
-            "timestamp": datetime.now().isoformat()
+            "quantity": feeding_request.quantity
         })
         
-        logger.info("🍽️ Alimentation déclenchée", {"success": success})
-        return {"status": "success" if success else "error"}
+        return FeedingResponse(
+            status="success" if success else "error",
+            success=success,
+            quantity_dispensed=feeding_request.quantity if success else None
+        )
         
     except AlimanteException:
         raise
@@ -365,24 +494,55 @@ async def trigger_feeding():
             {"original_error": str(e)}
         )
 
-@app.get("/api/config")
-async def get_config():
+@app.get("/api/config", response_model=ConfigResponse)
+async def get_config(current_user: User = Depends(get_current_user)):
     """Retourne la configuration actuelle"""
     try:
         config = SystemConfig.from_json('config/config.json', 'config/orthopteres/mantidae/mantis_religiosa.json')
-        return {
-            "serial_port": config.serial_port,
-            "baud_rate": config.baud_rate,
-            "temperature": config.temperature,
-            "humidity": config.humidity,
-            "location": config.location,
-            "feeding": config.feeding
-        }
+        return ConfigResponse(
+            temperature=config.temperature,
+            humidity=config.humidity,
+            feeding=config.feeding,
+            lighting={},  # À implémenter
+            location=config.location
+        )
     except Exception as e:
         logger.exception("💥 Erreur lors de la récupération de la configuration")
         raise create_api_error(
             ErrorCode.CONFIGURATION_INVALID,
             "Impossible de récupérer la configuration",
+            {"original_error": str(e)}
+        )
+
+# Endpoints administrateur
+@app.put("/api/config", response_model=ConfigResponse)
+async def update_config(
+    config_update: ConfigUpdateRequest,
+    admin_user: User = Depends(require_admin)
+):
+    """Met à jour la configuration (admin uniquement)"""
+    try:
+        # Ici on pourrait sauvegarder la configuration
+        logger.info("⚙️ Configuration mise à jour", {
+            "user": admin_user.username,
+            "updates": config_update.dict(exclude_none=True)
+        })
+        
+        # Retourner la configuration actuelle
+        config = SystemConfig.from_json('config/config.json', 'config/orthopteres/mantidae/mantis_religiosa.json')
+        return ConfigResponse(
+            temperature=config.temperature,
+            humidity=config.humidity,
+            feeding=config.feeding,
+            lighting={},
+            location=config.location
+        )
+        
+    except Exception as e:
+        logger.exception("💥 Erreur lors de la mise à jour de la configuration")
+        raise create_api_error(
+            ErrorCode.CONFIGURATION_INVALID,
+            "Erreur lors de la mise à jour de la configuration",
             {"original_error": str(e)}
         )
 

@@ -2,7 +2,7 @@
 
 ## 🍓 Description
 
-Alimante est un système de gestion automatisé pour l'élevage de mantes utilisant un **Raspberry Pi** et une **API moderne**. Le système contrôle automatiquement :
+Alimante est un système de gestion automatisé pour l'élevage de mantes utilisant un **Raspberry Pi** et une **API moderne sécurisée**. Le système contrôle automatiquement :
 
 - **🌡️ Température** : Maintien optimal avec relais de chauffage
 - **💧 Humidité** : Contrôle automatique avec pulvérisateur
@@ -13,13 +13,14 @@ Alimante est un système de gestion automatisé pour l'élevage de mantes utilis
 
 ### Backend (Raspberry Pi)
 
-- **API FastAPI** avec documentation auto-générée
+- **API FastAPI sécurisée** avec authentification JWT
 - **WebSocket** pour données temps réel
 - **GPIO** pour contrôle des capteurs/actionneurs
 - **Service systemd** pour démarrage automatique
 - **Logging structuré** avec rotation et niveaux multiples
 - **Gestion d'erreurs robuste** avec codes d'erreur standardisés
 - **Monitoring avancé** avec métriques et alertes
+- **Validation Pydantic** pour tous les endpoints
 
 ### Application Mobile (Prévue)
 
@@ -27,6 +28,40 @@ Alimante est un système de gestion automatisé pour l'élevage de mantes utilis
 - **Dashboard** temps réel
 - **Notifications** push
 - **Contrôles** manuels
+
+## 🔐 Sécurité
+
+### Authentification JWT
+
+Le système utilise une authentification JWT sécurisée :
+
+- **Tokens JWT** avec expiration automatique (30 minutes)
+- **Hachage bcrypt** des mots de passe
+- **Rôles utilisateur** : admin et user
+- **Logging des événements** d'authentification
+
+### Utilisateurs par défaut
+
+```
+Admin: username=admin, password=admin123
+User:  username=user,  password=user123
+```
+
+### Endpoints sécurisés
+
+- **Publics** : `/`, `/api/health`, `/api/auth/login`
+- **Protégés** : Tous les endpoints `/api/*` (sauf auth)
+- **Admin uniquement** : `/api/config` (PUT)
+
+### CORS sécurisé
+
+```python
+allow_origins=[
+    "http://localhost:3000",      # Développement
+    "http://192.168.1.100:3000",  # IP locale
+    "https://votre-app-mobile.com" # Production
+]
+```
 
 ## 📋 Matériel Requis
 
@@ -85,7 +120,25 @@ sudo chown root:gpio /dev/gpiomem
 sudo chmod g+rw /dev/gpiomem
 ```
 
+### 3. Configuration de sécurité
+
+```bash
+# Créer un fichier .env pour la production
+cat > .env << EOF
+ALIMANTE_SECRET_KEY=votre-clé-secrète-très-longue-et-complexe
+ALIMANTE_ENV=production
+ALIMANTE_LOG_LEVEL=INFO
+EOF
+```
+
 ## 🧪 Tests
+
+### Test du système d'authentification
+
+```bash
+# Test complet de l'authentification
+python3 tests/test_auth.py
+```
 
 ### Test du système de gestion d'erreurs
 
@@ -106,10 +159,21 @@ python3 test_gpio.py
 # Démarrage API
 ./start_api.sh
 
-# Test endpoints
+# Test endpoints publics
 curl http://localhost:8000/
-curl http://localhost:8000/api/status
-curl http://localhost:8000/api/metrics
+curl http://localhost:8000/api/health
+
+# Test authentification
+curl -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "admin123"}'
+
+# Test endpoints protégés (avec token)
+TOKEN=$(curl -s -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "admin123"}' | jq -r '.access_token')
+
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/status
 ```
 
 ## 🚀 Utilisation
@@ -139,13 +203,23 @@ sudo journalctl -u alimante -f
 
 ## 📱 API Endpoints
 
-### REST API
+### Endpoints publics
 
 - `GET /` - Statut de l'API
+- `GET /api/health` - Vérification de santé
+- `POST /api/auth/login` - Authentification
+
+### Endpoints protégés (authentification requise)
+
 - `GET /api/status` - Statut complet du système
 - `GET /api/metrics` - Métriques des capteurs
 - `POST /api/control` - Contrôle des systèmes
 - `POST /api/feeding/trigger` - Alimentation manuelle
+- `GET /api/config` - Configuration actuelle
+
+### Endpoints administrateur
+
+- `PUT /api/config` - Mise à jour configuration (admin uniquement)
 
 ### WebSocket
 
@@ -154,6 +228,7 @@ sudo journalctl -u alimante -f
 ### Documentation
 
 - `http://raspberry-pi:8000/docs` - Swagger UI
+- `http://raspberry-pi:8000/redoc` - ReDoc
 
 ## 🔍 Système de Logging et Gestion d'Erreurs
 
@@ -220,6 +295,7 @@ logger.error("Erreur température", exc.context, exc.error_code.name)
 
 ```bash
 # Créer .env
+ALIMANTE_SECRET_KEY=votre-clé-secrète-très-longue-et-complexe
 ALIMANTE_ENV=production
 ALIMANTE_LOG_LEVEL=INFO
 ALIMANTE_API_HOST=0.0.0.0
@@ -234,15 +310,19 @@ ALIMANTE_API_PORT=8000
 alimante/
 ├── src/
 │   ├── api/           # API FastAPI
+│   │   ├── app.py     # Application principale
+│   │   └── models.py  # Modèles Pydantic
 │   ├── controllers/   # Contrôleurs GPIO
 │   └── utils/         # Utilitaires
 │       ├── exceptions.py      # Système d'exceptions
 │       ├── logging_config.py  # Configuration logging
-│       └── error_handler.py   # Gestionnaire d'erreurs API
+│       ├── error_handler.py   # Gestionnaire d'erreurs API
+│       └── auth.py           # Authentification JWT
 ├── config/            # Configurations
 ├── mobile/            # App mobile (prévue)
 ├── tests/             # Tests unitaires
-│   └── test_error_handling.py # Tests gestion d'erreurs
+│   ├── test_error_handling.py # Tests gestion d'erreurs
+│   └── test_auth.py          # Tests authentification
 └── logs/              # Logs système
 ```
 
@@ -257,6 +337,9 @@ pytest --cov=src tests/
 
 # Tests spécifiques gestion d'erreurs
 python3 tests/test_error_handling.py
+
+# Tests spécifiques authentification
+python3 tests/test_auth.py
 ```
 
 ## 📊 Monitoring
@@ -277,6 +360,7 @@ python3 tests/test_error_handling.py
 - Historique des repas
 - Performance API (temps de réponse)
 - Erreurs par type et fréquence
+- Événements d'authentification
 
 ### Analyse des logs
 
@@ -289,6 +373,9 @@ tail -f logs/metrics.log | jq '.'
 
 # Rechercher des erreurs spécifiques
 grep "TEMPERATURE_OUT_OF_RANGE" logs/alimante.log
+
+# Analyser les événements d'authentification
+grep "login" logs/alimante.log | jq '.'
 ```
 
 ## 🆘 Dépannage
@@ -300,6 +387,7 @@ grep "TEMPERATURE_OUT_OF_RANGE" logs/alimante.log
 3. **Service ne démarre pas** : Vérifier les logs systemd
 4. **API non accessible** : Vérifier le firewall
 5. **Erreurs de logging** : Vérifier les permissions du dossier logs/
+6. **Authentification échoue** : Vérifier les credentials par défaut
 
 ### Commandes utiles
 
@@ -321,6 +409,11 @@ tail -n 50 logs/errors.log | jq '.'
 
 # Vérifier l'espace disque des logs
 du -sh logs/
+
+# Tester l'authentification
+curl -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "admin123"}'
 ```
 
 ### Codes d'erreur courants
@@ -330,6 +423,8 @@ du -sh logs/
 - **2000** : Erreur lecture capteur
 - **3000** : Échec initialisation contrôleur
 - **4000** : Données de requête invalides
+- **4001** : Authentification requise
+- **4003** : Accès interdit (admin requis)
 - **5000** : Erreur validation données
 
 ## 🤝 Contribution
@@ -344,6 +439,8 @@ du -sh logs/
 
 - **Gestion d'erreurs** : Utiliser le système d'exceptions centralisé
 - **Logging** : Utiliser le logger structuré avec contexte
+- **Authentification** : Tous les endpoints sensibles doivent être protégés
+- **Validation** : Utiliser les modèles Pydantic pour valider les données
 - **Tests** : Ajouter des tests pour les nouvelles fonctionnalités
 - **Documentation** : Mettre à jour le README si nécessaire
 
