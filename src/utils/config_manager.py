@@ -15,6 +15,10 @@ class SystemConfig:
     feeding: Dict[str, int]
     species_name: Optional[str] = None
     common_name: Optional[str] = None
+    classification: Optional[Dict[str, Any]] = None
+    lighting: Optional[Dict[str, Any]] = None
+    lifecycle: Optional[Dict[str, Any]] = None
+    enclosure: Optional[Dict[str, Any]] = None
 
     @classmethod
     def from_json(cls, common_config_path: str, specific_config_path: str) -> 'SystemConfig':

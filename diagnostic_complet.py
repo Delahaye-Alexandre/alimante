@@ -130,15 +130,30 @@ def check_gpio_config():
         with open('config/gpio_config.json', 'r', encoding='utf-8') as f:
             gpio_config = json.load(f)
         
-        required_sections = ['sensors', 'actuators', 'inputs', 'indicators', 'power_supply']
-        missing_sections = []
+        # Vérifier la structure avec 'pins'
+        if 'pins' in gpio_config:
+            print(f"  ✅ Section pins")
+            pins = gpio_config['pins']
+            
+            required_pin_sections = ['sensors', 'actuators', 'inputs', 'status']
+            missing_sections = []
+            
+            for section in required_pin_sections:
+                if section in pins:
+                    print(f"    ✅ Sous-section {section}")
+                else:
+                    print(f"    ❌ Sous-section {section} manquante")
+                    missing_sections.append(section)
+        else:
+            print(f"  ❌ Section pins manquante")
+            return ['pins']
         
-        for section in required_sections:
-            if section in gpio_config:
-                print(f"  ✅ Section {section}")
-            else:
-                print(f"  ❌ Section {section} manquante")
-                missing_sections.append(section)
+        # Vérifier power_supply
+        if 'power_supply' in gpio_config:
+            print(f"  ✅ Section power_supply")
+        else:
+            print(f"  ❌ Section power_supply manquante")
+            missing_sections.append('power_supply')
         
         return missing_sections
     except Exception as e:
