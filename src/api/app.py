@@ -43,10 +43,19 @@ from src.api.models import (
     UserResponse,
     ControllerInfo
 )
+# Import des contrôleurs
 from src.controllers.temperature_controller import TemperatureController
 from src.controllers.light_controller import LightController
 from src.controllers.humidity_controller import HumidityController
 from src.controllers.feeding_controller import FeedingController
+from src.controllers.fan_controller import FanController
+from src.controllers.buzzer_controller import BuzzerController
+
+# Import des services
+from src.services.system_service import system_service
+from src.services.control_service import control_service
+from src.services.config_service import config_service
+from src.services.sensor_service import sensor_service
 
 # Configuration de l'application
 app = FastAPI(
@@ -96,16 +105,28 @@ async def startup_event():
                 {"gpio_status": "failed"}
             )
         
-        # Chargement de la configuration
-        config = SystemConfig.from_json('config/config.json', 'config/orthopteres/mantidae/mantis_religiosa.json')
+        # Chargement de la configuration via le service
+        config = config_service.load_system_config()
         
         # Initialisation des contrôleurs
         controllers = {
             'temperature': TemperatureController(gpio_manager, config.temperature),
             'humidity': HumidityController(gpio_manager, config.humidity),
             'light': LightController(gpio_manager, config.location),
-            'feeding': FeedingController(gpio_manager, config.feeding)
+            'feeding': FeedingController(gpio_manager, config.feeding),
+            'fan': FanController(gpio_manager, config.get("fan", {})),
+            'buzzer': BuzzerController(gpio_manager, config.get("buzzer", {}))
         }
+        
+        # Enregistrer les contrôleurs dans les services
+        for name, controller in controllers.items():
+            system_service.register_controller(name, controller)
+            control_service.register_controller(name, controller)
+        
+        # Enregistrer les capteurs dans le service de capteurs
+        sensor_service.register_sensor("temperature", "temperature", controllers['temperature'])
+        sensor_service.register_sensor("humidity", "humidity", controllers['humidity'])
+        sensor_service.register_sensor("light", "light", controllers['light'])
         
         # Validation des contrôleurs
         for name, controller in controllers.items():
@@ -143,6 +164,12 @@ async def shutdown_event():
             await websocket.close()
         except Exception as e:
             logger.warning(f"Erreur lors de la fermeture WebSocket: {e}")
+    
+    # Nettoyer les services
+    system_service.cleanup()
+    control_service.cleanup()
+    config_service.cleanup()
+    sensor_service.cleanup()
     
     # Nettoyer GPIO
     if gpio_manager:
@@ -270,37 +297,24 @@ async def health_check():
 async def get_system_status(current_user: User = Depends(get_current_user)):
     """Retourne le statut complet du système"""
     try:
+        # Utiliser le service système
+        status_data = system_service.get_system_status()
+        
+        # Convertir en format de réponse API
         status = SystemStatusResponse(
             status="online",
             controllers={}
         )
         
-        # Statut de chaque contrôleur
-        for name, controller in controllers.items():
-            try:
-                if hasattr(controller, 'get_status'):
-                    controller_status = controller.get_status()
-                    status.controllers[name] = ControllerInfo(
-                        name=name,
-                        status="active" if controller_status.get("status") == "ok" else "error",
-                        last_update=datetime.now(),
-                        error_count=controller_status.get("error_count", 0),
-                        metadata=controller_status
-                    )
-                else:
-                    status.controllers[name] = ControllerInfo(
-                        name=name,
-                        status="unknown",
-                        last_update=datetime.now()
-                    )
-            except Exception as e:
-                logger.warning(f"Erreur lors de la récupération du statut {name}: {e}")
-                status.controllers[name] = ControllerInfo(
-                    name=name,
-                    status="error",
-                    last_update=datetime.now(),
-                    error_count=1
-                )
+        # Convertir les contrôleurs
+        for name, controller_data in status_data["controllers"].items():
+            status.controllers[name] = ControllerInfo(
+                name=name,
+                status=controller_data["status"],
+                last_update=datetime.fromisoformat(controller_data["last_update"]),
+                error_count=controller_data.get("error_count", 0),
+                metadata=controller_data.get("metadata")
+            )
         
         return status
         
@@ -316,33 +330,29 @@ async def get_system_status(current_user: User = Depends(get_current_user)):
 async def get_metrics(current_user: User = Depends(get_current_user)):
     """Récupère les métriques des capteurs"""
     try:
-        metrics = SystemMetrics()
+        # Utiliser le service système pour les métriques
+        metrics_data = system_service.get_system_metrics()
         
-        # Température
-        if 'temperature' in controllers:
-            try:
-                temp_status = controllers['temperature'].get_status()
-                metrics.temperature = {
-                    'current': temp_status.get('current_temperature'),
-                    'optimal': temp_status.get('optimal_temperature'),
-                    'heating_active': temp_status.get('heating_active')
-                }
-            except Exception as e:
-                logger.warning(f"Erreur métriques température: {e}")
-                metrics.temperature = {"error": str(e)}
-        
-        # Humidité
-        if 'humidity' in controllers:
-            try:
-                humidity_status = controllers['humidity'].get_status()
-                metrics.humidity = {
-                    'current': humidity_status.get('current_humidity'),
-                    'optimal': humidity_status.get('optimal_humidity'),
-                    'sprayer_active': humidity_status.get('sprayer_active')
-                }
-            except Exception as e:
-                logger.warning(f"Erreur métriques humidité: {e}")
-                metrics.humidity = {"error": str(e)}
+        # Convertir en format de réponse API
+        metrics = SystemMetrics(
+            temperature={
+                'current': metrics_data.temperature,
+                'heating_active': metrics_data.heating_active,
+                'cooling_active': metrics_data.cooling_active
+            } if metrics_data.temperature is not None else None,
+            humidity={
+                'current': metrics_data.humidity,
+                'humidifier_active': metrics_data.humidifier_active
+            } if metrics_data.humidity is not None else None,
+            lighting={
+                'level': metrics_data.light_level,
+                'light_on': metrics_data.light_on
+            } if metrics_data.light_level is not None else None,
+            feeding={
+                'last_feeding': metrics_data.feeding_last.isoformat() if metrics_data.feeding_last else None,
+                'next_feeding': metrics_data.feeding_next.isoformat() if metrics_data.feeding_next else None
+            } if metrics_data.feeding_last or metrics_data.feeding_next else None
+        )
         
         return metrics
         
@@ -361,81 +371,30 @@ async def control_system(
 ):
     """Contrôle les systèmes"""
     try:
-        results = {}
-        errors = []
-        
-        # Contrôle température
-        if "temperature" in control_request.actions:
-            try:
-                if controllers['temperature'].control_temperature():
-                    results['temperature'] = "controlled"
-                else:
-                    results['temperature'] = "error"
-                    errors.append("Échec contrôle température")
-            except Exception as e:
-                logger.error(f"Erreur contrôle température: {e}")
-                results['temperature'] = "error"
-                errors.append(f"Erreur contrôle température: {str(e)}")
-        
-        # Contrôle humidité
-        if "humidity" in control_request.actions:
-            try:
-                if controllers['humidity'].control_humidity():
-                    results['humidity'] = "controlled"
-                else:
-                    results['humidity'] = "error"
-                    errors.append("Échec contrôle humidité")
-            except Exception as e:
-                logger.error(f"Erreur contrôle humidité: {e}")
-                results['humidity'] = "error"
-                errors.append(f"Erreur contrôle humidité: {str(e)}")
-        
-        # Contrôle éclairage
-        if "light" in control_request.actions:
-            try:
-                if controllers['light'].control_lighting():
-                    results['light'] = "controlled"
-                else:
-                    results['light'] = "error"
-                    errors.append("Échec contrôle éclairage")
-            except Exception as e:
-                logger.error(f"Erreur contrôle éclairage: {e}")
-                results['light'] = "error"
-                errors.append(f"Erreur contrôle éclairage: {str(e)}")
-        
-        # Contrôle alimentation
-        if "feeding" in control_request.actions:
-            try:
-                if controllers['feeding'].control_feeding():
-                    results['feeding'] = "controlled"
-                else:
-                    results['feeding'] = "error"
-                    errors.append("Échec contrôle alimentation")
-            except Exception as e:
-                logger.error(f"Erreur contrôle alimentation: {e}")
-                results['feeding'] = "error"
-                errors.append(f"Erreur contrôle alimentation: {str(e)}")
+        # Utiliser le service de contrôle
+        action_names = [action.value for action in control_request.actions]
+        result = control_service.execute_multiple_actions(action_names, control_request.parameters)
         
         # Broadcast aux clients WebSocket
         control_message = ControlUpdateMessage(
             data=ControlResponse(
-                status="success" if not errors else "partial_success",
-                results=results,
-                errors=errors if errors else None
+                status=result["status"],
+                results=result["results"],
+                errors=result.get("errors")
             )
         )
         await broadcast_to_websockets(control_message)
         
         logger.info("🎛️ Contrôle système exécuté", {
             "user": current_user.username,
-            "actions": control_request.actions,
-            "results": results
+            "actions": action_names,
+            "results": result["results"]
         })
         
         return ControlResponse(
-            status="success" if not errors else "partial_success",
-            results=results,
-            errors=errors if errors else None
+            status=result["status"],
+            results=result["results"],
+            errors=result.get("errors")
         )
         
     except AlimanteException:
@@ -455,33 +414,31 @@ async def trigger_feeding(
 ):
     """Déclenche manuellement l'alimentation"""
     try:
-        if 'feeding' not in controllers:
-            raise create_api_error(
-                ErrorCode.API_NOT_FOUND,
-                "Contrôleur d'alimentation non disponible"
-            )
-        
-        success = controllers['feeding'].trigger_feeding()
+        # Utiliser le service de contrôle
+        result = control_service.execute_control_action("feeding", {
+            "quantity": feeding_request.quantity,
+            "force": feeding_request.force
+        })
         
         feeding_message = FeedingUpdateMessage(
             data=FeedingResponse(
-                status="success" if success else "error",
-                success=success,
-                quantity_dispensed=feeding_request.quantity if success else None
+                status="success" if result["status"] == "success" else "error",
+                success=result["status"] == "success",
+                quantity_dispensed=feeding_request.quantity if result["status"] == "success" else None
             )
         )
         await broadcast_to_websockets(feeding_message)
         
         logger.info("🍽️ Alimentation déclenchée", {
             "user": current_user.username,
-            "success": success,
+            "success": result["status"] == "success",
             "quantity": feeding_request.quantity
         })
         
         return FeedingResponse(
-            status="success" if success else "error",
-            success=success,
-            quantity_dispensed=feeding_request.quantity if success else None
+            status="success" if result["status"] == "success" else "error",
+            success=result["status"] == "success",
+            quantity_dispensed=feeding_request.quantity if result["status"] == "success" else None
         )
         
     except AlimanteException:
@@ -498,7 +455,9 @@ async def trigger_feeding(
 async def get_config(current_user: User = Depends(get_current_user)):
     """Retourne la configuration actuelle"""
     try:
-        config = SystemConfig.from_json('config/config.json', 'config/orthopteres/mantidae/mantis_religiosa.json')
+        # Utiliser le service de configuration
+        config = config_service.load_system_config()
+        
         return ConfigResponse(
             temperature=config.temperature,
             humidity=config.humidity,
@@ -522,14 +481,26 @@ async def update_config(
 ):
     """Met à jour la configuration (admin uniquement)"""
     try:
-        # Ici on pourrait sauvegarder la configuration
+        # Utiliser le service de configuration
+        if config_update.temperature:
+            config_service.update_config_section("species", "temperature", config_update.temperature)
+        
+        if config_update.humidity:
+            config_service.update_config_section("species", "humidity", config_update.humidity)
+        
+        if config_update.feeding:
+            config_service.update_config_section("species", "feeding", config_update.feeding)
+        
+        if config_update.lighting:
+            config_service.update_config_section("species", "lighting", config_update.lighting)
+        
         logger.info("⚙️ Configuration mise à jour", {
             "user": admin_user.username,
             "updates": config_update.dict(exclude_none=True)
         })
         
         # Retourner la configuration actuelle
-        config = SystemConfig.from_json('config/config.json', 'config/orthopteres/mantidae/mantis_religiosa.json')
+        config = config_service.load_system_config()
         return ConfigResponse(
             temperature=config.temperature,
             humidity=config.humidity,
@@ -543,6 +514,94 @@ async def update_config(
         raise create_api_error(
             ErrorCode.CONFIGURATION_INVALID,
             "Erreur lors de la mise à jour de la configuration",
+            {"original_error": str(e)}
+        )
+
+# Nouveaux endpoints pour les services
+@app.get("/api/system/health")
+async def get_system_health(current_user: User = Depends(get_current_user)):
+    """Récupère la santé du système"""
+    try:
+        return system_service.get_system_health()
+    except Exception as e:
+        logger.exception("💥 Erreur lors de la récupération de la santé du système")
+        raise create_api_error(
+            ErrorCode.SERVICE_UNAVAILABLE,
+            "Impossible de récupérer la santé du système",
+            {"original_error": str(e)}
+        )
+
+@app.get("/api/sensors/status")
+async def get_sensors_status(current_user: User = Depends(get_current_user)):
+    """Récupère le statut de tous les capteurs"""
+    try:
+        sensors_status = {}
+        for sensor_id in sensor_service.sensors.keys():
+            sensors_status[sensor_id] = sensor_service.get_sensor_status(sensor_id)
+        return {"sensors": sensors_status}
+    except Exception as e:
+        logger.exception("💥 Erreur lors de la récupération du statut des capteurs")
+        raise create_api_error(
+            ErrorCode.SERVICE_UNAVAILABLE,
+            "Impossible de récupérer le statut des capteurs",
+            {"original_error": str(e)}
+        )
+
+@app.get("/api/sensors/{sensor_id}/statistics")
+async def get_sensor_statistics(
+    sensor_id: str,
+    hours: int = 24,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère les statistiques d'un capteur"""
+    try:
+        return sensor_service.get_sensor_statistics(sensor_id, hours)
+    except Exception as e:
+        logger.exception(f"💥 Erreur lors de la récupération des statistiques du capteur {sensor_id}")
+        raise create_api_error(
+            ErrorCode.SERVICE_UNAVAILABLE,
+            f"Impossible de récupérer les statistiques du capteur {sensor_id}",
+            {"original_error": str(e)}
+        )
+
+@app.post("/api/sensors/{sensor_id}/calibrate")
+async def calibrate_sensor(
+    sensor_id: str,
+    reference_values: List[Dict[str, float]],
+    current_user: User = Depends(require_admin)
+):
+    """Calibre un capteur (admin uniquement)"""
+    try:
+        # Convertir les données en tuples
+        calibration_points = [(point["raw"], point["expected"]) for point in reference_values]
+        
+        success = sensor_service.calibrate_sensor(sensor_id, calibration_points)
+        
+        logger.info(f"🔧 Capteur calibré: {sensor_id}", {
+            "user": current_user.username,
+            "points_count": len(calibration_points)
+        })
+        
+        return {"success": success, "sensor_id": sensor_id}
+        
+    except Exception as e:
+        logger.exception(f"💥 Erreur lors de la calibration du capteur {sensor_id}")
+        raise create_api_error(
+            ErrorCode.SENSOR_CALIBRATION_FAILED,
+            f"Erreur lors de la calibration du capteur {sensor_id}",
+            {"original_error": str(e)}
+        )
+
+@app.get("/api/config/info")
+async def get_config_info(current_user: User = Depends(get_current_user)):
+    """Récupère les informations sur toutes les configurations"""
+    try:
+        return config_service.get_all_configs_info()
+    except Exception as e:
+        logger.exception("💥 Erreur lors de la récupération des informations de configuration")
+        raise create_api_error(
+            ErrorCode.CONFIGURATION_INVALID,
+            "Impossible de récupérer les informations de configuration",
             {"original_error": str(e)}
         )
 
