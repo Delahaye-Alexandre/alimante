@@ -75,7 +75,7 @@ class HumidityController:
             
             # Simulation temporaire
             import random
-            humidity = 60 + random.uniform(-10, 10)  # Simulation 50-70%
+            humidity = 70 + random.uniform(-5, 15)  # Simulation 65-85% (dans les limites de Saturnia pyri)
             
             if humidity is not None and self.config.min_humidity <= humidity <= self.config.max_humidity:
                 logging.info(f"Humidité lue: {humidity:.1f}%")
