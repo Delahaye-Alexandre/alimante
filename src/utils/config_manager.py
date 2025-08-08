@@ -14,6 +14,7 @@ class SystemConfig:
     location: Dict[str, float]
     feeding: Dict[str, int]
     species_name: Optional[str] = None
+    common_name: Optional[str] = None
 
     @classmethod
     def from_json(cls, common_config_path: str, specific_config_path: str) -> 'SystemConfig':

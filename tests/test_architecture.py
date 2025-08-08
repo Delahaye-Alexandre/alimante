@@ -317,6 +317,7 @@ def test_error_handling():
     except Exception as e:
         assert hasattr(e, 'error_code')
         assert e.error_code == ErrorCode.SERVICE_UNAVAILABLE
+        print(f"✅ Exception capturée: {type(e).__name__}")
     
     # Test service de contrôle avec action inexistante
     try:
@@ -324,6 +325,7 @@ def test_error_handling():
     except Exception as e:
         assert hasattr(e, 'error_code')
         assert e.error_code == ErrorCode.API_INVALID_REQUEST
+        print(f"✅ Exception capturée: {type(e).__name__}")
     
     # Test service de capteurs avec capteur inexistant
     try:
@@ -331,6 +333,7 @@ def test_error_handling():
     except Exception as e:
         assert hasattr(e, 'error_code')
         assert e.error_code == ErrorCode.SENSOR_INIT_FAILED
+        print(f"✅ Exception capturée: {type(e).__name__}")
     
     print("✅ Gestion d'erreurs OK")
 
@@ -338,6 +341,11 @@ def test_error_handling():
 def test_service_cleanup():
     """Test le nettoyage des services"""
     print("🧪 Test nettoyage des services...")
+    
+    # Nettoyer d'abord pour partir d'un état propre
+    system_service.cleanup()
+    control_service.cleanup()
+    sensor_service.cleanup()
     
     # Ajouter des données de test
     mock_controller = MockController("test")
