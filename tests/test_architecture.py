@@ -14,11 +14,11 @@ from datetime import datetime
 # Ajouter src au path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from services.system_service import system_service, SystemMetrics
-from services.control_service import control_service, ControlResult
-from services.config_service import config_service
-from services.sensor_service import sensor_service, SensorReading
-from utils.exceptions import ErrorCode, create_exception
+from src.services.system_service import system_service, SystemMetrics
+from src.services.control_service import control_service, ControlResult
+from src.services.config_service import config_service
+from src.services.sensor_service import sensor_service, SensorReading
+from src.utils.exceptions import ErrorCode, create_exception
 
 
 class MockController:

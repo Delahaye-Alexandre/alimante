@@ -142,7 +142,7 @@ class AuthManager:
         except jwt.ExpiredSignatureError:
             logger.warning("Token expiré")
             return None
-        except jwt.JWTError as e:
+        except jwt.InvalidTokenError as e:
             logger.warning(f"Token invalide: {e}")
             return None
         except Exception as e:
