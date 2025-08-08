@@ -315,21 +315,21 @@ def test_error_handling():
     try:
         system_service.get_system_status()
     except Exception as e:
-        assert isinstance(e, create_exception)
+        assert hasattr(e, 'error_code')
         assert e.error_code == ErrorCode.SERVICE_UNAVAILABLE
     
     # Test service de contrôle avec action inexistante
     try:
         control_service.execute_control_action("inexistant")
     except Exception as e:
-        assert isinstance(e, create_exception)
+        assert hasattr(e, 'error_code')
         assert e.error_code == ErrorCode.API_INVALID_REQUEST
     
     # Test service de capteurs avec capteur inexistant
     try:
         sensor_service.read_sensor("inexistant")
     except Exception as e:
-        assert isinstance(e, create_exception)
+        assert hasattr(e, 'error_code')
         assert e.error_code == ErrorCode.SENSOR_INIT_FAILED
     
     print("✅ Gestion d'erreurs OK")

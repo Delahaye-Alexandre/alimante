@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import json
 import os
 import logging
@@ -13,6 +13,7 @@ class SystemConfig:
     humidity: Dict[str, float]
     location: Dict[str, float]
     feeding: Dict[str, int]
+    species_name: Optional[str] = None
 
     @classmethod
     def from_json(cls, common_config_path: str, specific_config_path: str) -> 'SystemConfig':

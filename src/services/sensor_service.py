@@ -26,6 +26,17 @@ class SensorReading:
     def __post_init__(self):
         if self.metadata is None:
             self.metadata = {}
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convertit la lecture en dictionnaire"""
+        return {
+            "sensor_id": self.sensor_id,
+            "value": self.value,
+            "unit": self.unit,
+            "timestamp": self.timestamp.isoformat(),
+            "quality": self.quality,
+            "metadata": self.metadata
+        }
 
 
 @dataclass
