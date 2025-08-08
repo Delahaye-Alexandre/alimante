@@ -68,14 +68,15 @@ class HumidityController:
         :return: Humidité actuelle (en %) ou None si la lecture échoue.
         """
         try:
-            # Simulation pour le moment - à remplacer par la vraie lecture DHT22
-            # import adafruit_dht
-            # dht = adafruit_dht.DHT22(PinAssignments.TEMP_HUMIDITY_PIN)
-            # humidity = dht.humidity
+            # Lecture réelle du capteur DHT22
+            import adafruit_dht
+            import board
             
-            # Simulation temporaire
-            import random
-            humidity = 70 + random.uniform(-5, 15)  # Simulation 65-85% (dans les limites de Saturnia pyri)
+            # Initialiser le capteur DHT22 sur le pin configuré
+            dht = adafruit_dht.DHT22(board.D4)  # Pin 4 pour DHT22
+            
+            # Lire l'humidité
+            humidity = dht.humidity
             
             if humidity is not None and self.config.min_humidity <= humidity <= self.config.max_humidity:
                 logging.info(f"Humidité lue: {humidity:.1f}%")
