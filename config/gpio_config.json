@@ -67,24 +67,47 @@
                 "voltage": "3.3V",
                 "current": "20-40mA",
                 "description": "Transducteur sonore"
+            },
+            "lcd_display": {
+                "type": "ST7735",
+                "voltage": "3.3V",
+                "current": "150mA",
+                "description": "Écran LCD couleur ST7735",
+                "controller": "lcd_menu"
             }
         },
         "inputs": {
-            "emergency_button": {
+            "menu_up_button": {
                 "pin": 5,
                 "type": "button",
                 "voltage": "3.3V",
                 "current": "negligible",
                 "pull_up": true,
-                "description": "Bouton d'urgence"
+                "description": "Bouton menu - Navigation haut"
             },
-            "manual_feed_button": {
+            "menu_down_button": {
                 "pin": 6,
                 "type": "button",
                 "voltage": "3.3V",
                 "current": "negligible",
                 "pull_up": true,
-                "description": "Bouton alimentation manuelle"
+                "description": "Bouton menu - Navigation bas"
+            },
+            "menu_select_button": {
+                "pin": 13,
+                "type": "button",
+                "voltage": "3.3V",
+                "current": "negligible",
+                "pull_up": true,
+                "description": "Bouton menu - Sélection"
+            },
+            "menu_back_button": {
+                "pin": 19,
+                "type": "button",
+                "voltage": "3.3V",
+                "current": "negligible",
+                "pull_up": true,
+                "description": "Bouton menu - Retour"
             }
         },
         "status": {
@@ -140,5 +163,27 @@
         "voltage": "3.3V",
         "current": "30mA",
         "frequency_range": "2000-4000Hz"
+    },
+    "lcd_config": {
+        "type": "ST7735",
+        "resolution": "128x160",
+        "spi_pins": {
+            "dc": 8,
+            "cs": 7,
+            "rst": 9
+        },
+        "voltage": "3.3V",
+        "current": "150mA",
+        "backlight_pin": 10
+    },
+    "menu_config": {
+        "buttons": {
+            "up": 5,
+            "down": 6,
+            "select": 13,
+            "back": 19
+        },
+        "debounce_time": 200,
+        "long_press_time": 1000
     }
 } 

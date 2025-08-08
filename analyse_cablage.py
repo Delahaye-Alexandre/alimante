@@ -49,6 +49,14 @@ def analyze_controllers():
         'buzzer': {
             'actuator': 'buzzer',
             'pins_needed': ['buzzer']
+        },
+        'air_quality': {
+            'sensor': 'MQ135',
+            'pins_needed': ['air_quality']
+        },
+        'lcd_menu': {
+            'display': 'ST7735',
+            'pins_needed': ['lcd_display', 'menu_up_button', 'menu_down_button', 'menu_select_button', 'menu_back_button']
         }
     }
     

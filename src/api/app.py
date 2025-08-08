@@ -51,6 +51,7 @@ from src.controllers.feeding_controller import FeedingController
 from src.controllers.fan_controller import FanController
 from src.controllers.buzzer_controller import BuzzerController
 from src.controllers.air_quality_controller import AirQualityController
+from src.controllers.lcd_menu_controller import LCDMenuController
 
 # Import des services
 from src.services.system_service import system_service
@@ -117,7 +118,8 @@ async def startup_event():
             'feeding': FeedingController(gpio_manager, config.feeding),
             'fan': FanController(gpio_manager, config.get("fan", {})),
             'buzzer': BuzzerController(gpio_manager, config.get("buzzer", {})),
-            'air_quality': AirQualityController(gpio_manager, config.get("air_quality", {}))
+            'air_quality': AirQualityController(gpio_manager, config.get("air_quality", {})),
+            'lcd_menu': LCDMenuController(gpio_manager, config.get("lcd_config", {}))
         }
         
         # Enregistrer les contrôleurs dans les services
@@ -666,6 +668,70 @@ async def calibrate_air_quality_sensor(current_user: User = Depends(require_admi
         raise create_api_error(
             ErrorCode.SENSOR_CALIBRATION_FAILED,
             "Impossible de calibrer le capteur de qualité de l'air",
+            {"original_error": str(e)}
+        )
+
+# Endpoints pour le contrôleur LCD Menu
+@app.get("/api/lcd-menu/status")
+async def get_lcd_menu_status(current_user: User = Depends(get_current_user)):
+    """Récupère le statut du contrôleur LCD menu"""
+    try:
+        if 'lcd_menu' not in controllers:
+            raise create_api_error(
+                ErrorCode.CONTROLLER_NOT_FOUND,
+                "Contrôleur LCD menu non disponible",
+                {"controller": "lcd_menu"}
+            )
+        
+        status = controllers['lcd_menu'].get_status()
+        return {"lcd_menu": status}
+    except Exception as e:
+        raise create_api_error(
+            ErrorCode.CONTROLLER_READ_FAILED,
+            "Impossible de récupérer le statut du contrôleur LCD menu",
+            {"original_error": str(e)}
+        )
+
+@app.post("/api/lcd-menu/navigate")
+async def navigate_lcd_menu(
+    direction: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Navigation dans le menu LCD"""
+    try:
+        if 'lcd_menu' not in controllers:
+            raise create_api_error(
+                ErrorCode.CONTROLLER_NOT_FOUND,
+                "Contrôleur LCD menu non disponible",
+                {"controller": "lcd_menu"}
+            )
+        
+        # Simulation de navigation (les boutons physiques gèrent déjà la navigation)
+        return {"success": True, "message": f"Navigation {direction} simulée"}
+    except Exception as e:
+        raise create_api_error(
+            ErrorCode.CONTROLLER_CONTROL_FAILED,
+            "Impossible de naviguer dans le menu LCD",
+            {"original_error": str(e)}
+        )
+
+@app.post("/api/lcd-menu/select")
+async def select_lcd_menu_item(current_user: User = Depends(get_current_user)):
+    """Sélectionne l'élément actuel du menu LCD"""
+    try:
+        if 'lcd_menu' not in controllers:
+            raise create_api_error(
+                ErrorCode.CONTROLLER_NOT_FOUND,
+                "Contrôleur LCD menu non disponible",
+                {"controller": "lcd_menu"}
+            )
+        
+        # Simulation de sélection (les boutons physiques gèrent déjà la sélection)
+        return {"success": True, "message": "Sélection simulée"}
+    except Exception as e:
+        raise create_api_error(
+            ErrorCode.CONTROLLER_CONTROL_FAILED,
+            "Impossible de sélectionner l'élément du menu LCD",
             {"original_error": str(e)}
         )
 
