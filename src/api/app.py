@@ -50,6 +50,7 @@ from src.controllers.humidity_controller import HumidityController
 from src.controllers.feeding_controller import FeedingController
 from src.controllers.fan_controller import FanController
 from src.controllers.buzzer_controller import BuzzerController
+from src.controllers.air_quality_controller import AirQualityController
 
 # Import des services
 from src.services.system_service import system_service
@@ -115,7 +116,8 @@ async def startup_event():
             'light': LightController(gpio_manager, config.location),
             'feeding': FeedingController(gpio_manager, config.feeding),
             'fan': FanController(gpio_manager, config.get("fan", {})),
-            'buzzer': BuzzerController(gpio_manager, config.get("buzzer", {}))
+            'buzzer': BuzzerController(gpio_manager, config.get("buzzer", {})),
+            'air_quality': AirQualityController(gpio_manager, config.get("air_quality", {}))
         }
         
         # Enregistrer les contrôleurs dans les services
@@ -127,6 +129,7 @@ async def startup_event():
         sensor_service.register_sensor("temperature", "temperature", controllers['temperature'])
         sensor_service.register_sensor("humidity", "humidity", controllers['humidity'])
         sensor_service.register_sensor("light", "light", controllers['light'])
+        sensor_service.register_sensor("air_quality", "air_quality", controllers['air_quality'])
         
         # Validation des contrôleurs
         for name, controller in controllers.items():
@@ -602,6 +605,67 @@ async def get_config_info(current_user: User = Depends(get_current_user)):
         raise create_api_error(
             ErrorCode.CONFIGURATION_INVALID,
             "Impossible de récupérer les informations de configuration",
+            {"original_error": str(e)}
+        )
+
+# Endpoints pour la qualité de l'air
+@app.get("/api/air-quality/status")
+async def get_air_quality_status(current_user: User = Depends(get_current_user)):
+    """Récupère le statut de la qualité de l'air"""
+    try:
+        if 'air_quality' not in controllers:
+            raise create_api_error(
+                ErrorCode.CONTROLLER_NOT_FOUND,
+                "Contrôleur de qualité de l'air non disponible",
+                {"controller": "air_quality"}
+            )
+        
+        status = controllers['air_quality'].get_status()
+        return {"air_quality": status}
+    except Exception as e:
+        raise create_api_error(
+            ErrorCode.CONTROLLER_READ_FAILED,
+            "Impossible de récupérer le statut de la qualité de l'air",
+            {"original_error": str(e)}
+        )
+
+@app.post("/api/air-quality/control-ventilation")
+async def control_ventilation_with_air_quality(current_user: User = Depends(require_admin)):
+    """Contrôle la ventilation basée sur la qualité de l'air"""
+    try:
+        if 'air_quality' not in controllers or 'fan' not in controllers:
+            raise create_api_error(
+                ErrorCode.CONTROLLER_NOT_FOUND,
+                "Contrôleurs air_quality ou fan non disponibles",
+                {"controllers": ["air_quality", "fan"]}
+            )
+        
+        success = controllers['air_quality'].control_ventilation(controllers['fan'])
+        return {"success": success, "message": "Contrôle ventilation basé sur la qualité de l'air"}
+    except Exception as e:
+        raise create_api_error(
+            ErrorCode.CONTROLLER_CONTROL_FAILED,
+            "Impossible de contrôler la ventilation basée sur la qualité de l'air",
+            {"original_error": str(e)}
+        )
+
+@app.post("/api/air-quality/calibrate")
+async def calibrate_air_quality_sensor(current_user: User = Depends(require_admin)):
+    """Calibre le capteur de qualité de l'air"""
+    try:
+        if 'air_quality' not in controllers:
+            raise create_api_error(
+                ErrorCode.CONTROLLER_NOT_FOUND,
+                "Contrôleur de qualité de l'air non disponible",
+                {"controller": "air_quality"}
+            )
+        
+        success = controllers['air_quality'].calibrate_sensor()
+        return {"calibrated": success, "message": "Calibration du capteur de qualité de l'air"}
+    except Exception as e:
+        raise create_api_error(
+            ErrorCode.SENSOR_CALIBRATION_FAILED,
+            "Impossible de calibrer le capteur de qualité de l'air",
             {"original_error": str(e)}
         )
 

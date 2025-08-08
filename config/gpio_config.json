@@ -20,7 +20,8 @@
                 "type": "MQ135",
                 "voltage": "5V",
                 "current": "120mA",
-                "description": "Capteur qualité de l'air"
+                "description": "Capteur qualité de l'air",
+                "controller": "air_quality"
             }
         },
         "actuators": {

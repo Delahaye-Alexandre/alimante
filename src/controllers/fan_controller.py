@@ -40,6 +40,15 @@ class FanController:
         self.min_runtime = 30  # secondes
         self.max_runtime = 3600  # secondes (1 heure)
         
+        # Configuration de vitesse des ventilateurs
+        self.current_speed = 0  # 0-100%
+        self.speed_levels = {
+            "low": 25,      # 25% de vitesse
+            "medium": 50,   # 50% de vitesse
+            "high": 75,     # 75% de vitesse
+            "max": 100      # 100% de vitesse
+        }
+        
         # Initialisation GPIO
         self._setup_gpio()
         
@@ -73,7 +82,8 @@ class FanController:
                 self.logger.info("Ventilateurs activés", {
                     "fan_count": self.fan_count,
                     "total_current": f"{self.total_current}mA",
-                    "voltage": self.voltage
+                    "voltage": self.voltage,
+                    "speed": f"{self.current_speed}%"
                 })
                 
                 return True
@@ -96,6 +106,7 @@ class FanController:
             if self.fans_active:
                 self.gpio_manager.write_pin(self.fan_relay_pin, False)
                 self.fans_active = False
+                self.current_speed = 0
                 
                 # Calculer le temps de fonctionnement
                 if self.last_activation:
@@ -203,6 +214,31 @@ class FanController:
                 {"threshold": threshold, "valid_range": "30.0-95.0"}
             )
     
+    def set_fan_speed(self, speed_percent: int) -> bool:
+        """Définit la vitesse des ventilateurs (0-100%)"""
+        try:
+            if not 0 <= speed_percent <= 100:
+                self.logger.error(f"Vitesse invalide: {speed_percent}%")
+                return False
+            
+            self.current_speed = speed_percent
+            
+            # Activer/désactiver selon la vitesse
+            if speed_percent > 0:
+                if not self.fans_active:
+                    self.activate_fans()
+                self.logger.info(f"Vitesse ventilateurs: {speed_percent}%")
+            else:
+                if self.fans_active:
+                    self.deactivate_fans()
+                self.logger.info("Ventilateurs éteints")
+            
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Erreur mise à jour vitesse ventilateurs: {e}")
+            return False
+    
     def get_status(self) -> Dict[str, Any]:
         """Récupère le statut du contrôleur"""
         try:
@@ -219,6 +255,7 @@ class FanController:
                 "total_runtime": self.total_runtime,
                 "temperature_threshold": self.temperature_threshold,
                 "humidity_threshold": self.humidity_threshold,
+                "current_speed": self.current_speed,
                 "error_count": self.error_count,
                 "voltage": self.voltage,
                 "total_current_ma": self.total_current,
