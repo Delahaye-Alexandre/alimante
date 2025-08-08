@@ -169,6 +169,6 @@ mobile/.env
 *.backup
 *.old
 
-# Test files
-test_*.py
-*_test.py
+# Test files (excluding specific test files)
+# test_*.py
+# *_test.py
