@@ -12,7 +12,7 @@ from pathlib import Path
 from datetime import datetime
 
 # Ajouter src au path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from src.services.system_service import system_service, SystemMetrics
 from src.services.control_service import control_service, ControlResult

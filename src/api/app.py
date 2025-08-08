@@ -18,12 +18,13 @@ from src.utils.logging_config import get_logger, log_system_start, log_system_st
 from src.utils.error_handler import register_error_handlers, create_api_error
 from src.utils.exceptions import ErrorCode, AlimanteException
 from src.utils.auth import (
-    auth_manager, 
-    get_current_user, 
-    require_admin, 
-    User, 
+    auth_manager,
+    get_current_user,
+    require_admin,
+    User,
     UserLogin, 
     Token, 
+    UserResponse,
     create_user_token,
     log_auth_event
 )
@@ -40,7 +41,6 @@ from src.api.models import (
     StatusUpdateMessage,
     ControlUpdateMessage,
     FeedingUpdateMessage,
-    UserResponse,
     ControllerInfo
 )
 # Import des contrôleurs
