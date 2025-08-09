@@ -49,7 +49,7 @@ from src.controllers.light_controller import LightController
 from src.controllers.humidity_controller import HumidityController
 from src.controllers.feeding_controller import FeedingController
 from src.controllers.fan_controller import FanController
-from src.controllers.buzzer_controller import BuzzerController
+from src.controllers.buzzer_controller import UltrasonicMistController
 from src.controllers.air_quality_controller import AirQualityController
 from src.controllers.lcd_menu_controller import LCDMenuController
 
@@ -117,7 +117,7 @@ async def startup_event():
             'light': LightController(gpio_manager, config.location),
             'feeding': FeedingController(gpio_manager, config.feeding),
             'fan': FanController(gpio_manager, config.get("fan", {})),
-            'buzzer': BuzzerController(gpio_manager, config.get("buzzer", {})),
+                            'ultrasonic_mist': UltrasonicMistController(gpio_manager, config.get("ultrasonic_mist", {})),
             'air_quality': AirQualityController(gpio_manager, config.get("air_quality", {})),
             'lcd_menu': LCDMenuController(gpio_manager, config.get("lcd_config", {}))
         }
@@ -732,6 +732,128 @@ async def select_lcd_menu_item(current_user: User = Depends(get_current_user)):
         raise create_api_error(
             ErrorCode.CONTROLLER_CONTROL_FAILED,
             "Impossible de sélectionner l'élément du menu LCD",
+            {"original_error": str(e)}
+        )
+
+# Endpoints pour le contrôleur de brumisateur ultrasonique
+@app.get("/api/ultrasonic-mist/status")
+async def get_ultrasonic_mist_status(current_user: User = Depends(get_current_user)):
+    """Récupère le statut du brumisateur ultrasonique"""
+    try:
+        if 'ultrasonic_mist' not in controllers:
+            raise create_api_error(
+                ErrorCode.CONTROLLER_NOT_FOUND,
+                "Contrôleur brumisateur ultrasonique non disponible",
+                {"controller": "ultrasonic_mist"}
+            )
+        
+        status = controllers['ultrasonic_mist'].get_status()
+        return {"ultrasonic_mist": status}
+    except Exception as e:
+        raise create_api_error(
+            ErrorCode.CONTROLLER_READ_FAILED,
+            "Impossible de récupérer le statut du brumisateur ultrasonique",
+            {"original_error": str(e)}
+        )
+
+@app.post("/api/ultrasonic-mist/activate")
+async def activate_ultrasonic_mist(
+    intensity: int = 50,
+    duration: Optional[float] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Active le brumisateur ultrasonique"""
+    try:
+        if 'ultrasonic_mist' not in controllers:
+            raise create_api_error(
+                ErrorCode.CONTROLLER_NOT_FOUND,
+                "Contrôleur brumisateur ultrasonique non disponible",
+                {"controller": "ultrasonic_mist"}
+            )
+        
+        success = controllers['ultrasonic_mist'].activate_mist(intensity, duration)
+        return {
+            "success": success,
+            "message": f"Brumisateur activé avec intensité {intensity}%",
+            "duration": duration
+        }
+    except Exception as e:
+        raise create_api_error(
+            ErrorCode.CONTROLLER_CONTROL_FAILED,
+            "Impossible d'activer le brumisateur ultrasonique",
+            {"original_error": str(e)}
+        )
+
+@app.post("/api/ultrasonic-mist/deactivate")
+async def deactivate_ultrasonic_mist(current_user: User = Depends(get_current_user)):
+    """Désactive le brumisateur ultrasonique"""
+    try:
+        if 'ultrasonic_mist' not in controllers:
+            raise create_api_error(
+                ErrorCode.CONTROLLER_NOT_FOUND,
+                "Contrôleur brumisateur ultrasonique non disponible",
+                {"controller": "ultrasonic_mist"}
+            )
+        
+        success = controllers['ultrasonic_mist'].deactivate_mist()
+        return {
+            "success": success,
+            "message": "Brumisateur désactivé"
+        }
+    except Exception as e:
+        raise create_api_error(
+            ErrorCode.CONTROLLER_CONTROL_FAILED,
+            "Impossible de désactiver le brumisateur ultrasonique",
+            {"original_error": str(e)}
+        )
+
+@app.post("/api/ultrasonic-mist/mode/{mode_name}")
+async def run_mist_mode(
+    mode_name: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Exécute un mode d'humidification prédéfini"""
+    try:
+        if 'ultrasonic_mist' not in controllers:
+            raise create_api_error(
+                ErrorCode.CONTROLLER_NOT_FOUND,
+                "Contrôleur brumisateur ultrasonique non disponible",
+                {"controller": "ultrasonic_mist"}
+            )
+        
+        success = controllers['ultrasonic_mist'].run_mist_mode(mode_name)
+        return {
+            "success": success,
+            "message": f"Mode {mode_name} exécuté",
+            "mode": mode_name
+        }
+    except Exception as e:
+        raise create_api_error(
+            ErrorCode.CONTROLLER_CONTROL_FAILED,
+            f"Impossible d'exécuter le mode {mode_name}",
+            {"original_error": str(e)}
+        )
+
+@app.post("/api/ultrasonic-mist/emergency-stop")
+async def emergency_stop_mist(current_user: User = Depends(get_current_user)):
+    """Arrêt d'urgence du brumisateur ultrasonique"""
+    try:
+        if 'ultrasonic_mist' not in controllers:
+            raise create_api_error(
+                ErrorCode.CONTROLLER_NOT_FOUND,
+                "Contrôleur brumisateur ultrasonique non disponible",
+                {"controller": "ultrasonic_mist"}
+            )
+        
+        success = controllers['ultrasonic_mist'].emergency_stop()
+        return {
+            "success": success,
+            "message": "Arrêt d'urgence du brumisateur effectué"
+        }
+    except Exception as e:
+        raise create_api_error(
+            ErrorCode.CONTROLLER_CONTROL_FAILED,
+            "Impossible d'arrêter le brumisateur en urgence",
             {"original_error": str(e)}
         )
 

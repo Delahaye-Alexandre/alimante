@@ -61,12 +61,15 @@
                 "current": "30mA",
                 "description": "Relais ventilateurs"
             },
-            "buzzer": {
+            "ultrasonic_mist": {
                 "pin": 22,
-                "type": "buzzer",
-                "voltage": "3.3V",
-                "current": "20-40mA",
-                "description": "Transducteur sonore"
+                "type": "ultrasonic_transducer",
+                "voltage": "12V",
+                "current": "100mA",
+                "power_watts": 24,
+                "frequency": 1700000,
+                "description": "Transducteur ultrasonique pour brumisateur",
+                "controller": "ultrasonic_mist"
             },
             "lcd_display": {
                 "type": "ST7735",

@@ -46,9 +46,9 @@ def analyze_controllers():
             'actuator': 'fan_relay',
             'pins_needed': ['fan_relay']
         },
-        'buzzer': {
-            'actuator': 'buzzer',
-            'pins_needed': ['buzzer']
+        'ultrasonic_mist': {
+            'actuator': 'ultrasonic_mist',
+            'pins_needed': ['ultrasonic_mist']
         },
         'air_quality': {
             'sensor': 'MQ135',

@@ -1,6 +1,6 @@
 """
-Contrôleur pour le buzzer/transducteur sonore
-Gestion des alertes sonores et notifications
+Contrôleur pour le brumisateur à ultrasons
+Gestion de l'humidification par transducteur ultrasonique
 """
 
 import time
@@ -12,218 +12,221 @@ from ..utils.logging_config import get_logger
 from ..utils.exceptions import create_exception, ErrorCode
 
 
-class BuzzerController:
-    """Contrôleur pour le buzzer/transducteur sonore"""
+class UltrasonicMistController:
+    """Contrôleur pour le brumisateur à ultrasons"""
     
     def __init__(self, gpio_manager: GPIOManager, config: Dict[str, Any]):
-        self.logger = get_logger("buzzer_controller")
+        self.logger = get_logger("ultrasonic_mist_controller")
         self.gpio_manager = gpio_manager
         self.config = config
         
-        # Configuration du buzzer
-        self.buzzer_pin = config.get("pin", 22)
-        self.voltage = config.get("voltage", "3.3V")
-        self.current = config.get("current", 30)  # mA
-        self.frequency_range = config.get("frequency_range", "2000-4000Hz")
+        # Configuration du transducteur ultrasonique
+        self.mist_pin = config.get("pin", 22)
+        self.voltage = config.get("voltage", "12V")  # Transducteurs ultrasoniques fonctionnent souvent en 12V
+        self.current = config.get("current", 100)  # mA - plus élevé que buzzer
+        self.frequency = config.get("frequency", 1700000)  # 1.7MHz typique pour brumisateur
+        self.power_watts = config.get("power_watts", 24)  # Puissance typique
         
-        # État du buzzer
-        self.buzzer_active = False
+        # État du brumisateur
+        self.mist_active = False
         self.last_activation = None
         self.total_usage_time = 0
         self.error_count = 0
+        self.mist_intensity = 50  # 0-100%
         
-        # Configuration des alertes
-        self.alert_patterns = {
-            "emergency": {"duration": 5, "frequency": 4000, "repeats": 3},
-            "warning": {"duration": 2, "frequency": 2000, "repeats": 2},
-            "info": {"duration": 1, "frequency": 3000, "repeats": 1},
-            "success": {"duration": 0.5, "frequency": 3500, "repeats": 1}
+        # Configuration des modes d'humidification
+        self.mist_modes = {
+            "light": {"duration": 30, "intensity": 30, "description": "Humidification légère"},
+            "medium": {"duration": 60, "intensity": 60, "description": "Humidification moyenne"},
+            "heavy": {"duration": 120, "intensity": 100, "description": "Humidification forte"},
+            "continuous": {"duration": 0, "intensity": 50, "description": "Humidification continue"}
         }
+        
+        # Sécurité
+        self.max_continuous_time = 300  # 5 minutes max en continu
+        self.cooldown_time = 60  # 1 minute de pause entre activations
         
         # Initialisation GPIO
         self._setup_gpio()
         
-        self.logger.info("Contrôleur buzzer initialisé")
+        self.logger.info("Contrôleur brumisateur ultrasonique initialisé")
     
     def _setup_gpio(self):
         """Configure les pins GPIO"""
         try:
-            # Configurer le pin du buzzer
-            self.gpio_manager.setup_pin(self.buzzer_pin, "OUT")
-            self.gpio_manager.write_pin(self.buzzer_pin, False)  # Éteint par défaut
+            # Configurer le pin du transducteur ultrasonique
+            self.gpio_manager.setup_pin(self.mist_pin, "OUT")
+            self.gpio_manager.write_pin(self.mist_pin, False)  # Éteint par défaut
             
-            self.logger.info(f"GPIO buzzer configuré: pin {self.buzzer_pin}")
+            self.logger.info(f"GPIO brumisateur configuré: pin {self.mist_pin}")
             
         except Exception as e:
-            self.logger.exception("Erreur configuration GPIO buzzer")
+            self.logger.exception("Erreur configuration GPIO brumisateur")
             raise create_exception(
                 ErrorCode.CONTROLLER_INIT_FAILED,
-                "Impossible de configurer le buzzer",
-                {"buzzer_pin": self.buzzer_pin, "original_error": str(e)}
+                "Impossible de configurer le brumisateur ultrasonique",
+                {"mist_pin": self.mist_pin, "original_error": str(e)}
             )
     
-    def activate_buzzer(self, duration: float = 1.0) -> bool:
-        """Active le buzzer pour une durée donnée"""
+    def activate_mist(self, intensity: int = 50, duration: Optional[float] = None) -> bool:
+        """Active le brumisateur ultrasonique"""
         try:
-            if not self.buzzer_active:
-                self.gpio_manager.write_pin(self.buzzer_pin, True)
-                self.buzzer_active = True
-                self.last_activation = datetime.now()
-                
-                self.logger.info("Buzzer activé", {
-                    "duration": duration,
-                    "voltage": self.voltage,
-                    "current": f"{self.current}mA"
-                })
-                
-                # Attendre la durée spécifiée
+            if self.mist_active:
+                self.logger.debug("Brumisateur déjà actif")
+                return True
+            
+            # Vérifier l'intensité
+            intensity = max(0, min(100, intensity))
+            
+            # Vérifier le temps de pause si nécessaire
+            if self.last_activation:
+                time_since_last = (datetime.now() - self.last_activation).total_seconds()
+                if time_since_last < self.cooldown_time:
+                    remaining = self.cooldown_time - time_since_last
+                    self.logger.warning(f"Pause de sécurité requise: {remaining:.1f}s restantes")
+                    return False
+            
+            # Activer le transducteur
+            self.gpio_manager.write_pin(self.mist_pin, True)
+            self.mist_active = True
+            self.mist_intensity = intensity
+            self.last_activation = datetime.now()
+            
+            self.logger.info("Brumisateur ultrasonique activé", {
+                "intensity": f"{intensity}%",
+                "duration": f"{duration}s" if duration else "continue",
+                "voltage": self.voltage,
+                "power_watts": self.power_watts
+            })
+            
+            # Si une durée est spécifiée, arrêter après
+            if duration and duration > 0:
                 time.sleep(duration)
-                
-                # Désactiver
-                return self.deactivate_buzzer()
-            else:
-                self.logger.debug("Buzzer déjà actif")
-                return True
+                return self.deactivate_mist()
+            
+            return True
                 
         except Exception as e:
             self.error_count += 1
-            self.logger.exception("Erreur activation buzzer")
+            self.logger.exception("Erreur activation brumisateur")
             raise create_exception(
-                ErrorCode.CONTROLLER_INIT_FAILED,
-                "Impossible d'activer le buzzer",
+                ErrorCode.CONTROLLER_CONTROL_FAILED,
+                "Impossible d'activer le brumisateur ultrasonique",
                 {"original_error": str(e)}
             )
     
-    def deactivate_buzzer(self) -> bool:
-        """Désactive le buzzer"""
+    def deactivate_mist(self) -> bool:
+        """Désactive le brumisateur ultrasonique"""
         try:
-            if self.buzzer_active:
-                self.gpio_manager.write_pin(self.buzzer_pin, False)
-                self.buzzer_active = False
+            if not self.mist_active:
+                self.logger.debug("Brumisateur déjà inactif")
+                return True
+            
+            self.gpio_manager.write_pin(self.mist_pin, False)
+            self.mist_active = False
+            
+            # Calculer le temps d'utilisation
+            if self.last_activation:
+                usage_time = (datetime.now() - self.last_activation).total_seconds()
+                self.total_usage_time += usage_time
                 
-                # Calculer le temps d'utilisation
-                if self.last_activation:
-                    usage_time = (datetime.now() - self.last_activation).total_seconds()
-                    self.total_usage_time += usage_time
-                
-                self.logger.info("Buzzer désactivé", {
-                    "usage_time": usage_time if self.last_activation else 0,
-                    "total_usage_hours": self.total_usage_time / 3600
+                self.logger.info("Brumisateur désactivé", {
+                    "usage_time": usage_time,
+                    "total_usage_hours": self.total_usage_time / 3600,
+                    "last_intensity": self.mist_intensity
                 })
-                
-                return True
-            else:
-                self.logger.debug("Buzzer déjà inactif")
-                return True
+            
+            return True
                 
         except Exception as e:
             self.error_count += 1
-            self.logger.exception("Erreur désactivation buzzer")
+            self.logger.exception("Erreur désactivation brumisateur")
             raise create_exception(
-                ErrorCode.CONTROLLER_INIT_FAILED,
-                "Impossible de désactiver le buzzer",
+                ErrorCode.CONTROLLER_CONTROL_FAILED,
+                "Impossible de désactiver le brumisateur ultrasonique",
                 {"original_error": str(e)}
             )
     
-    def play_alert(self, alert_type: str) -> bool:
-        """Joue une alerte prédéfinie"""
+    def set_mist_intensity(self, intensity: int) -> bool:
+        """Ajuste l'intensité du brumisateur (0-100%)"""
         try:
-            if alert_type not in self.alert_patterns:
+            intensity = max(0, min(100, intensity))
+            
+            if self.mist_active:
+                self.mist_intensity = intensity
+                self.logger.info(f"Intensité brumisateur ajustée: {intensity}%")
+                return True
+            else:
+                self.logger.warning("Brumisateur inactif, impossible d'ajuster l'intensité")
+                return False
+                
+        except Exception as e:
+            self.logger.exception("Erreur ajustement intensité")
+            raise create_exception(
+                ErrorCode.CONTROLLER_CONTROL_FAILED,
+                "Impossible d'ajuster l'intensité du brumisateur",
+                {"original_error": str(e)}
+            )
+    
+    def run_mist_mode(self, mode: str) -> bool:
+        """Exécute un mode d'humidification prédéfini"""
+        try:
+            if mode not in self.mist_modes:
                 raise create_exception(
-                    ErrorCode.CONTROLLER_INIT_FAILED,
-                    f"Type d'alerte inconnu: {alert_type}",
-                    {"available_types": list(self.alert_patterns.keys())}
+                    ErrorCode.CONTROLLER_CONTROL_FAILED,
+                    f"Mode d'humidification inconnu: {mode}",
+                    {"available_modes": list(self.mist_modes.keys())}
                 )
             
-            pattern = self.alert_patterns[alert_type]
+            config = self.mist_modes[mode]
             
-            self.logger.info(f"Jouer alerte: {alert_type}", pattern)
+            self.logger.info(f"Exécution mode humidification: {mode}", config)
             
-            # Jouer le pattern
-            for i in range(pattern["repeats"]):
-                if i > 0:
-                    time.sleep(0.5)  # Pause entre les répétitions
-                
-                # Activer le buzzer
-                self.gpio_manager.write_pin(self.buzzer_pin, True)
-                time.sleep(pattern["duration"])
-                self.gpio_manager.write_pin(self.buzzer_pin, False)
-            
-            return True
+            # Activer avec les paramètres du mode
+            return self.activate_mist(
+                intensity=config["intensity"],
+                duration=config["duration"] if config["duration"] > 0 else None
+            )
             
         except Exception as e:
             self.error_count += 1
-            self.logger.exception(f"Erreur alerte {alert_type}")
+            self.logger.exception(f"Erreur mode humidification {mode}")
             raise create_exception(
-                ErrorCode.CONTROLLER_INIT_FAILED,
-                f"Impossible de jouer l'alerte {alert_type}",
+                ErrorCode.CONTROLLER_CONTROL_FAILED,
+                f"Impossible d'exécuter le mode {mode}",
                 {"original_error": str(e)}
             )
     
-    def play_custom_pattern(self, pattern: Dict[str, Any]) -> bool:
-        """Joue un pattern personnalisé"""
+    def emergency_stop(self) -> bool:
+        """Arrêt d'urgence du brumisateur"""
         try:
-            duration = pattern.get("duration", 1.0)
-            repeats = pattern.get("repeats", 1)
-            pause = pattern.get("pause", 0.5)
-            
-            self.logger.info("Jouer pattern personnalisé", pattern)
-            
-            for i in range(repeats):
-                if i > 0:
-                    time.sleep(pause)
-                
-                self.gpio_manager.write_pin(self.buzzer_pin, True)
-                time.sleep(duration)
-                self.gpio_manager.write_pin(self.buzzer_pin, False)
-            
-            return True
+            self.logger.warning("Arrêt d'urgence du brumisateur ultrasonique")
+            return self.deactivate_mist()
             
         except Exception as e:
-            self.error_count += 1
-            self.logger.exception("Erreur pattern personnalisé")
-            raise create_exception(
-                ErrorCode.CONTROLLER_INIT_FAILED,
-                "Impossible de jouer le pattern personnalisé",
-                {"original_error": str(e)}
-            )
+            self.logger.exception("Erreur arrêt d'urgence")
+            return False
     
-    def emergency_alert(self) -> bool:
-        """Alerte d'urgence"""
-        return self.play_alert("emergency")
-    
-    def warning_alert(self) -> bool:
-        """Alerte d'avertissement"""
-        return self.play_alert("warning")
-    
-    def info_alert(self) -> bool:
-        """Alerte d'information"""
-        return self.play_alert("info")
-    
-    def success_alert(self) -> bool:
-        """Alerte de succès"""
-        return self.play_alert("success")
-    
-    def add_alert_pattern(self, name: str, pattern: Dict[str, Any]) -> bool:
-        """Ajoute un nouveau pattern d'alerte"""
+    def add_mist_mode(self, name: str, config: Dict[str, Any]) -> bool:
+        """Ajoute un nouveau mode d'humidification"""
         try:
-            required_keys = ["duration", "frequency", "repeats"]
-            if not all(key in pattern for key in required_keys):
+            required_keys = ["duration", "intensity", "description"]
+            if not all(key in config for key in required_keys):
                 raise create_exception(
-                    ErrorCode.CONTROLLER_INIT_FAILED,
-                    "Pattern d'alerte incomplet",
-                    {"required_keys": required_keys, "provided_keys": list(pattern.keys())}
+                    ErrorCode.CONTROLLER_CONTROL_FAILED,
+                    "Configuration de mode incomplète",
+                    {"required_keys": required_keys, "provided_keys": list(config.keys())}
                 )
             
-            self.alert_patterns[name] = pattern
-            self.logger.info(f"Nouveau pattern d'alerte ajouté: {name}")
+            self.mist_modes[name] = config
+            self.logger.info(f"Nouveau mode d'humidification ajouté: {name}")
             return True
             
         except Exception as e:
-            self.logger.exception(f"Erreur ajout pattern {name}")
+            self.logger.exception(f"Erreur ajout mode {name}")
             raise create_exception(
-                ErrorCode.CONTROLLER_INIT_FAILED,
-                f"Impossible d'ajouter le pattern {name}",
+                ErrorCode.CONTROLLER_CONTROL_FAILED,
+                f"Impossible d'ajouter le mode {name}",
                 {"original_error": str(e)}
             )
     
@@ -231,51 +234,68 @@ class BuzzerController:
         """Récupère le statut du contrôleur"""
         try:
             usage_time = 0
-            if self.buzzer_active and self.last_activation:
+            if self.mist_active and self.last_activation:
                 usage_time = (datetime.now() - self.last_activation).total_seconds()
             
             return {
                 "status": "ok" if self.error_count == 0 else "error",
-                "buzzer_active": self.buzzer_active,
+                "mist_active": self.mist_active,
+                "current_intensity": self.mist_intensity,
                 "current_usage_time": usage_time,
                 "total_usage_time": self.total_usage_time,
                 "error_count": self.error_count,
                 "voltage": self.voltage,
-                "current_ma": self.current,
-                "frequency_range": self.frequency_range,
-                "available_patterns": list(self.alert_patterns.keys()),
-                "last_activation": self.last_activation.isoformat() if self.last_activation else None
+                "power_watts": self.power_watts,
+                "frequency_hz": self.frequency,
+                "available_modes": list(self.mist_modes.keys()),
+                "last_activation": self.last_activation.isoformat() if self.last_activation else None,
+                "safety": {
+                    "max_continuous_time": self.max_continuous_time,
+                    "cooldown_time": self.cooldown_time
+                }
             }
             
         except Exception as e:
-            self.logger.exception("Erreur récupération statut buzzer")
+            self.logger.exception("Erreur récupération statut brumisateur")
             return {
                 "status": "error",
                 "error": str(e),
-                "buzzer_active": False
+                "mist_active": False
             }
     
     def check_status(self) -> bool:
         """Vérifie le statut du contrôleur"""
         try:
             # Vérifier que le GPIO fonctionne
-            current_state = self.gpio_manager.read_pin(self.buzzer_pin)
+            current_state = self.gpio_manager.read_pin(self.mist_pin)
             
             # Vérifier la cohérence
-            if self.buzzer_active != current_state:
-                self.logger.warning("Incohérence état buzzer détectée")
+            if self.mist_active != current_state:
+                self.logger.warning("Incohérence état brumisateur détectée")
                 return False
+            
+            # Vérifier le temps d'utilisation en continu
+            if self.mist_active and self.last_activation:
+                usage_time = (datetime.now() - self.last_activation).total_seconds()
+                if usage_time > self.max_continuous_time:
+                    self.logger.warning("Temps d'utilisation continu dépassé, arrêt automatique")
+                    self.deactivate_mist()
+                    return False
             
             return self.error_count < 5
             
         except Exception as e:
-            self.logger.exception("Erreur vérification statut buzzer")
+            self.logger.exception("Erreur vérification statut brumisateur")
             return False
     
     def cleanup(self):
         """Nettoie les ressources"""
         try:
-            self.deactivate_buzzer()
-            self.logger.info("Contrôleur buzzer nettoyé")
+            self.deactivate_mist()
+            self.logger.info("Contrôleur brumisateur ultrasonique nettoyé")
         except Exception as e:
-            self.logger.error(f"Erreur nettoyage buzzer: {e}")
+            self.logger.error(f"Erreur nettoyage brumisateur: {e}")
+
+
+# Alias pour compatibilité
+BuzzerController = UltrasonicMistController
