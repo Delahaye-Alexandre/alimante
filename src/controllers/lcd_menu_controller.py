@@ -148,7 +148,7 @@ class LCDMenuController:
                 MenuItem("💡 Éclairage ON/OFF", MenuItemType.TOGGLE, action=self._toggle_lighting),
                 MenuItem("🌪️ Ventilation ON/OFF", MenuItemType.TOGGLE, action=self._toggle_ventilation),
                 MenuItem("🍽️ Alimentation Manuelle", MenuItemType.ACTION, action=self._manual_feed),
-                MenuItem("🔊 Test Buzzer", MenuItemType.ACTION, action=self._test_buzzer)
+                MenuItem("🌫️ Test Brumisateur", MenuItemType.ACTION, action=self._test_brumisateur)
             ]),
             MenuItem("📈 Métriques", MenuItemType.SUBMENU, submenu=[
                 MenuItem("📊 Historique", MenuItemType.ACTION, action=self._show_history),
@@ -446,11 +446,11 @@ class LCDMenuController:
         self.logger.info("Alimentation manuelle déclenchée")
         self._show_info_screen("🍽️ Alimentation", "Alimentation manuelle...")
     
-    def _test_buzzer(self):
-        """Teste le buzzer"""
-        # Simulation - à connecter avec le contrôleur de buzzer
-        self.logger.info("Test buzzer")
-        self._show_info_screen("🔊 Buzzer", "Test en cours...")
+    def _test_brumisateur(self):
+        """Teste le brumisateur ultrasonique"""
+        # Simulation - à connecter avec le contrôleur de brumisateur ultrasonique
+        self.logger.info("Test brumisateur ultrasonique")
+        self._show_info_screen("🌫️ Brumisateur", "Test en cours...")
     
     def _show_history(self):
         """Affiche l'historique"""

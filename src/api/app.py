@@ -6,7 +6,9 @@ API FastAPI pour le système de gestion des mantes
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import StreamingResponse
 import asyncio
+import io
 import json
 import logging
 from typing import Dict, Any, List
@@ -49,9 +51,10 @@ from src.controllers.light_controller import LightController
 from src.controllers.humidity_controller import HumidityController
 from src.controllers.feeding_controller import FeedingController
 from src.controllers.fan_controller import FanController
-from src.controllers.buzzer_controller import UltrasonicMistController
+from src.controllers.ultrasonic_mist_controller import UltrasonicMistController
 from src.controllers.air_quality_controller import AirQualityController
 from src.controllers.lcd_menu_controller import LCDMenuController
+from src.controllers.camera_controller import CameraController
 
 # Import des services
 from src.services.system_service import system_service
@@ -117,9 +120,10 @@ async def startup_event():
             'light': LightController(gpio_manager, config.location),
             'feeding': FeedingController(gpio_manager, config.feeding),
             'fan': FanController(gpio_manager, config.get("fan", {})),
-                            'ultrasonic_mist': UltrasonicMistController(gpio_manager, config.get("ultrasonic_mist", {})),
+            'ultrasonic_mist': UltrasonicMistController(gpio_manager, config.get("ultrasonic_mist", {})),
             'air_quality': AirQualityController(gpio_manager, config.get("air_quality", {})),
-            'lcd_menu': LCDMenuController(gpio_manager, config.get("lcd_config", {}))
+            'lcd_menu': LCDMenuController(gpio_manager, config.get("lcd_config", {})),
+            'camera': CameraController(config.get("camera_config", {}))
         }
         
         # Enregistrer les contrôleurs dans les services
@@ -854,6 +858,149 @@ async def emergency_stop_mist(current_user: User = Depends(get_current_user)):
         raise create_api_error(
             ErrorCode.CONTROLLER_CONTROL_FAILED,
             "Impossible d'arrêter le brumisateur en urgence",
+            {"original_error": str(e)}
+        )
+
+# Endpoints pour la caméra CSI
+@app.get("/api/camera/status")
+async def get_camera_status(current_user: User = Depends(get_current_user)):
+    """Récupère le statut de la caméra"""
+    try:
+        if 'camera' not in controllers:
+            raise create_api_error(
+                ErrorCode.CONTROLLER_NOT_FOUND,
+                "Contrôleur caméra non disponible",
+                {"controller": "camera"}
+            )
+        
+        status = controllers['camera'].get_status()
+        return {"camera": status}
+    except Exception as e:
+        raise create_api_error(
+            ErrorCode.CONTROLLER_READ_FAILED,
+            "Impossible de récupérer le statut de la caméra",
+            {"original_error": str(e)}
+        )
+
+@app.get("/api/camera/capture")
+async def capture_image(current_user: User = Depends(get_current_user)):
+    """Capture une image depuis la caméra"""
+    try:
+        if 'camera' not in controllers:
+            raise create_api_error(
+                ErrorCode.CONTROLLER_NOT_FOUND,
+                "Contrôleur caméra non disponible",
+                {"controller": "camera"}
+            )
+        
+        image_data = controllers['camera'].capture_image()
+        
+        logger.info("Image capturée via API", {
+            "user": current_user.username,
+            "size_bytes": len(image_data)
+        })
+        
+        return StreamingResponse(
+            io.BytesIO(image_data),
+            media_type="image/jpeg",
+            headers={"Content-Disposition": "inline; filename=capture.jpg"}
+        )
+        
+    except Exception as e:
+        raise create_api_error(
+            ErrorCode.CONTROLLER_CONTROL_FAILED,
+            "Impossible de capturer une image",
+            {"original_error": str(e)}
+        )
+
+@app.post("/api/camera/snapshot")
+async def take_snapshot(current_user: User = Depends(get_current_user)):
+    """Prend un snapshot et le sauvegarde"""
+    try:
+        if 'camera' not in controllers:
+            raise create_api_error(
+                ErrorCode.CONTROLLER_NOT_FOUND,
+                "Contrôleur caméra non disponible",
+                {"controller": "camera"}
+            )
+        
+        snapshot_path = controllers['camera'].take_snapshot()
+        
+        logger.info("Snapshot pris via API", {
+            "user": current_user.username,
+            "path": snapshot_path
+        })
+        
+        return {
+            "success": True,
+            "snapshot_path": snapshot_path,
+            "message": "Snapshot sauvegardé avec succès"
+        }
+        
+    except Exception as e:
+        raise create_api_error(
+            ErrorCode.CONTROLLER_CONTROL_FAILED,
+            "Impossible de prendre un snapshot",
+            {"original_error": str(e)}
+        )
+
+@app.post("/api/camera/streaming/start")
+async def start_camera_streaming(current_user: User = Depends(get_current_user)):
+    """Démarre le streaming vidéo"""
+    try:
+        if 'camera' not in controllers:
+            raise create_api_error(
+                ErrorCode.CONTROLLER_NOT_FOUND,
+                "Contrôleur caméra non disponible",
+                {"controller": "camera"}
+            )
+        
+        success = controllers['camera'].start_streaming()
+        
+        logger.info("Streaming caméra démarré via API", {
+            "user": current_user.username,
+            "success": success
+        })
+        
+        return {
+            "success": success,
+            "message": "Streaming démarré" if success else "Échec démarrage streaming"
+        }
+        
+    except Exception as e:
+        raise create_api_error(
+            ErrorCode.CONTROLLER_CONTROL_FAILED,
+            "Impossible de démarrer le streaming",
+            {"original_error": str(e)}
+        )
+
+@app.post("/api/camera/streaming/stop")
+async def stop_camera_streaming(current_user: User = Depends(get_current_user)):
+    """Arrête le streaming vidéo"""
+    try:
+        if 'camera' not in controllers:
+            raise create_api_error(
+                ErrorCode.CONTROLLER_NOT_FOUND,
+                "Contrôleur caméra non disponible",
+                {"controller": "camera"}
+            )
+        
+        success = controllers['camera'].stop_streaming()
+        
+        logger.info("Streaming caméra arrêté via API", {
+            "user": current_user.username,
+            "success": success
+        })
+        
+        return {
+            "success": success,
+            "message": "Streaming arrêté" if success else "Échec arrêt streaming"
+        }
+        
+    except Exception as e:
+        raise create_api_error(
+            ErrorCode.CONTROLLER_CONTROL_FAILED,
+            "Impossible d'arrêter le streaming",
             {"original_error": str(e)}
         )
 

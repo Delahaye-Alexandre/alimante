@@ -12,14 +12,14 @@
 
 ### **Actionneurs**
 
-| Composant               | Tension | Courant   | Pin GPIO | Description              |
-| ----------------------- | ------- | --------- | -------- | ------------------------ |
-| **Relais chauffage**    | 5V      | 30mA      | 18       | Contrôle chauffage       |
-| **Relais humidité**     | 5V      | 30mA      | 23       | Contrôle pulvérisateur   |
-| **Servomoteur**         | 5V      | 100-250mA | 12       | Trappe alimentation      |
-| **Relais LED**          | 5V      | 30mA      | 24       | Contrôle bandeau LED 12V |
-| **Relais ventilateurs** | 5V      | 30mA      | 25       | Contrôle 4 ventilateurs  |
-| **Buzzer**              | 3.3V    | 20-40mA   | 22       | Transducteur sonore      |
+| Composant                     | Tension | Courant   | Pin GPIO | Description              |
+| ----------------------------- | ------- | --------- | -------- | ------------------------ |
+| **Relais chauffage**          | 5V      | 30mA      | 18       | Contrôle chauffage       |
+| **Relais humidité**           | 5V      | 30mA      | 23       | Contrôle pulvérisateur   |
+| **Servomoteur**               | 5V      | 100-250mA | 12       | Trappe alimentation      |
+| **Relais LED**                | 5V      | 30mA      | 24       | Contrôle bandeau LED 12V |
+| **Relais ventilateurs**       | 5V      | 30mA      | 25       | Contrôle 4 ventilateurs  |
+| **Transducteur ultrasonique** | 5V      | 50mA      | 22       | Brumisateur ANGEEK 1/2   |
 
 ### **Entrées**
 
@@ -34,6 +34,12 @@
 | -------------------- | ------- | ------- | -------- | ------------------------- |
 | **LED statut**       | 3.3V    | 20mA    | 13       | Indicateur de statut      |
 | **LED alimentation** | 3.3V    | 20mA    | 19       | Indicateur d'alimentation |
+
+### **Caméra**
+
+| Composant      | Tension | Courant | Interface | Description            |
+| -------------- | ------- | ------- | --------- | ---------------------- |
+| **Caméra CSI** | 3.3V    | 200mA   | CSI-2     | Surveillance terrarium |
 
 ---
 
@@ -100,11 +106,11 @@ Servomoteur 9G (Pin 12)
 └── GND → GND
 ```
 
-### **Buzzer**
+### **Transducteur ultrasonique**
 
 ```
-Buzzer (Pin 22)
-├── VCC → 3.3V
+Transducteur ultrasonique ANGEEK (Pin 22)
+├── VCC → 5V (avec PWM pour contrôle intensité)
 ├── SIGNAL → GPIO 22
 └── GND → GND
 ```
@@ -135,6 +141,15 @@ LED alimentation (Pin 19)
 ├── VCC → 3.3V
 ├── SIGNAL → GPIO 19
 └── GND → GND
+```
+
+### **Caméra CSI**
+
+```
+Caméra CSI
+├── Connecteur CSI-2 → Port CSI Raspberry Pi
+├── Alimentation 3.3V automatique
+└── Communication série rapide
 ```
 
 ---
@@ -250,13 +265,13 @@ time.sleep(1)
 GPIO.output(18, GPIO.LOW)   # Désactiver
 ```
 
-### **Test 4 : Buzzer**
+### **Test 4 : Transducteur ultrasonique**
 
 ```python
-# Test buzzer
+# Test transducteur ultrasonique
 GPIO.setup(22, GPIO.OUT)
-GPIO.output(22, GPIO.HIGH)  # Activer
-time.sleep(0.5)
+GPIO.output(22, GPIO.HIGH)  # Activer brumisateur
+time.sleep(2)  # Test plus long pour voir la brume
 GPIO.output(22, GPIO.LOW)   # Désactiver
 ```
 
@@ -300,15 +315,16 @@ Capteurs: ~126mA @ 5V
 Relais: ~120mA @ 5V
 Servomoteur: ~250mA @ 5V (pic)
 Ventilateurs: ~800mA @ 5V
-Buzzer: ~30mA @ 3.3V
+Transducteur ultrasonique ANGEEK: ~50mA @ 5V
+Caméra CSI: ~200mA @ 3.3V
 LEDs: ~40mA @ 3.3V
 
-TOTAL: ~1.8A @ 5V (pic)
+TOTAL: ~1.85A @ 5V + 0.24A @ 3.3V + 0.1A @ 12V (pic)
 ```
 
 ### **Recommandations**
 
 - **Alimentation 5V/3A** minimum
-- **Alimentation 12V/1A** pour LED strip
+- **Alimentation 12V/1A** pour LED strip et transducteur ultrasonique
 - **Protection contre les surtensions**
 - **Ventilation** du boîtier

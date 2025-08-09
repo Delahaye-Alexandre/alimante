@@ -1,6 +1,7 @@
 """
-Contrôleur pour le brumisateur à ultrasons
-Gestion de l'humidification par transducteur ultrasonique
+Contrôleur pour le brumisateur à ultrasons ANGEEK
+Gestion de l'humidification par transducteur ultrasonique avec contrôle PWM
+Compatible avec transducteurs ANGEEK 1/2 pour contrôle précis de l'intensité
 """
 
 import time
@@ -13,19 +14,24 @@ from ..utils.exceptions import create_exception, ErrorCode
 
 
 class UltrasonicMistController:
-    """Contrôleur pour le brumisateur à ultrasons"""
+    """Contrôleur pour le brumisateur à ultrasons ANGEEK avec contrôle PWM"""
     
     def __init__(self, gpio_manager: GPIOManager, config: Dict[str, Any]):
         self.logger = get_logger("ultrasonic_mist_controller")
         self.gpio_manager = gpio_manager
         self.config = config
         
-        # Configuration du transducteur ultrasonique
+        # Configuration du transducteur ultrasonique ANGEEK
         self.mist_pin = config.get("pin", 22)
-        self.voltage = config.get("voltage", "12V")  # Transducteurs ultrasoniques fonctionnent souvent en 12V
-        self.current = config.get("current", 100)  # mA - plus élevé que buzzer
-        self.frequency = config.get("frequency", 1700000)  # 1.7MHz typique pour brumisateur
-        self.power_watts = config.get("power_watts", 24)  # Puissance typique
+        self.voltage = config.get("voltage", "5V")  # ANGEEK peut fonctionner en 5V
+        self.current = config.get("current", 50)  # mA - ANGEEK 1/2 plus efficace
+        self.frequency = config.get("frequency", 1700000)  # 1.7MHz pour ANGEEK
+        self.power_watts = config.get("power_watts", 2.5)  # ANGEEK 1/2 consomme moins
+        self.pwm_frequency = config.get("pwm_frequency", 1000)  # 1kHz pour contrôle PWM
+        
+        # Support PWM pour contrôle précis de l'intensité
+        self.pwm_instance = None
+        self.current_duty_cycle = 0
         
         # État du brumisateur
         self.mist_active = False
@@ -52,19 +58,29 @@ class UltrasonicMistController:
         self.logger.info("Contrôleur brumisateur ultrasonique initialisé")
     
     def _setup_gpio(self):
-        """Configure les pins GPIO"""
+        """Configure les pins GPIO avec support PWM pour transducteur ANGEEK"""
         try:
-            # Configurer le pin du transducteur ultrasonique
+            # Configurer le pin du transducteur ultrasonique en mode PWM
             self.gpio_manager.setup_pin(self.mist_pin, "OUT")
-            self.gpio_manager.write_pin(self.mist_pin, False)  # Éteint par défaut
             
-            self.logger.info(f"GPIO brumisateur configuré: pin {self.mist_pin}")
+            # Initialiser PWM pour contrôle précis de l'intensité ANGEEK
+            try:
+                import RPi.GPIO as GPIO
+                self.pwm_instance = GPIO.PWM(self.mist_pin, self.pwm_frequency)
+                self.pwm_instance.start(0)  # Démarrer avec 0% duty cycle
+                self.logger.info(f"PWM initialisé: pin {self.mist_pin}, fréquence {self.pwm_frequency}Hz")
+            except Exception as pwm_error:
+                self.logger.warning(f"Impossible d'initialiser PWM: {pwm_error}")
+                # Fallback sur contrôle digital simple
+                self.gpio_manager.write_pin(self.mist_pin, False)
+            
+            self.logger.info(f"GPIO brumisateur ANGEEK configuré: pin {self.mist_pin}")
             
         except Exception as e:
-            self.logger.exception("Erreur configuration GPIO brumisateur")
+            self.logger.exception("Erreur configuration GPIO brumisateur ANGEEK")
             raise create_exception(
                 ErrorCode.CONTROLLER_INIT_FAILED,
-                "Impossible de configurer le brumisateur ultrasonique",
+                "Impossible de configurer le brumisateur ultrasonique ANGEEK",
                 {"mist_pin": self.mist_pin, "original_error": str(e)}
             )
     
@@ -86,8 +102,17 @@ class UltrasonicMistController:
                     self.logger.warning(f"Pause de sécurité requise: {remaining:.1f}s restantes")
                     return False
             
-            # Activer le transducteur
-            self.gpio_manager.write_pin(self.mist_pin, True)
+            # Activer le transducteur avec contrôle PWM pour ANGEEK
+            if self.pwm_instance:
+                # Utiliser PWM pour contrôle précis de l'intensité
+                duty_cycle = intensity  # 0-100%
+                self.pwm_instance.ChangeDutyCycle(duty_cycle)
+                self.current_duty_cycle = duty_cycle
+                self.logger.debug(f"PWM activé: {duty_cycle}% duty cycle")
+            else:
+                # Fallback: contrôle digital simple
+                self.gpio_manager.write_pin(self.mist_pin, True)
+            
             self.mist_active = True
             self.mist_intensity = intensity
             self.last_activation = datetime.now()
@@ -122,7 +147,14 @@ class UltrasonicMistController:
                 self.logger.debug("Brumisateur déjà inactif")
                 return True
             
-            self.gpio_manager.write_pin(self.mist_pin, False)
+            # Désactiver le transducteur (PWM ou digital)
+            if self.pwm_instance:
+                self.pwm_instance.ChangeDutyCycle(0)  # 0% duty cycle = arrêt
+                self.current_duty_cycle = 0
+                self.logger.debug("PWM désactivé: 0% duty cycle")
+            else:
+                self.gpio_manager.write_pin(self.mist_pin, False)
+            
             self.mist_active = False
             
             # Calculer le temps d'utilisation
@@ -153,8 +185,14 @@ class UltrasonicMistController:
             intensity = max(0, min(100, intensity))
             
             if self.mist_active:
+                # Ajuster l'intensité en temps réel avec PWM
+                if self.pwm_instance:
+                    self.pwm_instance.ChangeDutyCycle(intensity)
+                    self.current_duty_cycle = intensity
+                    self.logger.debug(f"PWM ajusté: {intensity}% duty cycle")
+                
                 self.mist_intensity = intensity
-                self.logger.info(f"Intensité brumisateur ajustée: {intensity}%")
+                self.logger.info(f"Intensité brumisateur ANGEEK ajustée: {intensity}%")
                 return True
             else:
                 self.logger.warning("Brumisateur inactif, impossible d'ajuster l'intensité")
@@ -289,13 +327,19 @@ class UltrasonicMistController:
             return False
     
     def cleanup(self):
-        """Nettoie les ressources"""
+        """Nettoie les ressources PWM et GPIO"""
         try:
             self.deactivate_mist()
-            self.logger.info("Contrôleur brumisateur ultrasonique nettoyé")
+            
+            # Nettoyer PWM
+            if self.pwm_instance:
+                try:
+                    self.pwm_instance.stop()
+                    self.pwm_instance = None
+                    self.logger.debug("PWM nettoyé")
+                except Exception as pwm_error:
+                    self.logger.warning(f"Erreur nettoyage PWM: {pwm_error}")
+            
+            self.logger.info("Contrôleur brumisateur ultrasonique ANGEEK nettoyé")
         except Exception as e:
             self.logger.error(f"Erreur nettoyage brumisateur: {e}")
-
-
-# Alias pour compatibilité
-BuzzerController = UltrasonicMistController

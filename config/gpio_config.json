@@ -162,10 +162,21 @@
         "total_power": "7.2W",
         "control": "relay_with_converter"
     },
-    "buzzer_config": {
-        "voltage": "3.3V",
-        "current": "30mA",
-        "frequency_range": "2000-4000Hz"
+    "ultrasonic_mist_config": {
+        "voltage": "5V",
+        "current": "50mA",
+        "power_watts": 2.5,
+        "frequency": 1700000,
+        "pwm_frequency": 1000,
+        "description": "Transducteur ultrasonique ANGEEK 1/2 avec contrôle PWM"
+    },
+    "camera_config": {
+        "type": "CSI",
+        "resolution": "1920x1080",
+        "framerate": 30,
+        "format": "MJPEG",
+        "description": "Caméra CSI pour surveillance terrarium",
+        "stream_port": 8080
     },
     "lcd_config": {
         "type": "ST7735",

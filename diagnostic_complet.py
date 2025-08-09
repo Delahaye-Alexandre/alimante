@@ -31,7 +31,7 @@ def check_imports():
         'src.controllers.light_controller',
         'src.controllers.feeding_controller',
         'src.controllers.fan_controller',
-        'src.controllers.buzzer_controller',
+        'src.controllers.ultrasonic_mist_controller',
         'src.api.app',
         'src.api.models'
     ]

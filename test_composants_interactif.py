@@ -162,32 +162,34 @@ class ComposantTester:
             print(f"❌ Erreur: {e}")
             return False
             
-    def test_buzzer(self):
-        """Test d'un buzzer"""
-        print("\n🔊 Test Buzzer")
-        print("=" * 30)
+    def test_transducteur_ultrasonique(self):
+        """Test d'un transducteur ultrasonique pour brumisateur"""
+        print("\n🌫️ Test Transducteur Ultrasonique")
+        print("=" * 40)
         print("📋 Instructions:")
-        print("   1. Connectez un buzzer sur GPIO 4")
-        print("   2. Buzzer + → GPIO 4")
-        print("   3. Buzzer - → GND")
-        print("   4. Appuyez sur Entrée quand c'est fait")
+        print("   1. Connectez un transducteur ultrasonique sur GPIO 4")
+        print("   2. Transducteur + → GPIO 4")
+        print("   3. Transducteur - → GND")
+        print("   4. Alimentez le transducteur en 12V (alimentation séparée)")
+        print("   5. Placez le transducteur dans l'eau")
+        print("   6. Appuyez sur Entrée quand c'est fait")
         
-        input("✅ Buzzer connecté ? (Entrée pour continuer): ")
+        input("✅ Transducteur connecté et dans l'eau ? (Entrée pour continuer): ")
         
         try:
             GPIO.setup(self.GPIO_PIN, GPIO.OUT)
             
             print("🔄 Test en cours...")
             for i in range(3):
-                print(f"   Cycle {i+1}: Buzzer ON")
+                print(f"   Cycle {i+1}: Transducteur ON - Regardez pour de la brume")
                 GPIO.output(self.GPIO_PIN, GPIO.HIGH)
-                time.sleep(0.5)
+                time.sleep(3)  # Plus long pour voir la brume se former
                 
-                print(f"   Cycle {i+1}: Buzzer OFF")
+                print(f"   Cycle {i+1}: Transducteur OFF")
                 GPIO.output(self.GPIO_PIN, GPIO.LOW)
-                time.sleep(0.5)
+                time.sleep(2)
             
-            result = input("✅ Le buzzer fait-il du bruit ? (o/n): ").lower()
+            result = input("✅ Le transducteur produit-il de la brume ? (o/n): ").lower()
             return result == 'o'
             
         except Exception as e:
@@ -241,7 +243,7 @@ def main():
         ("Bouton", tester.test_bouton),
         ("Relais", tester.test_relais),
         ("Servomoteur", tester.test_servo),
-        ("Buzzer", tester.test_buzzer),
+        ("Transducteur ultrasonique", tester.test_transducteur_ultrasonique),
         ("Capteur Analogique", tester.test_capteur_analogique)
     ]
     
