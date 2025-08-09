@@ -4,11 +4,12 @@
 
 ### **Capteurs**
 
-| Composant | Tension | Courant | Pin GPIO | Description             |
-| --------- | ------- | ------- | -------- | ----------------------- |
-| **DHT22** | 3.3V    | 5mA     | 4        | Température et humidité |
-| **LDR**   | 3.3V    | 1mA     | 17       | Capteur de lumière      |
-| **MQ135** | 5V      | 120mA   | 27       | Qualité de l'air        |
+| Composant    | Tension | Courant | Pin GPIO | Description                     |
+| ------------ | ------- | ------- | -------- | ------------------------------- |
+| **DHT22**    | 3.3V    | 5mA     | 4        | Température et humidité         |
+| **MQ135**    | 5V      | 120mA   | 27       | Qualité de l'air                |
+| **HC-SR04P** | 3.3V    | 15mA    | 20/21    | Niveau d'eau (trigger/echo)     |
+| **DS18B20**  | 3.3V    | 1mA     | 26       | Température radiateur (OneWire) |
 
 ### **Actionneurs**
 
@@ -21,12 +22,14 @@
 | **Relais ventilateurs**       | 5V      | 30mA      | 25       | Contrôle 4 ventilateurs  |
 | **Transducteur ultrasonique** | 5V      | 50mA      | 22       | Brumisateur ANGEEK 1/2   |
 
-### **Entrées**
+### **Interface utilisateur**
 
-| Composant               | Tension | Courant     | Pin GPIO | Description              |
-| ----------------------- | ------- | ----------- | -------- | ------------------------ |
-| **Bouton urgence**      | 3.3V    | négligeable | 5        | Bouton d'arrêt d'urgence |
-| **Bouton alimentation** | 3.3V    | négligeable | 6        | Alimentation manuelle    |
+| Composant                | Tension | Courant     | Pin GPIO | Description               |
+| ------------------------ | ------- | ----------- | -------- | ------------------------- |
+| **Encodeur rotatif CLK** | 3.3V    | négligeable | 5        | Navigation menu (horloge) |
+| **Encodeur rotatif DT**  | 3.3V    | négligeable | 6        | Navigation menu (data)    |
+| **Encodeur rotatif SW**  | 3.3V    | négligeable | 13       | Validation menu (bouton)  |
+| **Switch principal**     | 12V     | selon alim  | externe  | On/Off système            |
 
 ### **Indicateurs**
 
@@ -70,6 +73,17 @@ LDR (Pin 17)
 MQ135 (Pin 27)
 ├── VCC → 5V
 ├── SIGNAL → GPIO 27
+└── GND → GND
+
+HC-SR04P Niveau d'eau (Pins 20/21)
+├── VCC → 3.3V
+├── TRIGGER → GPIO 20
+├── ECHO → GPIO 21
+└── GND → GND
+
+DS18B20 Temp radiateur (Pin 26)
+├── VCC → 3.3V
+├── DATA → GPIO 26 (OneWire)
 └── GND → GND
 ```
 
@@ -115,17 +129,14 @@ Transducteur ultrasonique ANGEEK (Pin 22)
 └── GND → GND
 ```
 
-### **Boutons**
+### **Encodeur rotatif**
 
 ```
-Bouton urgence (Pin 5)
+Encodeur rotatif (Pins 5/6/13)
+├── CLK → GPIO 5 (pull-up)
+├── DT → GPIO 6 (pull-up)
+├── SW → GPIO 13 (pull-up)
 ├── VCC → 3.3V
-├── SIGNAL → GPIO 5 (pull-up)
-└── GND → GND
-
-Bouton alimentation (Pin 6)
-├── VCC → 3.3V
-├── SIGNAL → GPIO 6 (pull-up)
 └── GND → GND
 ```
 
@@ -316,10 +327,12 @@ Relais: ~120mA @ 5V
 Servomoteur: ~250mA @ 5V (pic)
 Ventilateurs: ~800mA @ 5V
 Transducteur ultrasonique ANGEEK: ~50mA @ 5V
+Capteur niveau d'eau HC-SR04P: ~15mA @ 3.3V
+Capteur température DS18B20: ~1mA @ 3.3V
 Caméra CSI: ~200mA @ 3.3V
 LEDs: ~40mA @ 3.3V
 
-TOTAL: ~1.85A @ 5V + 0.24A @ 3.3V + 0.1A @ 12V (pic)
+TOTAL: ~1.85A @ 5V + 0.256A @ 3.3V + 0.1A @ 12V (pic)
 ```
 
 ### **Recommandations**

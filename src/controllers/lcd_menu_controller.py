@@ -53,12 +53,17 @@ class LCDMenuController:
         self.rst_pin = self.lcd_config.get("spi_pins", {}).get("rst", 9)
         self.backlight_pin = self.lcd_config.get("backlight_pin", 10)
         
-        # Pins des boutons
-        self.button_pins = self.menu_config.get("buttons", {})
-        self.up_pin = self.button_pins.get("up", 5)
-        self.down_pin = self.button_pins.get("down", 6)
-        self.select_pin = self.button_pins.get("select", 13)
-        self.back_pin = self.button_pins.get("back", 19)
+        # Configuration encodeur rotatif
+        self.rotary_config = self.menu_config.get("rotary_encoder", {})
+        self.clk_pin = self.rotary_config.get("clk_pin", 5)
+        self.dt_pin = self.rotary_config.get("dt_pin", 6)
+        self.sw_pin = self.rotary_config.get("sw_pin", 13)
+        self.rotation_sensitivity = self.menu_config.get("rotation_sensitivity", 1)
+        
+        # État de l'encodeur rotatif
+        self.last_clk_state = None
+        self.encoder_position = 0
+        self.last_encoder_position = 0
         
         # Configuration de l'écran
         self.width = 128
@@ -73,14 +78,14 @@ class LCDMenuController:
         self.display_start = 0
         self.items_per_page = 6
         
-        # Gestion des boutons
-        self.button_states = {}
-        self.debounce_time = self.menu_config.get("debounce_time", 200)
+        # Gestion de l'encodeur rotatif
+        self.encoder_states = {}
+        self.debounce_time = self.menu_config.get("debounce_time", 50)
         self.long_press_time = self.menu_config.get("long_press_time", 1000)
-        self.last_button_press = {}
+        self.last_encoder_action = {}
         
-        # Thread pour la gestion des boutons
-        self.button_thread = None
+        # Thread pour la gestion de l'encodeur
+        self.encoder_thread = None
         self.running = False
         
         # État du contrôleur
@@ -90,25 +95,29 @@ class LCDMenuController:
         # Initialisation
         self._setup_gpio()
         self._create_main_menu()
-        self._start_button_monitoring()
+        self._start_encoder_monitoring()
         
         self.logger.info("Contrôleur LCD menu initialisé")
     
     def _setup_gpio(self):
-        """Configure les GPIO pour l'écran et les boutons"""
+        """Configure les GPIO pour l'écran et l'encodeur rotatif"""
         try:
             # Configuration des pins SPI (sera géré par la bibliothèque ST7735)
-            # Configuration des boutons
-            button_pins = [self.up_pin, self.down_pin, self.select_pin, self.back_pin]
             
-            for pin in button_pins:
+            # Configuration de l'encodeur rotatif
+            encoder_pins = [self.clk_pin, self.dt_pin, self.sw_pin]
+            
+            for pin in encoder_pins:
                 pin_config = {
                     "pin": pin,
                     "mode": "input",
                     "pull_up_down": "up"
                 }
                 self.gpio_manager.setup_pin(pin_config)
-                self.button_states[pin] = False
+                self.encoder_states[pin] = False
+            
+            # Initialiser l'état CLK pour détecter les rotations
+            self.last_clk_state = self.gpio_manager.read_pin(self.clk_pin)
             
             # Configuration du backlight
             backlight_config = {
@@ -118,7 +127,7 @@ class LCDMenuController:
             self.gpio_manager.setup_pin(backlight_config)
             self.gpio_manager.write_pin(self.backlight_pin, True)  # Allumer le backlight
             
-            self.logger.info("GPIO configuré pour LCD et boutons")
+            self.logger.info("GPIO configuré pour LCD et encodeur rotatif")
             
         except Exception as e:
             self.logger.error(f"Erreur configuration GPIO LCD: {e}")
@@ -162,83 +171,98 @@ class LCDMenuController:
             ])
         ]
     
-    def _start_button_monitoring(self):
-        """Démarre la surveillance des boutons dans un thread séparé"""
+    def _start_encoder_monitoring(self):
+        """Démarre la surveillance de l'encodeur rotatif dans un thread séparé"""
         self.running = True
-        self.button_thread = threading.Thread(target=self._button_monitor_loop, daemon=True)
-        self.button_thread.start()
-        self.logger.info("Surveillance des boutons démarrée")
+        self.encoder_thread = threading.Thread(target=self._encoder_monitor_loop, daemon=True)
+        self.encoder_thread.start()
+        self.logger.info("Surveillance encodeur rotatif démarrée")
     
-    def _button_monitor_loop(self):
-        """Boucle de surveillance des boutons"""
+    def _encoder_monitor_loop(self):
+        """Boucle de surveillance de l'encodeur rotatif"""
         while self.running:
             try:
-                self._check_buttons()
-                time.sleep(0.05)  # 50ms de délai
+                self._check_encoder_rotation()
+                self._check_encoder_button()
+                time.sleep(0.01)  # 10ms de délai pour réactivité encodeur
             except Exception as e:
-                self.logger.error(f"Erreur surveillance boutons: {e}")
-                time.sleep(0.1)
+                self.logger.error(f"Erreur surveillance encodeur: {e}")
+                time.sleep(0.05)
     
-    def _check_buttons(self):
-        """Vérifie l'état des boutons"""
-        current_time = time.time()
-        
-        for pin, button_name in [
-            (self.up_pin, "UP"),
-            (self.down_pin, "DOWN"),
-            (self.select_pin, "SELECT"),
-            (self.back_pin, "BACK")
-        ]:
-            try:
-                # Lire l'état du bouton (inversé car pull-up)
-                button_pressed = not self.gpio_manager.read_pin(pin)
-                
-                if button_pressed and not self.button_states[pin]:
-                    # Bouton pressé
-                    self.button_states[pin] = True
-                    self.last_button_press[pin] = current_time
-                    self.logger.debug(f"Bouton {button_name} pressé")
-                    
-                elif not button_pressed and self.button_states[pin]:
-                    # Bouton relâché
-                    self.button_states[pin] = False
-                    press_duration = current_time - self.last_button_press.get(pin, current_time)
-                    
-                    if press_duration > self.long_press_time:
-                        self._handle_long_press(button_name)
-                    else:
-                        self._handle_button_press(button_name)
-                    
-            except Exception as e:
-                self.logger.error(f"Erreur lecture bouton {button_name}: {e}")
-    
-    def _handle_button_press(self, button_name: str):
-        """Gère un appui court sur un bouton"""
+    def _check_encoder_rotation(self):
+        """Vérifie la rotation de l'encodeur rotatif"""
         try:
-            if button_name == "UP":
-                self._navigate_up()
-            elif button_name == "DOWN":
-                self._navigate_down()
-            elif button_name == "SELECT":
-                self._select_item()
-            elif button_name == "BACK":
-                self._go_back()
+            current_clk = self.gpio_manager.read_pin(self.clk_pin)
+            
+            # Détecter changement d'état sur CLK
+            if current_clk != self.last_clk_state:
+                dt_state = self.gpio_manager.read_pin(self.dt_pin)
+                
+                # Déterminer le sens de rotation
+                if current_clk == 0:  # Front descendant CLK
+                    if dt_state == 0:
+                        # Rotation horaire
+                        self.encoder_position += self.rotation_sensitivity
+                        self._navigate_down()
+                        self.logger.debug("Encodeur: rotation horaire")
+                    else:
+                        # Rotation anti-horaire
+                        self.encoder_position -= self.rotation_sensitivity
+                        self._navigate_up()
+                        self.logger.debug("Encodeur: rotation anti-horaire")
+                
+                self.last_clk_state = current_clk
                 
         except Exception as e:
-            self.logger.error(f"Erreur gestion bouton {button_name}: {e}")
+            self.logger.error(f"Erreur lecture rotation encodeur: {e}")
+    
+    def _check_encoder_button(self):
+        """Vérifie l'état du bouton de l'encodeur"""
+        try:
+            current_time = time.time()
+            
+            # Lire l'état du bouton (inversé car pull-up)
+            button_pressed = not self.gpio_manager.read_pin(self.sw_pin)
+            
+            if button_pressed and not self.encoder_states.get(self.sw_pin, False):
+                # Bouton pressé
+                self.encoder_states[self.sw_pin] = True
+                self.last_encoder_action[self.sw_pin] = current_time
+                self.logger.debug("Bouton encodeur pressé")
+                
+            elif not button_pressed and self.encoder_states.get(self.sw_pin, False):
+                # Bouton relâché
+                self.encoder_states[self.sw_pin] = False
+                press_duration = current_time - self.last_encoder_action.get(self.sw_pin, current_time)
+                
+                if press_duration > (self.long_press_time / 1000.0):  # Conversion ms en s
+                    self._handle_long_press("ENCODER")
+                else:
+                    self._handle_encoder_press()
+                    
+        except Exception as e:
+            self.logger.error(f"Erreur lecture bouton encodeur: {e}")
+    
+    def _handle_encoder_press(self):
+        """Gère un appui court sur le bouton de l'encodeur"""
+        try:
+            # Appui court = sélection
+            self._select_item()
+        except Exception as e:
+            self.logger.error(f"Erreur gestion bouton encodeur: {e}")
     
     def _handle_long_press(self, button_name: str):
-        """Gère un appui long sur un bouton"""
+        """Gère un appui long sur le bouton de l'encodeur"""
         try:
-            if button_name == "BACK":
-                # Retour au menu principal
-                self._go_to_main_menu()
-            elif button_name == "SELECT":
-                # Action spéciale selon le contexte
-                self._handle_long_select()
+            if button_name == "ENCODER":
+                # Appui long = retour au menu principal ou action spéciale
+                if self.menu_stack:
+                    self._go_to_main_menu()
+                else:
+                    self._handle_long_select()
                 
         except Exception as e:
-            self.logger.error(f"Erreur gestion appui long {button_name}: {e}")
+            self.logger.error(f"Erreur gestion appui long encodeur: {e}")
     
     def _navigate_up(self):
         """Navigation vers le haut"""

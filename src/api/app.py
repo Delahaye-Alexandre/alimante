@@ -55,6 +55,8 @@ from src.controllers.ultrasonic_mist_controller import UltrasonicMistController
 from src.controllers.air_quality_controller import AirQualityController
 from src.controllers.lcd_menu_controller import LCDMenuController
 from src.controllers.camera_controller import CameraController
+from src.controllers.water_level_controller import WaterLevelController
+from src.controllers.radiator_temp_controller import RadiatorTempController
 
 # Import des services
 from src.services.system_service import system_service
@@ -123,7 +125,9 @@ async def startup_event():
             'ultrasonic_mist': UltrasonicMistController(gpio_manager, config.get("ultrasonic_mist", {})),
             'air_quality': AirQualityController(gpio_manager, config.get("air_quality", {})),
             'lcd_menu': LCDMenuController(gpio_manager, config.get("lcd_config", {})),
-            'camera': CameraController(config.get("camera_config", {}))
+            'camera': CameraController(config.get("camera_config", {})),
+            'water_level': WaterLevelController(gpio_manager, config.get("water_level_sensor", {})),
+            'radiator_temp': RadiatorTempController(gpio_manager, config.get("radiator_temp_sensor", {}))
         }
         
         # Enregistrer les contrôleurs dans les services
@@ -136,6 +140,8 @@ async def startup_event():
         sensor_service.register_sensor("humidity", "humidity", controllers['humidity'])
         sensor_service.register_sensor("light", "light", controllers['light'])
         sensor_service.register_sensor("air_quality", "air_quality", controllers['air_quality'])
+        sensor_service.register_sensor("water_level", "water_level", controllers['water_level'])
+        sensor_service.register_sensor("radiator_temp", "radiator_temp", controllers['radiator_temp'])
         
         # Validation des contrôleurs
         for name, controller in controllers.items():
@@ -858,6 +864,160 @@ async def emergency_stop_mist(current_user: User = Depends(get_current_user)):
         raise create_api_error(
             ErrorCode.CONTROLLER_CONTROL_FAILED,
             "Impossible d'arrêter le brumisateur en urgence",
+            {"original_error": str(e)}
+        )
+
+# Endpoints pour le niveau d'eau
+@app.get("/api/water-level/status")
+async def get_water_level_status(current_user: User = Depends(get_current_user)):
+    """Récupère le statut du capteur de niveau d'eau"""
+    try:
+        if 'water_level' not in controllers:
+            raise create_api_error(
+                ErrorCode.CONTROLLER_NOT_FOUND,
+                "Contrôleur niveau d'eau non disponible",
+                {"controller": "water_level"}
+            )
+        
+        status = controllers['water_level'].get_status()
+        return {"water_level": status}
+    except Exception as e:
+        raise create_api_error(
+            ErrorCode.CONTROLLER_READ_FAILED,
+            "Impossible de récupérer le statut du niveau d'eau",
+            {"original_error": str(e)}
+        )
+
+@app.get("/api/water-level/read")
+async def read_water_level(current_user: User = Depends(get_current_user)):
+    """Lit le niveau d'eau actuel"""
+    try:
+        if 'water_level' not in controllers:
+            raise create_api_error(
+                ErrorCode.CONTROLLER_NOT_FOUND,
+                "Contrôleur niveau d'eau non disponible",
+                {"controller": "water_level"}
+            )
+        
+        level_data = controllers['water_level'].read_water_level()
+        return {"water_level_data": level_data}
+    except Exception as e:
+        raise create_api_error(
+            ErrorCode.SENSOR_READ_FAILED,
+            "Impossible de lire le niveau d'eau",
+            {"original_error": str(e)}
+        )
+
+@app.get("/api/water-level/check-availability")
+async def check_water_availability(current_user: User = Depends(get_current_user)):
+    """Vérifie si suffisamment d'eau est disponible"""
+    try:
+        if 'water_level' not in controllers:
+            raise create_api_error(
+                ErrorCode.CONTROLLER_NOT_FOUND,
+                "Contrôleur niveau d'eau non disponible",
+                {"controller": "water_level"}
+            )
+        
+        is_available = controllers['water_level'].is_water_available()
+        trend = controllers['water_level'].get_level_trend()
+        
+        return {
+            "water_available": is_available,
+            "trend": trend,
+            "message": "Eau disponible" if is_available else "Niveau d'eau critique"
+        }
+    except Exception as e:
+        raise create_api_error(
+            ErrorCode.SENSOR_READ_FAILED,
+            "Impossible de vérifier la disponibilité de l'eau",
+            {"original_error": str(e)}
+        )
+
+# Endpoints pour la température du radiateur
+@app.get("/api/radiator-temp/status")
+async def get_radiator_temp_status(current_user: User = Depends(get_current_user)):
+    """Récupère le statut du capteur de température radiateur"""
+    try:
+        if 'radiator_temp' not in controllers:
+            raise create_api_error(
+                ErrorCode.CONTROLLER_NOT_FOUND,
+                "Contrôleur température radiateur non disponible",
+                {"controller": "radiator_temp"}
+            )
+        
+        status = controllers['radiator_temp'].get_status()
+        return {"radiator_temp": status}
+    except Exception as e:
+        raise create_api_error(
+            ErrorCode.CONTROLLER_READ_FAILED,
+            "Impossible de récupérer le statut de la température radiateur",
+            {"original_error": str(e)}
+        )
+
+@app.get("/api/radiator-temp/read")
+async def read_radiator_temperature(current_user: User = Depends(get_current_user)):
+    """Lit la température du radiateur"""
+    try:
+        if 'radiator_temp' not in controllers:
+            raise create_api_error(
+                ErrorCode.CONTROLLER_NOT_FOUND,
+                "Contrôleur température radiateur non disponible",
+                {"controller": "radiator_temp"}
+            )
+        
+        temp_data = controllers['radiator_temp'].read_temperature()
+        return {"radiator_temperature": temp_data}
+    except Exception as e:
+        raise create_api_error(
+            ErrorCode.SENSOR_READ_FAILED,
+            "Impossible de lire la température du radiateur",
+            {"original_error": str(e)}
+        )
+
+@app.get("/api/radiator-temp/safety-check")
+async def radiator_safety_check(current_user: User = Depends(get_current_user)):
+    """Vérification de sécurité rapide du radiateur"""
+    try:
+        if 'radiator_temp' not in controllers:
+            raise create_api_error(
+                ErrorCode.CONTROLLER_NOT_FOUND,
+                "Contrôleur température radiateur non disponible",
+                {"controller": "radiator_temp"}
+            )
+        
+        safety_result = controllers['radiator_temp'].emergency_check()
+        return {"safety_check": safety_result}
+    except Exception as e:
+        raise create_api_error(
+            ErrorCode.SENSOR_READ_FAILED,
+            "Impossible d'effectuer la vérification de sécurité",
+            {"original_error": str(e)}
+        )
+
+@app.get("/api/radiator-temp/is-safe")
+async def is_radiator_safe(current_user: User = Depends(get_current_user)):
+    """Vérifie si la température du radiateur est sûre"""
+    try:
+        if 'radiator_temp' not in controllers:
+            raise create_api_error(
+                ErrorCode.CONTROLLER_NOT_FOUND,
+                "Contrôleur température radiateur non disponible",
+                {"controller": "radiator_temp"}
+            )
+        
+        is_safe = controllers['radiator_temp'].is_safe_temperature()
+        trend = controllers['radiator_temp'].get_temperature_trend()
+        
+        return {
+            "is_safe": is_safe,
+            "trend": trend,
+            "message": "Température sûre" if is_safe else "Température dangereuse"
+        }
+    except Exception as e:
+        raise create_api_error(
+            ErrorCode.SENSOR_READ_FAILED,
+            "Impossible de vérifier la sécurité de la température",
             {"original_error": str(e)}
         )
 

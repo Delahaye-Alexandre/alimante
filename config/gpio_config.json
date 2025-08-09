@@ -191,13 +191,31 @@
         "backlight_pin": 10
     },
     "menu_config": {
-        "buttons": {
-            "up": 5,
-            "down": 6,
-            "select": 13,
-            "back": 19
+        "rotary_encoder": {
+            "clk_pin": 5,
+            "dt_pin": 6,
+            "sw_pin": 13
         },
-        "debounce_time": 200,
-        "long_press_time": 1000
+        "debounce_time": 50,
+        "long_press_time": 1000,
+        "rotation_sensitivity": 1
+    },
+    "water_level_sensor": {
+        "type": "HC-SR04P",
+        "trigger_pin": 20,
+        "echo_pin": 21,
+        "voltage": "3.3V",
+        "current": "15mA",
+        "min_distance": 5,
+        "max_distance": 30,
+        "description": "Capteur niveau d'eau réservoir"
+    },
+    "radiator_temp_sensor": {
+        "type": "DS18B20",
+        "pin": 26,
+        "voltage": "3.3V",
+        "current": "1mA",
+        "address": "auto",
+        "description": "Température radiateur (sécurité)"
     }
 } 
