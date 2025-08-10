@@ -29,10 +29,13 @@ class SystemConfig:
     lighting: Optional[Dict[str, Any]] = None
     lifecycle: Optional[Dict[str, Any]] = None
     enclosure: Optional[Dict[str, Any]] = None
+    
+    # Configuration GPIO (optionnelle)
+    gpio_config: Optional[Dict[str, Any]] = None
 
     @classmethod
-    def from_json(cls, common_config_path: str, specific_config_path: str) -> 'SystemConfig':
-        """Charge la configuration depuis deux fichiers JSON"""
+    def from_json(cls, common_config_path: str, specific_config_path: str, gpio_config_path: Optional[str] = None) -> 'SystemConfig':
+        """Charge la configuration depuis deux fichiers JSON et optionnellement la config GPIO"""
         if not os.path.exists(common_config_path):
             raise FileNotFoundError(f"Common configuration file not found: {common_config_path}")
         if not os.path.exists(specific_config_path):
@@ -46,6 +49,12 @@ class SystemConfig:
             # Charger la configuration spécifique à l'espèce
             with open(specific_config_path, 'r', encoding='utf-8') as f:
                 specific_data = json.load(f)
+            
+            # Charger la configuration GPIO si fournie
+            gpio_data = {}
+            if gpio_config_path and os.path.exists(gpio_config_path):
+                with open(gpio_config_path, 'r', encoding='utf-8') as f:
+                    gpio_data = json.load(f)
             
             # Combiner les configurations
             # La configuration spécifique a la priorité sur la commune
@@ -73,7 +82,10 @@ class SystemConfig:
                 feeding=specific_data.get('feeding'),
                 lighting=specific_data.get('lighting'),
                 lifecycle=specific_data.get('lifecycle'),
-                enclosure=specific_data.get('enclosure')
+                enclosure=specific_data.get('enclosure'),
+                
+                # Configuration GPIO
+                gpio_config=gpio_data
             )
             
             logging.info(f"Configuration chargée: {specific_data.get('species_name', 'Unknown')}")
@@ -113,3 +125,22 @@ class SystemConfig:
     def get_safety_config(self) -> Dict[str, Any]:
         """Retourne la configuration de sécurité"""
         return self.safety or {}
+    
+    def get_gpio_config(self) -> Dict[str, Any]:
+        """Retourne la configuration GPIO"""
+        return self.gpio_config or {}
+    
+    def get_gpio_pins(self) -> Dict[str, Any]:
+        """Retourne la configuration des pins GPIO"""
+        gpio_config = self.get_gpio_config()
+        return gpio_config.get('gpio_pins', {})
+    
+    def get_pin_assignments(self) -> Dict[str, int]:
+        """Retourne les assignations de pins"""
+        gpio_config = self.get_gpio_config()
+        return gpio_config.get('pin_assignments', {})
+    
+    def get_hardware_config(self) -> Dict[str, Any]:
+        """Retourne la configuration matérielle"""
+        gpio_config = self.get_gpio_config()
+        return gpio_config.get('hardware_config', {})

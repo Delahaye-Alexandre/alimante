@@ -7,7 +7,6 @@ Fonctionnalités :
 - Activation ou désactivation du relais pour maintenir une température optimale.
 """
 
-import logging
 import time
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
@@ -34,33 +33,49 @@ class TemperatureController(BaseController):
         """
         super().__init__(gpio_manager, config)
         
+        # Extraire la configuration de température depuis la config système
+        temp_config = config.get('temperature', {})
         self.temp_config = TemperatureConfig(
-            optimal=config['optimal'],
-            tolerance=config['tolerance'],
-            min_temp=config.get('min', 15.0),
-            max_temp=config.get('max', 35.0)
+            optimal=temp_config.get('optimal', 25.0),
+            tolerance=temp_config.get('tolerance', 2.0),
+            min_temp=temp_config.get('min', 15.0),
+            max_temp=temp_config.get('max', 35.0)
         )
         
-        # Configuration des pins
+        # Configuration des pins depuis la config GPIO
         self._setup_pins()
         self.initialized = True
         
     def _setup_pins(self):
         """Configure les pins GPIO nécessaires"""
-        # Pin du capteur DHT22
-        temp_sensor_config = PinConfig(
-            pin=PinAssignments.TEMP_HUMIDITY_PIN,
-            mode=PinMode.INPUT
-        )
-        self.gpio_manager.setup_pin(temp_sensor_config)
-        
-        # Pin du relais de chauffage
-        heating_relay_config = PinConfig(
-            pin=PinAssignments.HEATING_RELAY_PIN,
-            mode=PinMode.OUTPUT,
-            initial_state=False  # Relais désactivé au démarrage
-        )
-        self.gpio_manager.setup_pin(heating_relay_config)
+        try:
+            # Récupérer la configuration GPIO depuis la config système
+            gpio_config = self.config.get('gpio_config', {})
+            pin_assignments = gpio_config.get('pin_assignments', {})
+            
+            # Pin du capteur DHT22
+            temp_sensor_pin = pin_assignments.get('TEMP_HUMIDITY_PIN', 4)
+            temp_sensor_config = PinConfig(
+                pin=temp_sensor_pin,
+                mode=PinMode.INPUT
+            )
+            self.gpio_manager.setup_pin(temp_sensor_config)
+            
+            # Pin du relais de chauffage
+            heating_relay_pin = pin_assignments.get('HEATING_RELAY_PIN', 18)
+            heating_relay_config = PinConfig(
+                pin=heating_relay_pin,
+                mode=PinMode.OUTPUT,
+                initial_state=False  # Relais désactivé au démarrage
+            )
+            self.gpio_manager.setup_pin(heating_relay_config)
+            
+            self.logger.info(f"Pins configurés - Capteur: {temp_sensor_pin}, Relais: {heating_relay_pin}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la configuration des pins: {e}")
+            self.record_error(e)
+            raise
 
     def read_temperature(self) -> Optional[float]:
         """
@@ -90,6 +105,14 @@ class TemperatureController(BaseController):
             self.record_error(e)
             return None
 
+    def control(self) -> bool:
+        """
+        Méthode de contrôle principale (implémentation de l'abstraction)
+        
+        :return: True si le contrôle a été effectué, False sinon
+        """
+        return self.control_temperature()
+
     def control_temperature(self) -> bool:
         """
         Contrôle la température en activant ou désactivant le relais.
@@ -97,88 +120,141 @@ class TemperatureController(BaseController):
         :return: True si le contrôle a été effectué, False sinon
         """
         current_temperature = self.read_temperature()
-
+        
         if current_temperature is None:
-            self.logger.warning("Impossible de lire la température.")
             return False
-
-        self.logger.info(f"Température actuelle: {current_temperature:.1f}°C (optimal: {self.temp_config.optimal}°C)")
-
-        # Logique de contrôle
-        if current_temperature < self.temp_config.optimal - self.temp_config.tolerance:
-            self.activate_heating()
-            return True
-        elif current_temperature > self.temp_config.optimal + self.temp_config.tolerance:
-            self.deactivate_heating()
-            return True
-        else:
-            self.logger.info("Température dans la plage optimale.")
-            return True
-
-    def control(self) -> bool:
-        """Méthode principale de contrôle - alias pour control_temperature"""
-        return self.control_temperature()
+        
+        try:
+            # Vérifier si le chauffage est nécessaire
+            if current_temperature < (self.temp_config.optimal - self.temp_config.tolerance):
+                if not self.is_heating_active():
+                    self.activate_heating()
+                    return True
+            elif current_temperature > (self.temp_config.optimal + self.temp_config.tolerance):
+                if self.is_heating_active():
+                    self.deactivate_heating()
+                    return True
+            
+            return False
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors du contrôle de la température: {e}")
+            self.record_error(e)
+            return False
 
     def activate_heating(self) -> bool:
         """
         Active le relais de chauffage.
-        
-        :return: True si activé avec succès
+
+        :return: True si l'activation a réussi, False sinon.
         """
-        success = self.gpio_manager.write_digital(PinAssignments.HEATING_RELAY_PIN, True)
-        if success:
-            self.logger.info("Relais de chauffage activé")
-        else:
-            self.logger.error("Échec de l'activation du relais de chauffage")
-        return success
+        try:
+            # Récupérer le pin depuis la config GPIO
+            gpio_config = self.config.get('gpio_config', {})
+            pin_assignments = gpio_config.get('pin_assignments', {})
+            heating_pin = pin_assignments.get('HEATING_RELAY_PIN', 18)
+            
+            self.gpio_manager.set_pin_state(heating_pin, True)
+            self.logger.info("Chauffage activé")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors de l'activation du chauffage: {e}")
+            self.record_error(e)
+            return False
 
     def deactivate_heating(self) -> bool:
         """
         Désactive le relais de chauffage.
-        
-        :return: True si désactivé avec succès
+
+        :return: True si la désactivation a réussi, False sinon.
         """
-        success = self.gpio_manager.write_digital(PinAssignments.HEATING_RELAY_PIN, False)
-        if success:
-            self.logger.info("Relais de chauffage désactivé")
-        else:
-            self.logger.error("Échec de la désactivation du relais de chauffage")
-        return success
+        try:
+            # Récupérer le pin depuis la config GPIO
+            gpio_config = self.config.get('gpio_config', {})
+            pin_assignments = gpio_config.get('pin_assignments', {})
+            heating_pin = pin_assignments.get('HEATING_RELAY_PIN', 18)
+            
+            self.gpio_manager.set_pin_state(heating_pin, False)
+            self.logger.info("Chauffage désactivé")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la désactivation du chauffage: {e}")
+            self.record_error(e)
+            return False
 
     def is_heating_active(self) -> bool:
         """
         Vérifie si le chauffage est actuellement actif.
-        
-        :return: True si le chauffage est actif
+
+        :return: True si le chauffage est actif, False sinon.
         """
-        return self.gpio_manager.read_digital(PinAssignments.HEATING_RELAY_PIN) or False
+        try:
+            # Récupérer le pin depuis la config GPIO
+            gpio_config = self.config.get('gpio_config', {})
+            pin_assignments = gpio_config.get('pin_assignments', {})
+            heating_pin = pin_assignments.get('HEATING_RELAY_PIN', 18)
+            
+            return self.gpio_manager.get_pin_state(heating_pin)
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la vérification du chauffage: {e}")
+            self.record_error(e)
+            return False
 
     def get_status(self) -> Dict[str, Any]:
         """
-        Retourne le statut complet du contrôleur.
+        Retourne le statut complet du contrôleur (implémentation de l'abstraction)
         
-        :return: Dictionnaire avec les informations de statut
+        :return: Dictionnaire contenant le statut
         """
-        current_temp = self.read_temperature()
-        heating_active = self.is_heating_active()
-        
-        return {
-            "current_temperature": current_temp,
-            "optimal_temperature": self.temp_config.optimal,
-            "tolerance": self.temp_config.tolerance,
-            "heating_active": heating_active,
-            "status": "optimal" if current_temp and abs(current_temp - self.temp_config.optimal) <= self.temp_config.tolerance else "adjusting"
-        }
+        try:
+            current_temp = self.read_temperature()
+            heating_active = self.is_heating_active()
+            
+            return {
+                "controller": "temperature",
+                "initialized": self.initialized,
+                "current_temperature": current_temp,
+                "heating_active": heating_active,
+                "target_temperature": self.temp_config.optimal,
+                "tolerance": self.temp_config.tolerance,
+                "min_temp": self.temp_config.min_temp,
+                "max_temp": self.temp_config.max_temp,
+                "error_count": self.error_count,
+                "last_error": str(self.last_error) if self.last_error else None
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la récupération du statut: {e}")
+            self.record_error(e)
+            return {
+                "controller": "temperature",
+                "initialized": self.initialized,
+                "error": str(e),
+                "error_count": self.error_count
+            }
 
     def check_status(self) -> bool:
         """
-        Vérifie si le contrôleur est fonctionnel.
-        
-        :return: True si fonctionnel
+        Vérifie le statut du contrôleur.
+
+        :return: True si tout fonctionne correctement, False sinon.
         """
         try:
+            # Vérifier que le capteur fonctionne
             temp = self.read_temperature()
-            return temp is not None
+            if temp is None:
+                return False
+            
+            # Vérifier que le relais répond
+            heating_state = self.is_heating_active()
+            
+            self.logger.info(f"Statut vérifié - Temp: {temp}°C, Chauffage: {heating_state}")
+            return True
+            
         except Exception as e:
             self.logger.error(f"Erreur lors de la vérification du statut: {e}")
+            self.record_error(e)
             return False

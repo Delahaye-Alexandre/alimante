@@ -74,20 +74,49 @@ def select_species_config(species_path: str) -> Tuple[str, str]:
     
     return common_config_path, specific_config_path
 
-def load_species_config(species_path: str) -> SystemConfig:
+def load_species_config(species_name: str) -> 'SystemConfig':
     """
-    Charge la configuration complète pour une espèce.
+    Charge la configuration pour une espèce spécifique
     
-    :param species_path: Chemin vers la configuration de l'espèce
-    :return: Configuration système chargée
+    Args:
+        species_name: Nom de l'espèce (ex: 'mantis_religiosa')
+        
+    Returns:
+        SystemConfig: Configuration système complète
+        
+    Raises:
+        FileNotFoundError: Si les fichiers de configuration n'existent pas
+        ValueError: Si la configuration est invalide
     """
     try:
-        common_path, specific_path = select_species_config(species_path)
-        config = SystemConfig.from_json(common_path, specific_path)
-        logging.info(f"Configuration chargée pour {species_path}")
+        # Chemins des fichiers de configuration
+        common_config_path = "config/config.json"
+        specific_config_path = f"config/orthopteres/mantidae/{species_name}.json"
+        gpio_config_path = "config/gpio_config.json"
+        
+        # Vérifier que les fichiers existent
+        if not os.path.exists(common_config_path):
+            raise FileNotFoundError(f"Configuration commune introuvable: {common_config_path}")
+        if not os.path.exists(specific_config_path):
+            raise FileNotFoundError(f"Configuration espèce introuvable: {specific_config_path}")
+        if not os.path.exists(gpio_config_path):
+            raise FileNotFoundError(f"Configuration GPIO introuvable: {gpio_config_path}")
+        
+        # Charger la configuration
+        from .config_manager import SystemConfig
+        config = SystemConfig.from_json(
+            common_config_path=common_config_path,
+            specific_config_path=specific_config_path,
+            gpio_config_path=gpio_config_path
+        )
+        
+        # Valider la configuration
+        validate_species_config(config)
+        
         return config
+        
     except Exception as e:
-        logging.error(f"Erreur lors du chargement de la configuration: {e}")
+        logger.error(f"Erreur lors du chargement de la configuration: {e}")
         raise
 
 def get_default_species() -> str:
