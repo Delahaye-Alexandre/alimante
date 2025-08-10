@@ -4,15 +4,14 @@ Module pour la gestion de l'humidité via GPIO Raspberry Pi.
 
 Fonctionnalités :
 - Lecture de l'humidité actuelle depuis un capteur DHT22.
-- Activation ou désactivation du pulvérisateur pour maintenir une humidité optimale.
+- Activation ou désactivation de l'ultrasonic mist pour maintenir une humidité optimale.
 """
 
-import logging
 import time
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
 from src.controllers.base_controller import BaseController
-from src.utils.gpio_manager import GPIOManager, PinAssignments, PinConfig, PinMode
+from src.utils.gpio_manager import GPIOManager, PinConfig, PinMode
 
 @dataclass
 class HumidityConfig:
@@ -35,12 +34,14 @@ class HumidityController(BaseController):
         """
         super().__init__(gpio_manager, config)
         
+        # Extraire la configuration d'humidité depuis la config système
+        humidity_config = config.get('humidity', {})
         self.humidity_config = HumidityConfig(
-            optimal=config['optimal'],
-            tolerance=config['tolerance'],
-            min_humidity=config.get('min', 30.0),
-            max_humidity=config.get('max', 90.0),
-            spray_duration=config.get('spray_duration', 3)
+            optimal=humidity_config.get('optimal', 60.0),
+            tolerance=humidity_config.get('tolerance', 10.0),
+            min_humidity=humidity_config.get('min', 30.0),
+            max_humidity=humidity_config.get('max', 90.0),
+            spray_duration=humidity_config.get('spray_duration', 3)
         )
         
         # Configuration des pins
@@ -49,20 +50,34 @@ class HumidityController(BaseController):
         
     def _setup_pins(self):
         """Configure les pins GPIO nécessaires"""
-        # Pin du capteur DHT22 (partagé avec température)
-        humidity_sensor_config = PinConfig(
-            pin=PinAssignments.TEMP_HUMIDITY_PIN,
-            mode=PinMode.INPUT
-        )
-        self.gpio_manager.setup_pin(humidity_sensor_config)
-        
-        # Pin du relais de pulvérisation
-        spray_relay_config = PinConfig(
-            pin=PinAssignments.HUMIDITY_RELAY_PIN,
-            mode=PinMode.OUTPUT,
-            initial_state=False  # Relais désactivé au démarrage
-        )
-        self.gpio_manager.setup_pin(spray_relay_config)
+        try:
+            # Récupérer la configuration GPIO depuis la config système
+            gpio_config = self.config.get('gpio_config', {})
+            pin_assignments = gpio_config.get('pin_assignments', {})
+            
+            # Pin du capteur DHT22 (partagé avec température)
+            temp_humidity_pin = pin_assignments.get('TEMP_HUMIDITY_PIN', 4)
+            humidity_sensor_config = PinConfig(
+                pin=temp_humidity_pin,
+                mode=PinMode.INPUT
+            )
+            self.gpio_manager.setup_pin(humidity_sensor_config)
+            
+            # Pin du relais de pulvérisation
+            humidity_relay_pin = pin_assignments.get('HUMIDITY_RELAY_PIN', 23)
+            spray_relay_config = PinConfig(
+                pin=humidity_relay_pin,
+                mode=PinMode.OUTPUT,
+                initial_state=False  # Relais désactivé au démarrage
+            )
+            self.gpio_manager.setup_pin(spray_relay_config)
+            
+            self.logger.info(f"Pins configurés - Capteur: {temp_humidity_pin}, Relais: {humidity_relay_pin}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la configuration des pins: {e}")
+            self.record_error(e)
+            raise
 
     def read_humidity(self) -> Optional[float]:
         """
@@ -75,8 +90,13 @@ class HumidityController(BaseController):
             import adafruit_dht
             import board
             
+            # Récupérer le pin depuis la config GPIO
+            gpio_config = self.config.get('gpio_config', {})
+            pin_assignments = gpio_config.get('pin_assignments', {})
+            temp_humidity_pin = pin_assignments.get('TEMP_HUMIDITY_PIN', 4)
+            
             # Initialiser le capteur DHT22 sur le pin configuré
-            dht = adafruit_dht.DHT22(board.D4)  # Pin 4 pour DHT22
+            dht = adafruit_dht.DHT22(getattr(board, f'D{temp_humidity_pin}'))
             
             # Lire l'humidité
             humidity = dht.humidity
@@ -95,96 +115,160 @@ class HumidityController(BaseController):
 
     def control_humidity(self) -> bool:
         """
-        Contrôle l'humidité en activant ou désactivant le pulvérisateur.
+        Contrôle l'humidité en activant ou désactivant l'ultrasonic mist.
 
         :return: True si le contrôle a été effectué, False sinon
         """
         current_humidity = self.read_humidity()
-
+        
         if current_humidity is None:
-            self.logger.warning("Impossible de lire l'humidité.")
+            return False
+        
+        try:
+            # Vérifier si la pulvérisation est nécessaire
+            if current_humidity < (self.humidity_config.optimal - self.humidity_config.tolerance):
+                if not self.is_sprayer_active():
+                    self.activate_sprayer()
+                    return True
+            elif current_humidity > (self.humidity_config.optimal + self.humidity_config.tolerance):
+                if self.is_sprayer_active():
+                    self.deactivate_sprayer()
+                    return True
+            
+            return False
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors du contrôle de l'humidité: {e}")
+            self.record_error(e)
             return False
 
-        self.logger.info(f"Humidité actuelle: {current_humidity:.1f}% (optimal: {self.humidity_config.optimal}%)")
-
-        # Logique de contrôle
-        if current_humidity < self.humidity_config.optimal - self.humidity_config.tolerance:
-            self.activate_sprayer()
-            return True
-        elif current_humidity > self.humidity_config.optimal + self.humidity_config.tolerance:
-            self.deactivate_sprayer()
-            return True
-        else:
-            self.logger.info("Humidité dans la plage optimale.")
-            return True
-
     def control(self) -> bool:
-        """Méthode principale de contrôle - alias pour control_humidity"""
+        """
+        Méthode de contrôle principale (implémentation de l'abstraction)
+        
+        :return: True si le contrôle a été effectué, False sinon
+        """
         return self.control_humidity()
 
     def activate_sprayer(self) -> bool:
         """
-        Active le pulvérisateur pour augmenter l'humidité.
+        Active l'ultrasonic mist d'humidité.
         
-        :return: True si activé avec succès
+        :return: True si l'activation a réussi, False sinon
         """
-        success = self.gpio_manager.write_digital(PinAssignments.HUMIDITY_RELAY_PIN, True)
-        if success:
-            self.logger.info(f"Pulvérisateur activé pour {self.humidity_config.spray_duration} secondes")
-            # Désactivation automatique après la durée configurée
+        try:
+            # Récupérer le pin depuis la config GPIO
+            gpio_config = self.config.get('gpio_config', {})
+            pin_assignments = gpio_config.get('pin_assignments', {})
+            humidity_pin = pin_assignments.get('HUMIDITY_RELAY_PIN', 23)
+            
+            self.gpio_manager.set_pin_state(humidity_pin, True)
+            self.logger.info("Ultrasonic mist activé")
+            
+            # Désactiver après la durée configurée
             time.sleep(self.humidity_config.spray_duration)
             self.deactivate_sprayer()
-        else:
-            self.logger.error("Échec de l'activation du pulvérisateur")
-        return success
+            
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors de l'activation de l'ultrasonic mist: {e}")
+            self.record_error(e)
+            return False
 
     def deactivate_sprayer(self) -> bool:
         """
-        Désactive le pulvérisateur.
+        Désactive l'ultrasonic mist d'humidité.
         
-        :return: True si désactivé avec succès
+        :return: True si la désactivation a réussi, False sinon
         """
-        success = self.gpio_manager.write_digital(PinAssignments.HUMIDITY_RELAY_PIN, False)
-        if success:
-            self.logger.info("Pulvérisateur désactivé")
-        else:
-            self.logger.error("Échec de la désactivation du pulvérisateur")
-        return success
+        try:
+            # Récupérer le pin depuis la config GPIO
+            gpio_config = self.config.get('gpio_config', {})
+            pin_assignments = gpio_config.get('pin_assignments', {})
+            humidity_pin = pin_assignments.get('HUMIDITY_RELAY_PIN', 23)
+            
+            self.gpio_manager.set_pin_state(humidity_pin, False)
+            self.logger.info("Ultrasonic mist désactivé")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la désactivation de l'ultrasonic mist: {e}")
+            self.record_error(e)
+            return False
 
     def is_sprayer_active(self) -> bool:
         """
-        Vérifie si le pulvérisateur est actuellement actif.
+        Vérifie si l'ultrasonic mist est actuellement actif.
         
-        :return: True si le pulvérisateur est actif
+        :return: True si l'ultrasonic mist est actif, False sinon
         """
-        return self.gpio_manager.read_digital(PinAssignments.HUMIDITY_RELAY_PIN) or False
+        try:
+            # Récupérer le pin depuis la config GPIO
+            gpio_config = self.config.get('gpio_config', {})
+            pin_assignments = gpio_config.get('pin_assignments', {})
+            humidity_pin = pin_assignments.get('HUMIDITY_RELAY_PIN', 23)
+            
+            return self.gpio_manager.get_pin_state(humidity_pin)
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la vérification de l'ultrasonic mist: {e}")
+            self.record_error(e)
+            return False
 
     def get_status(self) -> Dict[str, Any]:
         """
-        Retourne le statut complet du contrôleur.
+        Retourne le statut complet du contrôleur (implémentation de l'abstraction)
         
-        :return: Dictionnaire avec les informations de statut
+        :return: Dictionnaire contenant le statut
         """
-        current_humidity = self.read_humidity()
-        sprayer_active = self.is_sprayer_active()
-        
-        return {
-            "current_humidity": current_humidity,
-            "optimal_humidity": self.humidity_config.optimal,
-            "tolerance": self.humidity_config.tolerance,
-            "sprayer_active": sprayer_active,
-            "status": "optimal" if current_humidity and abs(current_humidity - self.humidity_config.optimal) <= self.humidity_config.tolerance else "adjusting"
-        }
+        try:
+            current_humidity = self.read_humidity()
+            sprayer_active = self.is_sprayer_active()
+            
+            return {
+                "controller": "humidity",
+                "initialized": self.initialized,
+                "current_humidity": current_humidity,
+                "sprayer_active": sprayer_active,
+                "target_humidity": self.humidity_config.optimal,
+                "tolerance": self.humidity_config.tolerance,
+                "min_humidity": self.humidity_config.min_humidity,
+                "max_humidity": self.humidity_config.max_humidity,
+                "spray_duration": self.humidity_config.spray_duration,
+                "error_count": self.error_count,
+                "last_error": str(self.last_error) if self.last_error else None
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la récupération du statut: {e}")
+            self.record_error(e)
+            return {
+                "controller": "humidity",
+                "initialized": self.initialized,
+                "error": str(e),
+                "error_count": self.error_count
+            }
 
     def check_status(self) -> bool:
         """
-        Vérifie si le contrôleur est fonctionnel.
+        Vérifie le statut du contrôleur.
         
-        :return: True si fonctionnel
+        :return: True si tout fonctionne correctement, False sinon
         """
         try:
+            # Vérifier que le capteur fonctionne
             humidity = self.read_humidity()
-            return humidity is not None
+            if humidity is None:
+                return False
+            
+            # Vérifier que le relais répond
+            sprayer_state = self.is_sprayer_active()
+            
+            self.logger.info(f"Statut vérifié - Humidité: {humidity}%, Ultrasonic mist: {sprayer_state}")
+            return True
+            
         except Exception as e:
             self.logger.error(f"Erreur lors de la vérification du statut: {e}")
+            self.record_error(e)
             return False

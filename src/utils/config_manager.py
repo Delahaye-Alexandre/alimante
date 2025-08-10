@@ -144,3 +144,59 @@ class SystemConfig:
         """Retourne la configuration matérielle"""
         gpio_config = self.get_gpio_config()
         return gpio_config.get('hardware_config', {})
+    
+    def validate(self) -> bool:
+        """
+        Valide la configuration système
+        
+        :return: True si la configuration est valide, False sinon
+        """
+        try:
+            # Vérifier les configurations obligatoires
+            if not self.temperature:
+                logging.warning("Configuration de température manquante")
+                return False
+            
+            if not self.humidity:
+                logging.warning("Configuration d'humidité manquante")
+                return False
+            
+            if not self.feeding:
+                logging.warning("Configuration d'alimentation manquante")
+                return False
+            
+            # Vérifier les valeurs de température
+            temp_config = self.get_temperature_config()
+            if not all(key in temp_config for key in ['optimal', 'tolerance', 'min', 'max']):
+                logging.warning("Configuration de température incomplète")
+                return False
+            
+            # Vérifier les valeurs d'humidité
+            hum_config = self.get_humidity_config()
+            if not all(key in hum_config for key in ['optimal', 'tolerance', 'min', 'max']):
+                logging.warning("Configuration d'humidité incomplète")
+                return False
+            
+            # Vérifier la configuration d'alimentation
+            feed_config = self.get_feeding_config()
+            if not all(key in feed_config for key in ['interval_days', 'feed_count', 'prey_type']):
+                logging.warning("Configuration d'alimentation incomplète")
+                return False
+            
+            # Vérifier la configuration GPIO
+            gpio_config = self.get_gpio_config()
+            if not gpio_config:
+                logging.warning("Configuration GPIO manquante")
+                return False
+            
+            pin_assignments = self.get_pin_assignments()
+            if not pin_assignments:
+                logging.warning("Assignations de pins GPIO manquantes")
+                return False
+            
+            logging.info("Configuration validée avec succès")
+            return True
+            
+        except Exception as e:
+            logging.error(f"Erreur lors de la validation de la configuration: {e}")
+            return False

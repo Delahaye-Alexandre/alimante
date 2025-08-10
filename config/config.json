@@ -22,7 +22,7 @@
     "actuators": {
       "heating": "Relais 5V",
       "cooling": "Ventilateur 12V",
-      "humidity": "Pulvérisateur ultrasonique",
+              "humidity": "Ultrasonic mist",
       "feeding": "Servo-moteur SG90",
       "lighting": "Relais LED/UV"
     },

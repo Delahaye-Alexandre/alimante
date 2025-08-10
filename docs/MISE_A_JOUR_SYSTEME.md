@@ -62,7 +62,7 @@
 | 20   | HC-SR04P Trigger    | Digital | Niveau d'eau (trigger)      |
 | 21   | HC-SR04P Echo       | Input   | Niveau d'eau (echo)         |
 | 22   | Transducteur ANGEEK | PWM     | Brumisateur (intensité)     |
-| 23   | Relais humidité     | Digital | Contrôle pulvérisateur      |
+| 23   | Relais humidité     | Digital | Contrôle ultrasonic mist    |
 | 24   | Relais LED          | Digital | Bandeau LED 12V             |
 | 25   | Relais ventilateurs | Digital | 4 ventilateurs terrarium    |
 | 26   | DS18B20             | OneWire | Température radiateur       |

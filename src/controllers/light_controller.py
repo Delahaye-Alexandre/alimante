@@ -8,13 +8,12 @@ Fonctionnalités :
 - Support pour différents types d'éclairage (UV, LED, etc.).
 """
 
-import logging
 import time
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
 from src.controllers.base_controller import BaseController
-from src.utils.gpio_manager import GPIOManager, PinAssignments, PinConfig, PinMode
+from src.utils.gpio_manager import GPIOManager, PinConfig, PinMode
 
 # Import pour le calcul des heures de soleil
 try:
@@ -23,7 +22,7 @@ try:
     SUN_CALCULATION_AVAILABLE = True
 except ImportError:
     SUN_CALCULATION_AVAILABLE = False
-    logging.warning("Module astral non disponible, utilisation des heures par défaut")
+    # Note: logging sera géré par BaseController
 
 @dataclass
 class LightConfig:
@@ -46,12 +45,14 @@ class LightController(BaseController):
         """
         super().__init__(gpio_manager, config)
         
+        # Extraire la configuration d'éclairage depuis la config système
+        lighting_config = config.get('lighting', {})
         self.light_config = LightConfig(
-            latitude=config['latitude'],
-            longitude=config['longitude'],
-            day_hours=config.get('day_hours', 12),
-            uv_required=config.get('uv_required', True),
-            intensity=config.get('intensity', 'medium')
+            latitude=lighting_config.get('latitude', 48.8566),
+            longitude=lighting_config.get('longitude', 2.3522),
+            day_hours=lighting_config.get('day_hours', 12),
+            uv_required=lighting_config.get('uv_required', True),
+            intensity=lighting_config.get('intensity', 'medium')
         )
         
         # Configuration des pins
@@ -65,25 +66,40 @@ class LightController(BaseController):
             )
         else:
             self.location = None
+            self.logger.warning("Module astral non disponible, utilisation des heures par défaut")
             
         self.initialized = True
         
     def _setup_pins(self):
         """Configure les pins GPIO nécessaires"""
-        # Pin du relais d'éclairage
-        light_relay_config = PinConfig(
-            pin=PinAssignments.LIGHT_RELAY_PIN,
-            mode=PinMode.OUTPUT,
-            initial_state=False  # Éclairage désactivé au démarrage
-        )
-        self.gpio_manager.setup_pin(light_relay_config)
-        
-        # Pin du capteur de lumière (optionnel)
-        light_sensor_config = PinConfig(
-            pin=PinAssignments.LIGHT_SENSOR_PIN,
-            mode=PinMode.INPUT
-        )
-        self.gpio_manager.setup_pin(light_sensor_config)
+        try:
+            # Récupérer la configuration GPIO depuis la config système
+            gpio_config = self.config.get('gpio_config', {})
+            pin_assignments = gpio_config.get('pin_assignments', {})
+            
+            # Pin du relais d'éclairage
+            light_relay_pin = pin_assignments.get('LIGHT_RELAY_PIN', 24)
+            light_relay_config = PinConfig(
+                pin=light_relay_pin,
+                mode=PinMode.OUTPUT,
+                initial_state=False  # Éclairage désactivé au démarrage
+            )
+            self.gpio_manager.setup_pin(light_relay_config)
+            
+            # Pin du capteur de lumière (optionnel)
+            light_sensor_pin = pin_assignments.get('LIGHT_SENSOR_PIN', 17)
+            light_sensor_config = PinConfig(
+                pin=light_sensor_pin,
+                mode=PinMode.INPUT
+            )
+            self.gpio_manager.setup_pin(light_sensor_config)
+            
+            self.logger.info(f"Pins configurés - Relais: {light_relay_pin}, Capteur: {light_sensor_pin}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la configuration des pins: {e}")
+            self.record_error(e)
+            raise
 
     def get_sunrise_sunset_times(self) -> Dict[str, datetime]:
         """
@@ -101,121 +117,171 @@ class LightController(BaseController):
                     'sunset': s['sunset']
                 }
             else:
-                # Heures par défaut si astral non disponible
+                # Heures par défaut si le module astral n'est pas disponible
+                now = datetime.now()
+                sunrise = now.replace(hour=6, minute=0, second=0, microsecond=0)
+                sunset = sunrise + timedelta(hours=self.light_config.day_hours)
+                
                 return {
-                    'sunrise': datetime.combine(datetime.now().date(), datetime.min.time().replace(hour=6)),
-                    'sunset': datetime.combine(datetime.now().date(), datetime.min.time().replace(hour=18))
+                    'sunrise': sunrise,
+                    'sunset': sunset
                 }
+                
         except Exception as e:
             self.logger.error(f"Erreur lors du calcul des heures de soleil: {e}")
             self.record_error(e)
-            # Heures par défaut si erreur
+            # Heures par défaut en cas d'erreur
+            now = datetime.now()
+            sunrise = now.replace(hour=6, minute=0, second=0, microsecond=0)
+            sunset = sunrise + timedelta(hours=self.light_config.day_hours)
+            
             return {
-                'sunrise': datetime.combine(datetime.now().date(), datetime.min.time().replace(hour=6)),
-                'sunset': datetime.combine(datetime.now().date(), datetime.min.time().replace(hour=18))
+                'sunrise': sunrise,
+                'sunset': sunset
             }
 
     def should_light_be_on(self) -> bool:
         """
-        Détermine si l'éclairage doit être activé.
+        Détermine si l'éclairage doit être allumé.
         
-        :return: True si l'éclairage doit être activé
+        :return: True si l'éclairage doit être allumé
         """
         try:
-            now = datetime.now()
-            sun_times = self.get_sunrise_sunset_times()
-            
-            # Calcul de la durée d'éclairage
-            light_start = sun_times['sunrise']
-            light_end = light_start + timedelta(hours=self.light_config.day_hours)
-            
-            # Vérification si on est dans la période d'éclairage
-            is_light_time = light_start <= now <= light_end
-            
-            self.logger.debug(f"Période d'éclairage: {light_start.time()} - {light_end.time()}")
-            self.logger.debug(f"Heure actuelle: {now.time()}, Éclairage: {'ON' if is_light_time else 'OFF'}")
-            
-            return is_light_time
-            
+            if SUN_CALCULATION_AVAILABLE and self.location:
+                # Utiliser les vraies heures de lever/coucher
+                times = self.get_sunrise_sunset_times()
+                now = datetime.now()
+                
+                return times['sunrise'] <= now <= times['sunset']
+            else:
+                # Utiliser des heures fixes
+                now = datetime.now()
+                start_hour = 6  # 6h00
+                end_hour = start_hour + self.light_config.day_hours
+                
+                return start_hour <= now.hour < end_hour
+                
         except Exception as e:
-            self.logger.error(f"Erreur lors de la détermination de l'éclairage: {e}")
+            self.logger.error(f"Erreur lors de la détermination de l'état d'éclairage: {e}")
             self.record_error(e)
             return False
 
     def control_lighting(self) -> bool:
         """
-        Contrôle l'éclairage automatiquement.
+        Contrôle l'éclairage automatique.
         
         :return: True si le contrôle a été effectué, False sinon
         """
         try:
             should_be_on = self.should_light_be_on()
-            current_state = self.is_light_on()
+            currently_on = self.is_light_on()
             
-            if should_be_on and not current_state:
-                self.logger.info("Activation de l'éclairage")
-                return self.activate_light()
-            elif not should_be_on and current_state:
-                self.logger.info("Désactivation de l'éclairage")
-                return self.deactivate_light()
-            else:
-                self.logger.debug("État d'éclairage correct")
+            if should_be_on and not currently_on:
+                self.activate_light()
                 return True
-                
+            elif not should_be_on and currently_on:
+                self.deactivate_light()
+                return True
+            
+            return False
+            
         except Exception as e:
             self.logger.error(f"Erreur lors du contrôle de l'éclairage: {e}")
             self.record_error(e)
             return False
 
     def control(self) -> bool:
-        """Méthode principale de contrôle - alias pour control_lighting"""
+        """
+        Méthode de contrôle principale (implémentation de l'abstraction)
+        
+        :return: True si le contrôle a été effectué, False sinon
+        """
         return self.control_lighting()
 
     def activate_light(self) -> bool:
         """
         Active l'éclairage.
         
-        :return: True si activé avec succès
+        :return: True si l'activation a réussi, False sinon
         """
-        success = self.gpio_manager.write_digital(PinAssignments.LIGHT_RELAY_PIN, True)
-        if success:
+        try:
+            # Récupérer le pin depuis la config GPIO
+            gpio_config = self.config.get('gpio_config', {})
+            pin_assignments = gpio_config.get('pin_assignments', {})
+            light_pin = pin_assignments.get('LIGHT_RELAY_PIN', 24)
+            
+            self.gpio_manager.set_pin_state(light_pin, True)
             self.logger.info("Éclairage activé")
-        else:
-            self.logger.error("Échec de l'activation de l'éclairage")
-        return success
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors de l'activation de l'éclairage: {e}")
+            self.record_error(e)
+            return False
 
     def deactivate_light(self) -> bool:
         """
         Désactive l'éclairage.
         
-        :return: True si désactivé avec succès
+        :return: True si la désactivation a réussi, False sinon
         """
-        success = self.gpio_manager.write_digital(PinAssignments.LIGHT_RELAY_PIN, False)
-        if success:
+        try:
+            # Récupérer le pin depuis la config GPIO
+            gpio_config = self.config.get('gpio_config', {})
+            pin_assignments = gpio_config.get('pin_assignments', {})
+            light_pin = pin_assignments.get('LIGHT_RELAY_PIN', 24)
+            
+            self.gpio_manager.set_pin_state(light_pin, False)
             self.logger.info("Éclairage désactivé")
-        else:
-            self.logger.error("Échec de la désactivation de l'éclairage")
-        return success
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la désactivation de l'éclairage: {e}")
+            self.record_error(e)
+            return False
 
     def is_light_on(self) -> bool:
         """
-        Vérifie si l'éclairage est actuellement actif.
+        Vérifie si l'éclairage est actuellement allumé.
         
-        :return: True si l'éclairage est actif
+        :return: True si l'éclairage est allumé, False sinon
         """
-        return self.gpio_manager.read_digital(PinAssignments.LIGHT_RELAY_PIN) or False
+        try:
+            # Récupérer le pin depuis la config GPIO
+            gpio_config = self.config.get('gpio_config', {})
+            pin_assignments = gpio_config.get('pin_assignments', {})
+            light_pin = pin_assignments.get('LIGHT_RELAY_PIN', 24)
+            
+            return self.gpio_manager.get_pin_state(light_pin)
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la vérification de l'éclairage: {e}")
+            self.record_error(e)
+            return False
 
     def read_light_sensor(self) -> Optional[float]:
         """
-        Lit la valeur du capteur de lumière (si disponible).
+        Lit la valeur du capteur de lumière.
         
-        :return: Valeur de luminosité ou None
+        :return: Valeur de luminosité ou None si la lecture échoue
         """
         try:
-            # Simulation pour le moment
-            import random
-            light_value = random.uniform(0, 100)  # Simulation 0-100%
-            return light_value
+            # Récupérer le pin depuis la config GPIO
+            gpio_config = self.config.get('gpio_config', {})
+            pin_assignments = gpio_config.get('pin_assignments', {})
+            light_sensor_pin = pin_assignments.get('LIGHT_SENSOR_PIN', 17)
+            
+            # Lecture analogique du capteur LDR
+            # Note: Cette implémentation dépend du type de capteur utilisé
+            light_value = self.gpio_manager.read_analog(light_sensor_pin)
+            
+            if light_value is not None:
+                self.logger.info(f"Luminosité lue: {light_value}")
+                return light_value
+            else:
+                self.logger.warning("Impossible de lire la luminosité")
+                return None
+                
         except Exception as e:
             self.logger.error(f"Erreur lors de la lecture du capteur de lumière: {e}")
             self.record_error(e)
@@ -223,34 +289,57 @@ class LightController(BaseController):
 
     def get_status(self) -> Dict[str, Any]:
         """
-        Retourne le statut complet du contrôleur.
+        Retourne le statut complet du contrôleur (implémentation de l'abstraction)
         
-        :return: Dictionnaire avec les informations de statut
+        :return: Dictionnaire contenant le statut
         """
-        sun_times = self.get_sunrise_sunset_times()
-        light_on = self.is_light_on()
-        should_be_on = self.should_light_be_on()
-        light_sensor = self.read_light_sensor()
-        
-        return {
-            "light_on": light_on,
-            "should_be_on": should_be_on,
-            "sunrise": sun_times['sunrise'].isoformat() if sun_times['sunrise'] else None,
-            "sunset": sun_times['sunset'].isoformat() if sun_times['sunset'] else None,
-            "day_hours": self.light_config.day_hours,
-            "light_sensor_value": light_sensor,
-            "status": "on" if light_on else "off"
-        }
+        try:
+            light_on = self.is_light_on()
+            should_be_on = self.should_light_be_on()
+            light_sensor_value = self.read_light_sensor()
+            
+            return {
+                "controller": "light",
+                "initialized": self.initialized,
+                "light_on": light_on,
+                "should_be_on": should_be_on,
+                "light_sensor_value": light_sensor_value,
+                "latitude": self.light_config.latitude,
+                "longitude": self.light_config.longitude,
+                "day_hours": self.light_config.day_hours,
+                "uv_required": self.light_config.uv_required,
+                "intensity": self.light_config.intensity,
+                "sun_calculation_available": SUN_CALCULATION_AVAILABLE,
+                "error_count": self.error_count,
+                "last_error": str(self.last_error) if self.last_error else None
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la récupération du statut: {e}")
+            self.record_error(e)
+            return {
+                "controller": "light",
+                "initialized": self.initialized,
+                "error": str(e),
+                "error_count": self.error_count
+            }
 
     def check_status(self) -> bool:
         """
-        Vérifie si le contrôleur est fonctionnel.
+        Vérifie le statut du contrôleur.
         
-        :return: True si fonctionnel
+        :return: True si tout fonctionne correctement, False sinon
         """
         try:
-            # Vérification basique - peut-on contrôler l'éclairage
-            return self.gpio_manager.initialized
+            # Vérifier que le relais répond
+            light_state = self.is_light_on()
+            
+            # Vérifier que le capteur fonctionne (optionnel)
+            light_sensor_value = self.read_light_sensor()
+            
+            self.logger.info(f"Statut vérifié - Éclairage: {light_state}, Capteur: {light_sensor_value}")
+            return True
+            
         except Exception as e:
             self.logger.error(f"Erreur lors de la vérification du statut: {e}")
             self.record_error(e)

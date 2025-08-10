@@ -16,7 +16,7 @@
 | Composant                     | Tension | Courant   | Pin GPIO | Description              |
 | ----------------------------- | ------- | --------- | -------- | ------------------------ |
 | **Relais chauffage**          | 5V      | 30mA      | 18       | Contrôle chauffage       |
-| **Relais humidité**           | 5V      | 30mA      | 23       | Contrôle pulvérisateur   |
+| **Relais humidité**           | 5V      | 30mA      | 23       | Contrôle ultrasonic mist |
 | **Servomoteur**               | 5V      | 100-250mA | 12       | Trappe alimentation      |
 | **Relais LED**                | 5V      | 30mA      | 24       | Contrôle bandeau LED 12V |
 | **Relais ventilateurs**       | 5V      | 30mA      | 25       | Contrôle 4 ventilateurs  |

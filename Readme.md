@@ -5,7 +5,7 @@
 Alimante est un système de gestion automatisé pour l'élevage de mantes utilisant un **Raspberry Pi** et une **API moderne sécurisée**. Le système contrôle automatiquement :
 
 - **🌡️ Température** : Maintien optimal avec relais de chauffage
-- **💧 Humidité** : Contrôle automatique avec pulvérisateur
+- **💧 Humidité** : Contrôle automatique avec ultrasonic mist
 - **💡 Éclairage** : Synchronisation lever/coucher du soleil
 - **🦗 Alimentation** : Distribution automatique selon planning
 
@@ -69,7 +69,7 @@ allow_origins=[
 
 - **Raspberry Pi Zero 2W** (recommandé)
 - **Capteur DHT22** (température + humidité)
-- **Relais 5V** (chauffage, pulvérisateur, éclairage)
+- **Relais 5V** (chauffage, ultrasonic mist, éclairage)
 - **Servo SG90** (trappe alimentation)
 - **LED RGB** (statut système)
 - **Capteur LDR** (luminosité, optionnel)
@@ -80,7 +80,7 @@ allow_origins=[
 DHT22     → Pin 4   (température/humidité)
 LDR       → Pin 17  (luminosité)
 Relais H  → Pin 18  (chauffage)
-Relais H  → Pin 23  (pulvérisateur)
+Relais H  → Pin 23  (ultrasonic mist)
 Servo     → Pin 12  (trappe alimentation)
 Relais L  → Pin 24  (éclairage)
 LED Stat  → Pin 25  (statut)

@@ -105,7 +105,39 @@ class GPIOManager:
             logging.debug(f"PWM pin {pin} à {duty_cycle}%")
             return True
         except Exception as e:
-            logging.error(f"Erreur PWM sur pin {pin}: {e}")
+            logging.error(f"Erreur lors de la définition du cycle PWM: {e}")
+            return False
+    
+    def set_servo_position(self, pin: int, pulse_width: int) -> bool:
+        """
+        Définit la position d'un servomoteur via PWM
+        
+        :param pin: Pin GPIO du servo
+        :param pulse_width: Largeur d'impulsion en microsecondes (500-2500)
+        :return: True si réussi, False sinon
+        """
+        try:
+            if pin not in self.pwm_channels:
+                logging.error(f"Pin {pin} n'est pas configuré en PWM")
+                return False
+            
+            # Convertir la largeur d'impulsion en cycle de travail
+            # Fréquence typique: 50Hz (20ms période)
+            # Cycle de travail = (pulse_width / 20000) * 100
+            duty_cycle = (pulse_width / 20000.0) * 100
+            
+            # Limiter le cycle de travail à 0-100%
+            duty_cycle = max(0.0, min(100.0, duty_cycle))
+            
+            # Appliquer le cycle de travail
+            pwm = self.pwm_channels[pin]
+            pwm.ChangeDutyCycle(duty_cycle)
+            
+            logging.debug(f"Servo pin {pin} positionné à {pulse_width}μs ({duty_cycle:.1f}%)")
+            return True
+            
+        except Exception as e:
+            logging.error(f"Erreur lors du positionnement du servo: {e}")
             return False
     
     def cleanup(self):
@@ -126,7 +158,7 @@ class PinAssignments:
     
     # Actionneurs
     HEATING_RELAY_PIN = 18  # Relais chauffage
-    HUMIDITY_RELAY_PIN = 23  # Relais pulvérisateur
+    HUMIDITY_RELAY_PIN = 23  # Relais ultrasonic mist
     FEEDING_SERVO_PIN = 12  # Servo trappe
     LIGHT_RELAY_PIN = 24   # Relais éclairage
     

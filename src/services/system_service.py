@@ -286,6 +286,19 @@ class SystemService:
         self.error_history.clear()
         
         self.logger.info("Service système nettoyé")
+    
+    def is_healthy(self) -> bool:
+        """
+        Vérifie si le système est en bonne santé
+        
+        :return: True si le système est sain, False sinon
+        """
+        try:
+            health = self.get_system_health()
+            return health.get("status") == "healthy"
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la vérification de la santé: {e}")
+            return False
 
 
 # Instance globale du service système

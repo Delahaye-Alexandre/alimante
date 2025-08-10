@@ -88,78 +88,102 @@ class AlimanteLogger:
     
     def _setup_logger(self):
         """Configure le logger avec tous les handlers"""
-        self.logger.setLevel(logging.DEBUG)
-        
-        # Éviter les logs dupliqués
-        if self.logger.handlers:
-            return
+        try:
+            self.logger.setLevel(logging.DEBUG)
             
-        # Handler console avec couleurs
-        console_handler = logging.StreamHandler(sys.stdout)
-        console_handler.setLevel(logging.INFO)
-        console_handler.setFormatter(ColoredFormatter())
-        self.logger.addHandler(console_handler)
-        
-        # Handler fichier principal (JSON structuré)
-        self._setup_file_handlers()
-        
-        # Handler pour les erreurs critiques
-        self._setup_error_handler()
-        
-        # Handler pour les métriques
-        self._setup_metrics_handler()
+            # Éviter les logs dupliqués
+            if self.logger.handlers:
+                return
+                
+            # Handler console avec couleurs
+            console_handler = logging.StreamHandler(sys.stdout)
+            console_handler.setLevel(logging.INFO)
+            console_handler.setFormatter(ColoredFormatter())
+            self.logger.addHandler(console_handler)
+            
+            # Handler fichier principal (JSON structuré)
+            self._setup_file_handlers()
+            
+            # Handler pour les erreurs critiques
+            self._setup_error_handler()
+            
+            # Handler pour les métriques
+            self._setup_metrics_handler()
+            
+        except Exception as e:
+            # En cas d'erreur, on configure au minimum un handler console
+            fallback_handler = logging.StreamHandler(sys.stderr)
+            fallback_handler.setLevel(logging.ERROR)
+            fallback_handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
+            self.logger.addHandler(fallback_handler)
+            self.logger.error(f"Erreur lors de la configuration du logging: {e}")
     
     def _setup_file_handlers(self):
         """Configure les handlers de fichiers"""
-        log_dir = Path("logs")
-        log_dir.mkdir(exist_ok=True)
-        
-        # Log principal (JSON structuré)
-        main_handler = logging.handlers.RotatingFileHandler(
-            log_dir / "alimante.log",
-            maxBytes=10*1024*1024,  # 10MB
-            backupCount=5
-        )
-        main_handler.setLevel(logging.DEBUG)
-        main_handler.setFormatter(StructuredFormatter())
-        self.logger.addHandler(main_handler)
-        
-        # Log des erreurs séparé
-        error_handler = logging.handlers.RotatingFileHandler(
-            log_dir / "errors.log",
-            maxBytes=5*1024*1024,  # 5MB
-            backupCount=3
-        )
-        error_handler.setLevel(logging.ERROR)
-        error_handler.setFormatter(StructuredFormatter())
-        self.logger.addHandler(error_handler)
+        try:
+            log_dir = Path("logs")
+            log_dir.mkdir(exist_ok=True)
+            
+            # Log principal (JSON structuré)
+            main_handler = logging.handlers.RotatingFileHandler(
+                log_dir / "alimante.log",
+                maxBytes=10*1024*1024,  # 10MB
+                backupCount=5
+            )
+            main_handler.setLevel(logging.DEBUG)
+            main_handler.setFormatter(StructuredFormatter())
+            self.logger.addHandler(main_handler)
+            
+            # Log des erreurs séparé
+            error_handler = logging.handlers.RotatingFileHandler(
+                log_dir / "errors.log",
+                maxBytes=5*1024*1024,  # 5MB
+                backupCount=3
+            )
+            error_handler.setLevel(logging.ERROR)
+            error_handler.setFormatter(StructuredFormatter())
+            self.logger.addHandler(error_handler)
+            
+        except Exception as e:
+            # En cas d'erreur, on continue sans les handlers de fichiers
+            self.logger.warning(f"Impossible de configurer les handlers de fichiers: {e}")
     
     def _setup_error_handler(self):
         """Handler spécial pour les erreurs critiques"""
-        critical_handler = logging.handlers.RotatingFileHandler(
-            Path("logs") / "critical.log",
-            maxBytes=2*1024*1024,  # 2MB
-            backupCount=2
-        )
-        critical_handler.setLevel(logging.CRITICAL)
-        critical_handler.setFormatter(StructuredFormatter())
-        self.logger.addHandler(critical_handler)
+        try:
+            critical_handler = logging.handlers.RotatingFileHandler(
+                Path("logs") / "critical.log",
+                maxBytes=2*1024*1024,  # 2MB
+                backupCount=2
+            )
+            critical_handler.setLevel(logging.CRITICAL)
+            critical_handler.setFormatter(StructuredFormatter())
+            self.logger.addHandler(critical_handler)
+            
+        except Exception as e:
+            # En cas d'erreur, on continue sans le handler critique
+            self.logger.warning(f"Impossible de configurer le handler critique: {e}")
     
     def _setup_metrics_handler(self):
         """Handler pour les métriques système"""
-        metrics_handler = logging.handlers.RotatingFileHandler(
-            Path("logs") / "metrics.log",
-            maxBytes=5*1024*1024,  # 5MB
-            backupCount=3
-        )
-        metrics_handler.setLevel(logging.INFO)
-        metrics_handler.setFormatter(StructuredFormatter())
-        
-        # Créer un logger séparé pour les métriques
-        metrics_logger = logging.getLogger(f"{self.name}.metrics")
-        metrics_logger.addHandler(metrics_handler)
-        metrics_logger.setLevel(logging.INFO)
-        metrics_logger.propagate = False  # Éviter la duplication
+        try:
+            metrics_handler = logging.handlers.RotatingFileHandler(
+                Path("logs") / "metrics.log",
+                maxBytes=5*1024*1024,  # 5MB
+                backupCount=3
+            )
+            metrics_handler.setLevel(logging.INFO)
+            metrics_handler.setFormatter(StructuredFormatter())
+            
+            # Créer un logger séparé pour les métriques
+            metrics_logger = logging.getLogger(f"{self.name}.metrics")
+            metrics_logger.addHandler(metrics_handler)
+            metrics_logger.setLevel(logging.INFO)
+            metrics_logger.propagate = False  # Éviter la duplication
+            
+        except Exception as e:
+            # En cas d'erreur, on continue sans le handler de métriques
+            self.logger.warning(f"Impossible de configurer le handler de métriques: {e}")
     
     def log_with_context(
         self, 
@@ -236,9 +260,81 @@ def get_logger(name: str = "alimante") -> AlimanteLogger:
     return _logger_instance
 
 
-def setup_logging():
-    """Fonction de compatibilité pour l'ancien système"""
-    get_logger()
+def setup_logging(name: str = "alimante") -> AlimanteLogger:
+    """Fonction de compatibilité pour l'ancien système - retourne le logger configuré"""
+    return get_logger(name)
+
+
+def test_logging_system() -> bool:
+    """Teste le système de logging et retourne True si tout fonctionne"""
+    try:
+        logger = get_logger("test")
+        
+        # Tester les différents niveaux
+        logger.debug("Test debug")
+        logger.info("Test info")
+        logger.warning("Test warning")
+        logger.error("Test error")
+        
+        # Vérifier que les handlers sont configurés
+        if not logger.logger.handlers:
+            return False
+            
+        # Vérifier que le niveau est correct
+        if logger.logger.level > logging.DEBUG:
+            return False
+            
+        return True
+        
+    except Exception as e:
+        # En cas d'erreur, on ne peut pas logger, donc on retourne False
+        return False
+
+
+def get_logging_status() -> Dict[str, Any]:
+    """Retourne l'état actuel du système de logging"""
+    try:
+        logger = get_logger()
+        status = {
+            "name": logger.name,
+            "level": logging.getLevelName(logger.logger.level),
+            "handlers_count": len(logger.logger.handlers),
+            "handlers_info": []
+        }
+        
+        for handler in logger.logger.handlers:
+            handler_info = {
+                "type": handler.__class__.__name__,
+                "level": logging.getLevelName(handler.level),
+                "formatter": handler.formatter.__class__.__name__ if handler.formatter else "None"
+            }
+            status["handlers_info"].append(handler_info)
+            
+        return status
+        
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def cleanup_test_logs():
+    """Nettoie les logs de test pour éviter l'accumulation"""
+    try:
+        log_dir = Path("logs")
+        if not log_dir.exists():
+            return
+            
+        # Supprimer les fichiers de test temporaires
+        test_patterns = ["*test*", "*temp*"]
+        for pattern in test_patterns:
+            for log_file in log_dir.glob(pattern):
+                try:
+                    log_file.unlink()
+                except Exception:
+                    pass
+                    
+    except Exception:
+        # Ignorer les erreurs de nettoyage
+        pass
 
 
 # Fonctions utilitaires pour le logging

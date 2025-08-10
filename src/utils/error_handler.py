@@ -288,3 +288,31 @@ def create_authentication_error(message: str = "Authentification requise") -> Au
         message,
         {"auth_required": True}
     ) 
+
+    def handle_error(self, error: Exception) -> None:
+        """
+        Gère une erreur générique (pour compatibilité avec les tests)
+        
+        :param error: L'erreur à gérer
+        """
+        self.logger.error(f"Erreur gérée: {error}")
+        
+        # Enregistrer l'erreur dans un historique local
+        if not hasattr(self, '_error_history'):
+            self._error_history = []
+        
+        self._error_history.append({
+            "timestamp": time.time(),
+            "error_type": type(error).__name__,
+            "error_message": str(error)
+        })
+    
+    def get_error_count(self) -> int:
+        """
+        Retourne le nombre d'erreurs enregistrées (pour compatibilité avec les tests)
+        
+        :return: Nombre d'erreurs
+        """
+        if hasattr(self, '_error_history'):
+            return len(self._error_history)
+        return 0 

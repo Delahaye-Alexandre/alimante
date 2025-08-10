@@ -104,7 +104,7 @@ def main():
     # Test des pins de sortie (relais)
     output_pins = {
         'HEATING_RELAY_PIN': 'Relais chauffage',
-        'HUMIDITY_RELAY_PIN': 'Relais pulvérisateur',
+                    'HUMIDITY_RELAY_PIN': 'Relais ultrasonic mist',
         'LIGHT_RELAY_PIN': 'Relais éclairage',
         'STATUS_LED_PIN': 'LED statut'
     }

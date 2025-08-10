@@ -299,6 +299,37 @@ class ControlService:
         self.action_history.clear()
         
         self.logger.info("Service de contrôle nettoyé")
+    
+    def is_ready(self) -> bool:
+        """
+        Vérifie si le service de contrôle est prêt
+        
+        :return: True si le service est prêt, False sinon
+        """
+        try:
+            # Vérifier que tous les contrôleurs requis sont enregistrés
+            required_controllers = set(action["controller"] for action in self.available_actions.values())
+            registered_controllers = set(self.controllers.keys())
+            
+            # Vérifier que tous les contrôleurs requis sont disponibles
+            missing_controllers = required_controllers - registered_controllers
+            
+            if missing_controllers:
+                self.logger.warning(f"Contrôleurs manquants: {missing_controllers}")
+                return False
+            
+            # Vérifier que tous les contrôleurs sont initialisés
+            for controller_name, controller in self.controllers.items():
+                if hasattr(controller, 'is_initialized') and not controller.is_initialized():
+                    self.logger.warning(f"Contrôleur {controller_name} non initialisé")
+                    return False
+            
+            self.logger.info("Service de contrôle prêt")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la vérification de l'état du service: {e}")
+            return False
 
 
 # Instance globale du service de contrôle

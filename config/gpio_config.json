@@ -51,7 +51,7 @@
                 "type": "relay",
                 "voltage": "5V",
                 "current": "30mA",
-                "description": "Relais pulvérisateur"
+                "description": "Relais ultrasonic mist"
             },
             "feeding_servo": {
                 "pin": 12,
