@@ -1,8 +1,106 @@
 {
-    "serial_port": "/dev/ttyAMA0",
-    "baud_rate": 9600,
+    "system_info": {
+        "name": "Alimante - Système de gestion d'insectes",
+        "version": "1.0.0",
+        "description": "Système automatisé pour la gestion des conditions de vie des insectes en terrarium",
+        "hardware": "Raspberry Pi Zero 2W"
+    },
+    "hardware": {
+        "raspberry_pi": {
+            "model": "Raspberry Pi Zero 2W",
+            "ram": "512MB",
+            "storage": "64GB SD Card",
+            "gpio_version": "BCM2835"
+        },
+        "sensors": {
+            "temperature_humidity": "DHT22",
+            "light": "LDR (Light Dependent Resistor)",
+            "air_quality": "MQ135",
+            "water_level": "HC-SR04P",
+            "radiator_temp": "DS18B20"
+        },
+        "actuators": {
+            "heating": "Relais 5V 30A",
+            "humidity": "Relais 5V 30A",
+            "lighting": "Relais 5V 30A",
+            "ventilation": "Relais 5V 30A",
+            "feeding": "Servo SG90 5V",
+            "ultrasonic_mist": "Transducteur ANGEEK 1/2"
+        }
+    },
+    "communication": {
+        "serial_port": "/dev/ttyAMA0",
+        "baud_rate": 9600,
+        "wifi": {
+            "enabled": true,
+            "ssid": "Alimante_Network",
+            "password": "change_me_in_production"
+        }
+    },
     "location": {
         "latitude": 48.8566,
-        "longitude": 2.3522
+        "longitude": 2.3522,
+        "timezone": "Europe/Paris"
+    },
+    "species_profiles": {
+        "available_orders": [
+            "orthopteres",
+            "lepidopteres", 
+            "dipteres",
+            "coleopteres"
+        ],
+        "default_species": "orthopteres/mantidae/mantis_religiosa",
+        "profile_loading": "dynamic_from_config_subdirectories"
+    },
+    "system_control": {
+        "sensor_polling_interval": 30,
+        "control_interval": 60,
+        "data_logging_interval": 60,
+        "log_retention_days": 30
+    },
+    "safety": {
+        "emergency_shutdown": {
+            "enabled": true,
+            "max_temperature": 35.0,
+            "max_humidity": 90.0,
+            "min_water_level": 5
+        },
+        "watchdog": {
+            "enabled": true,
+            "timeout_seconds": 30,
+            "max_cpu_temp": 80.0,
+            "max_cpu_usage": 90.0,
+            "max_memory_usage": 85.0
+        }
+    },
+    "api": {
+        "enabled": true,
+        "port": 8000,
+        "host": "0.0.0.0",
+        "cors_enabled": true,
+        "websocket": {
+            "enabled": true,
+            "port": 8001,
+            "max_connections": 5
+        }
+    },
+    "logging": {
+        "level": "INFO",
+        "file_enabled": true,
+        "file_path": "logs/alimante.log",
+        "file_max_size": "5MB",
+        "file_backup_count": 3,
+        "console_enabled": true
+    },
+    "performance": {
+        "cpu_throttling": {
+            "enabled": true,
+            "max_usage": 80.0,
+            "throttle_threshold": 70.0
+        },
+        "memory_management": {
+            "max_usage": 85.0,
+            "cleanup_interval": 300
+        }
     }
 }

@@ -11,7 +11,7 @@ from typing import Dict, Any, List, Set
 def load_gpio_config():
     """Charge la configuration GPIO"""
     try:
-        with open('config/gpio_config.json', 'r', encoding='utf-8') as f:
+        with open('config/pin_config.json', 'r', encoding='utf-8') as f:
             return json.load(f)
     except Exception as e:
         print(f"❌ Erreur chargement GPIO config: {e}")

@@ -22,7 +22,7 @@ def check_file_structure():
         "test_gpio.py",
         "test_complete_system.py",
         "config/config.json",
-        "config/gpio_config.json",
+        "config/pin_config.json",
         "src/__init__.py",
         "src/api/app.py",
         "src/utils/gpio_manager.py",
@@ -93,13 +93,13 @@ def check_config_files():
                     print(f"❌ Clé manquante dans config.json: {key}")
                     return False
         
-        # Vérifier gpio_config.json
-        with open('config/gpio_config.json', 'r') as f:
+        # Vérifier pin_config.json
+        with open('config/pin_config.json', 'r') as f:
             gpio_config = json.load(f)
             required_sections = ['pins', 'servo_config', 'relay_config']
             for section in required_sections:
                 if section not in gpio_config:
-                    print(f"❌ Section manquante dans gpio_config.json: {section}")
+                    print(f"❌ Section manquante dans pin_config.json: {section}")
                     return False
         
         print("✅ Fichiers de configuration valides")

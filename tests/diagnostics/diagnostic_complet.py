@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 """
 Script de diagnostic complet pour Alimante
@@ -53,7 +54,7 @@ def check_config_files():
     
     config_files = [
         'config/config.json',
-        'config/gpio_config.json',
+        'config/pin_config.json',
         'config/classification_reference.json',
         'config/orthopteres/mantidae/mantis_religiosa.json',
         'config/orthopteres/mantidae/mantis_religiosa.json',
@@ -81,7 +82,7 @@ def check_json_syntax():
     
     json_files = [
         'config/config.json',
-        'config/gpio_config.json',
+        'config/pin_config.json',
         'config/classification_reference.json',
         'config/orthopteres/mantidae/mantis_religiosa.json'
     ]
@@ -127,7 +128,7 @@ def check_gpio_config():
     print("\n🔍 Vérification de la configuration GPIO...")
     
     try:
-        with open('config/gpio_config.json', 'r', encoding='utf-8') as f:
+        with open('config/pin_config.json', 'r', encoding='utf-8') as f:
             gpio_config = json.load(f)
         
         # Vérifier la structure avec 'pins'

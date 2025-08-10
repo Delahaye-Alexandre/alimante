@@ -28,7 +28,7 @@ class ConfigService:
         self.default_configs = {
             "system": "config/config.json",
             "species": "config/orthopteres/mantidae/mantis_religiosa.json",
-            "gpio": "config/gpio_config.json"
+            "gpio": "config/pin_config.json"
         }
         
         # Validation des configurations

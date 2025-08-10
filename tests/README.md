@@ -34,7 +34,7 @@ chmod +x tests/install_dependencies.sh
 
 ### 3. Configuration des pins
 
-Modifiez le fichier `tests/pin_config.json` selon vos connexions :
+Modifiez le fichier `config/pin_config.json` selon vos connexions :
 
 ```json
 {
@@ -125,7 +125,7 @@ Les tests génèrent :
 
 ### Modification des pins
 
-1. Éditez `tests/pin_config.json`
+1. Éditez `config/pin_config.json`
 2. Modifiez les valeurs selon vos connexions
 3. Relancez les tests
 
@@ -187,7 +187,7 @@ Le capteur MQ2 nécessite une calibration :
 1. Placez le capteur dans un environnement propre
 2. Exécutez le test plusieurs fois
 3. Notez les valeurs de référence
-4. Ajustez les paramètres dans `pin_config.json`
+4. Ajustez les paramètres dans `config/pin_config.json`
 
 ### Servomoteur
 
@@ -217,12 +217,12 @@ tail -f component_test.log
 ### Ajout d'un nouveau composant
 
 1. Ajoutez la méthode de test dans `ComponentTester`
-2. Ajoutez la configuration dans `pin_config.json`
+2. Ajoutez la configuration dans `config/pin_config.json`
 3. Ajoutez le test dans la liste `tests` de `run_all_tests()`
 
 ### Modification des paramètres de test
 
-Éditez `pin_config.json` :
+Éditez `config/pin_config.json` :
 
 ```json
 {
@@ -240,7 +240,7 @@ En cas de problème :
 1. Vérifiez les connexions physiques
 2. Consultez les logs : `component_test.log`
 3. Testez individuellement : `python3 tests/quick_test.py <composant>`
-4. Vérifiez la configuration : `tests/pin_config.json`
+4. Vérifiez la configuration : `config/pin_config.json`
 
 ## 📄 Licence
 

@@ -288,7 +288,7 @@ logger.error("Erreur température", exc.context, exc.error_code.name)
 ### Fichiers de configuration
 
 - `config/config.json` - Configuration générale
-- `config/gpio_config.json` - Configuration GPIO
+- `config/pin_config.json` - Configuration GPIO
 - `config/orthopteres/` - Configurations par espèce
 
 ### Variables d'environnement
