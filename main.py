@@ -53,9 +53,22 @@ def initialize_system(config: SystemConfig) -> Dict[str, Any]:
         # Initialisation des contrôleurs
         controllers = {}
         
+        # Préparer la configuration complète avec GPIO pour chaque contrôleur
+        temp_config = config.temperature.copy()
+        temp_config['gpio_config'] = config.gpio_config
+        
+        humidity_config = config.humidity.copy()
+        humidity_config['gpio_config'] = config.gpio_config
+        
+        light_config = config.location.copy()
+        light_config['gpio_config'] = config.gpio_config
+        
+        feeding_config = config.feeding.copy()
+        feeding_config['gpio_config'] = config.gpio_config
+        
         # Contrôleur de température
         try:
-            controllers['temperature'] = TemperatureController(gpio_manager, config.temperature)
+            controllers['temperature'] = TemperatureController(gpio_manager, temp_config)
             if not controllers['temperature'].check_status():
                 raise create_exception(
                     ErrorCode.CONTROLLER_INIT_FAILED,
@@ -73,7 +86,7 @@ def initialize_system(config: SystemConfig) -> Dict[str, Any]:
         
         # Contrôleur d'humidité
         try:
-            controllers['humidity'] = HumidityController(gpio_manager, config.humidity)
+            controllers['humidity'] = HumidityController(gpio_manager, humidity_config)
             if not controllers['humidity'].check_status():
                 raise create_exception(
                     ErrorCode.CONTROLLER_INIT_FAILED,
@@ -91,7 +104,7 @@ def initialize_system(config: SystemConfig) -> Dict[str, Any]:
         
         # Contrôleur d'éclairage
         try:
-            controllers['light'] = LightController(gpio_manager, config.location)
+            controllers['light'] = LightController(gpio_manager, light_config)
             if not controllers['light'].check_status():
                 raise create_exception(
                     ErrorCode.CONTROLLER_INIT_FAILED,
@@ -109,7 +122,7 @@ def initialize_system(config: SystemConfig) -> Dict[str, Any]:
         
         # Contrôleur d'alimentation
         try:
-            controllers['feeding'] = FeedingController(gpio_manager, config.feeding)
+            controllers['feeding'] = FeedingController(gpio_manager, feeding_config)
             if not controllers['feeding'].check_status():
                 raise create_exception(
                     ErrorCode.CONTROLLER_INIT_FAILED,
@@ -153,7 +166,7 @@ async def run_system_loop(controllers: Dict[str, Any]):
             # Contrôle de la température
             if 'temperature' in controllers:
                 try:
-                    success = controllers['temperature'].control_temperature()
+                    success = controllers['temperature'].control()
                     log_controller_action("temperature", "control", success)
                 except Exception as e:
                     logger.error(f"❌ Erreur contrôle température: {e}")
@@ -162,7 +175,7 @@ async def run_system_loop(controllers: Dict[str, Any]):
             # Contrôle de l'humidité
             if 'humidity' in controllers:
                 try:
-                    success = controllers['humidity'].control_humidity()
+                    success = controllers['humidity'].control()
                     log_controller_action("humidity", "control", success)
                 except Exception as e:
                     logger.error(f"❌ Erreur contrôle humidité: {e}")
@@ -171,7 +184,7 @@ async def run_system_loop(controllers: Dict[str, Any]):
             # Contrôle de l'éclairage
             if 'light' in controllers:
                 try:
-                    success = controllers['light'].control_lighting()
+                    success = controllers['light'].control()
                     log_controller_action("light", "control", success)
                 except Exception as e:
                     logger.error(f"❌ Erreur contrôle éclairage: {e}")
@@ -180,7 +193,7 @@ async def run_system_loop(controllers: Dict[str, Any]):
             # Contrôle de l'alimentation
             if 'feeding' in controllers:
                 try:
-                    success = controllers['feeding'].control_feeding()
+                    success = controllers['feeding'].control()
                     log_controller_action("feeding", "control", success)
                 except Exception as e:
                     logger.error(f"❌ Erreur contrôle alimentation: {e}")
@@ -229,7 +242,8 @@ def main():
         
         # Chargement de la configuration
         common_config_path = 'config/config.json'
-        config = SystemConfig.from_json(common_config_path, specific_config_path)
+        gpio_config_path = 'config/gpio_config.json'
+        config = SystemConfig.from_json(common_config_path, specific_config_path, gpio_config_path)
         
         logger.info("✅ Configuration chargée avec succès")
         

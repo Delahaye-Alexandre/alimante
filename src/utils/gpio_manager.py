@@ -93,6 +93,36 @@ class GPIOManager:
             logging.error(f"Erreur lors de l'écriture du pin {pin}: {e}")
             return False
     
+    def set_pin_state(self, pin: int, state: bool) -> bool:
+        """Alias pour write_digital - compatibilité avec les contrôleurs existants"""
+        return self.write_digital(pin, state)
+    
+    def get_pin_state(self, pin: int) -> Optional[bool]:
+        """Alias pour read_digital - compatibilité avec les contrôleurs existants"""
+        return self.read_digital(pin)
+    
+    def read_analog(self, pin: int) -> Optional[float]:
+        """Lit la valeur analogique d'un pin (simulation pour Raspberry Pi)"""
+        if not self.initialized or pin not in self.pins:
+            logging.error(f"Pin {pin} non configuré")
+            return None
+        
+        try:
+            # Note: Raspberry Pi n'a pas de pins analogiques natifs
+            # Cette méthode simule une lecture analogique pour compatibilité
+            # En production, utiliser un ADC externe (MCP3008, ADS1115, etc.)
+            
+            # Simulation temporaire - retourne une valeur entre 0 et 1
+            import random
+            analog_value = random.uniform(0.0, 1.0)
+            
+            logging.debug(f"Lecture analogique simulée pin {pin}: {analog_value:.3f}")
+            return analog_value
+            
+        except Exception as e:
+            logging.error(f"Erreur lors de la lecture analogique du pin {pin}: {e}")
+            return None
+    
     def set_pwm_duty_cycle(self, pin: int, duty_cycle: float) -> bool:
         """Définit le cycle de travail PWM (0-100)"""
         if pin not in self.pwm_channels:
