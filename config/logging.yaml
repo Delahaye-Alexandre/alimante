@@ -1,16 +1,16 @@
 # Configuration du système de logging Alimante
 logging:
   # Configuration générale
-  level: INFO  # DEBUG, INFO, WARNING, ERROR, CRITICAL
-  format: colored  # colored, json, simple
-  
+  level: INFO # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: colored # colored, json, simple
+
   # Configuration des handlers
   handlers:
     console:
       enabled: true
       level: INFO
       format: colored
-      
+
     file:
       enabled: true
       level: DEBUG
@@ -18,7 +18,7 @@ logging:
       max_size: 10MB
       backup_count: 5
       filename: logs/alimante.log
-      
+
     error_file:
       enabled: true
       level: ERROR
@@ -26,7 +26,7 @@ logging:
       max_size: 5MB
       backup_count: 3
       filename: logs/errors.log
-      
+
     critical_file:
       enabled: true
       level: CRITICAL
@@ -34,7 +34,7 @@ logging:
       max_size: 2MB
       backup_count: 2
       filename: logs/critical.log
-      
+
     metrics_file:
       enabled: true
       level: INFO
@@ -42,7 +42,7 @@ logging:
       max_size: 5MB
       backup_count: 3
       filename: logs/metrics.log
-  
+
   # Configuration des formateurs
   formatters:
     colored:
@@ -51,7 +51,7 @@ logging:
       show_module: true
       show_function: true
       show_line: true
-      
+
     json:
       enabled: true
       include_timestamp: true
@@ -61,29 +61,29 @@ logging:
       include_function: true
       include_line: true
       include_context: true
-      
+
     simple:
       enabled: false
       format: "%(levelname)s: %(message)s"
-  
+
   # Configuration des loggers spécifiques
   loggers:
     alimante.controllers:
       level: INFO
       propagate: true
-      
+
     alimante.services:
       level: INFO
       propagate: true
-      
+
     alimante.api:
       level: INFO
       propagate: true
-      
+
     alimante.utils:
       level: DEBUG
       propagate: true
-      
+
     alimante.metrics:
       level: INFO
       propagate: false
