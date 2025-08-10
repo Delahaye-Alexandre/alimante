@@ -1,106 +1,108 @@
 {
-    "system_info": {
-        "name": "Alimante - Système de gestion d'insectes",
-        "version": "1.0.0",
-        "description": "Système automatisé pour la gestion des conditions de vie des insectes en terrarium",
-        "hardware": "Raspberry Pi Zero 2W"
+  "system_info": {
+    "name": "Alimante",
+    "version": "1.0.0",
+    "description": "Système d'élevage automatisé pour insectes",
+    "manufacturer": "Alimante Team",
+    "model": "Raspberry Pi Zero 2W"
+  },
+  "hardware": {
+    "raspberry_pi": {
+      "model": "Raspberry Pi Zero 2W",
+      "ram": "512MB",
+      "storage": "16GB SD Card",
+      "gpio_pins": 40
     },
-    "hardware": {
-        "raspberry_pi": {
-            "model": "Raspberry Pi Zero 2W",
-            "ram": "512MB",
-            "storage": "64GB SD Card",
-            "gpio_version": "BCM2835"
-        },
-        "sensors": {
-            "temperature_humidity": "DHT22",
-            "light": "LDR (Light Dependent Resistor)",
-            "air_quality": "MQ135",
-            "water_level": "HC-SR04P",
-            "radiator_temp": "DS18B20"
-        },
-        "actuators": {
-            "heating": "Relais 5V 30A",
-            "humidity": "Relais 5V 30A",
-            "lighting": "Relais 5V 30A",
-            "ventilation": "Relais 5V 30A",
-            "feeding": "Servo SG90 5V",
-            "ultrasonic_mist": "Transducteur ANGEEK 1/2"
-        }
+    "sensors": {
+      "temperature_humidity": "DHT22",
+      "water_level": "Capteur ultrasonique",
+      "air_quality": "MQ135",
+      "light": "LDR (Light Dependent Resistor)"
     },
-    "communication": {
-        "serial_port": "/dev/ttyAMA0",
-        "baud_rate": 9600,
-        "wifi": {
-            "enabled": true,
-            "ssid": "Alimante_Network",
-            "password": "change_me_in_production"
-        }
+    "actuators": {
+      "heating": "Relais 5V",
+      "cooling": "Ventilateur 12V",
+      "humidity": "Pulvérisateur ultrasonique",
+      "feeding": "Servo-moteur SG90",
+      "lighting": "Relais LED/UV"
     },
-    "location": {
-        "latitude": 48.8566,
-        "longitude": 2.3522,
-        "timezone": "Europe/Paris"
-    },
-    "species_profiles": {
-        "available_orders": [
-            "orthopteres",
-            "lepidopteres", 
-            "dipteres",
-            "coleopteres"
-        ],
-        "default_species": "orthopteres/mantidae/mantis_religiosa",
-        "profile_loading": "dynamic_from_config_subdirectories"
-    },
-    "system_control": {
-        "sensor_polling_interval": 30,
-        "control_interval": 60,
-        "data_logging_interval": 60,
-        "log_retention_days": 30
-    },
-    "safety": {
-        "emergency_shutdown": {
-            "enabled": true,
-            "max_temperature": 35.0,
-            "max_humidity": 90.0,
-            "min_water_level": 5
-        },
-        "watchdog": {
-            "enabled": true,
-            "timeout_seconds": 30,
-            "max_cpu_temp": 80.0,
-            "max_cpu_usage": 90.0,
-            "max_memory_usage": 85.0
-        }
-    },
-    "api": {
-        "enabled": true,
-        "port": 8000,
-        "host": "0.0.0.0",
-        "cors_enabled": true,
-        "websocket": {
-            "enabled": true,
-            "port": 8001,
-            "max_connections": 5
-        }
-    },
-    "logging": {
-        "level": "INFO",
-        "file_enabled": true,
-        "file_path": "logs/alimante.log",
-        "file_max_size": "5MB",
-        "file_backup_count": 3,
-        "console_enabled": true
-    },
-    "performance": {
-        "cpu_throttling": {
-            "enabled": true,
-            "max_usage": 80.0,
-            "throttle_threshold": 70.0
-        },
-        "memory_management": {
-            "max_usage": 85.0,
-            "cleanup_interval": 300
-        }
+    "displays": {
+      "lcd": "LCD 16x2 I2C",
+      "led_status": "LED RGB"
     }
+  },
+  "communication": {
+    "serial": {
+      "enabled": false,
+      "port": "/dev/ttyUSB0",
+      "baud_rate": 9600
+    },
+    "wifi": {
+      "enabled": true,
+      "ssid": "Alimante_Network",
+      "password": "change_me_123"
+    },
+    "bluetooth": {
+      "enabled": false
+    }
+  },
+  "location": {
+    "default_latitude": 48.8566,
+    "default_longitude": 2.3522,
+    "timezone": "Europe/Paris",
+    "altitude": 35
+  },
+  "species_profiles": {
+    "default_profile": "mantis_religiosa",
+    "profiles_directory": "config/orthopteres/mantidae/",
+    "auto_detect": false
+  },
+  "system_control": {
+    "auto_mode": true,
+    "manual_override": true,
+    "check_interval_minutes": 5,
+    "emergency_shutdown": true,
+    "data_logging": true,
+    "backup_enabled": true,
+    "backup_interval_hours": 24
+  },
+  "safety": {
+    "max_temperature": 40.0,
+    "min_temperature": 10.0,
+    "max_humidity": 95.0,
+    "min_humidity": 20.0,
+    "water_level_min": 15,
+    "power_monitoring": true,
+    "overcurrent_protection": true,
+    "thermal_protection": true
+  },
+  "api": {
+    "enabled": true,
+    "port": 5000,
+    "host": "0.0.0.0",
+    "cors_enabled": true,
+    "rate_limit": 100,
+    "authentication": {
+      "enabled": true,
+      "method": "JWT",
+      "token_expiry_hours": 24
+    }
+  },
+  "logging": {
+    "level": "INFO",
+    "file_enabled": true,
+    "console_enabled": true,
+    "max_file_size_mb": 10,
+    "backup_count": 5,
+    "log_directory": "logs/",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  },
+  "performance": {
+    "gpio_check_interval": 1.0,
+    "sensor_read_interval": 5.0,
+    "control_loop_interval": 10.0,
+    "data_retention_days": 30,
+    "max_memory_usage_mb": 512,
+    "max_cpu_usage_percent": 80
+  }
 }

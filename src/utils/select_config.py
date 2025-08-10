@@ -1,147 +1,173 @@
+"""
+select_config.py
+Module pour la sélection et le chargement de la configuration appropriée.
+"""
+
 import os
 import json
+import logging
+from typing import Dict, Any, Optional, Tuple
+from src.utils.config_manager import SystemConfig
 
-def select_config():
+def get_available_species() -> Dict[str, Dict[str, Any]]:
     """
-    Sélectionne une configuration système en fonction du type d'insectes.
+    Récupère la liste des espèces disponibles dans le répertoire de configuration.
     
-    L'utilisateur choisit:
-    1. L'ordre (ex: orthoptères, coléoptères, diptères, lépidoptères)
-    2. La famille (ex: mantidae, tenebrionidae, drosophilidae, saturniidae)
-    3. L'espèce (ex: mantis religiosa, tenebrio molitor, drosophila melanogaster, saturnia pyri)
-    
-    Returns:
-        str: Chemin vers le fichier de configuration sélectionné ou None si annulé
+    :return: Dictionnaire des espèces disponibles avec leurs informations
     """
-
-    # Définition des ordres disponibles
-    orders = {
-        "1": "orthopteres",
-        "2": "coleopteres",
-        "3": "dipteres",
-        "4": "lepidopteres"
-    }
-
-    # Définition des familles par ordre
-    families = {
-        "orthopteres": {
-            "1": "mantidae"
-        },
-        "coleopteres": {
-            "1": "tenebrionidae"
-        },
-        "dipteres": {
-            "1": "drosophilidae"
-        },
-        "lepidopteres": {
-            "1": "saturniidae"
-        }
-    }
-
-    # Définition des espèces par famille
-    species = {
-        "mantidae": {
-            "1": "mantis_religiosa"
-        },
-        "tenebrionidae": {
-            "1": "tenebrio_molitor"
-        },
-        "drosophilidae": {
-            "1": "drosophila_melanogaster"
-        },
-        "saturniidae": {
-            "1": "saturnia_pyri"
-        }
-    }
-
-    # Sélection de l'ordre
-    print("Sélectionnez l'ordre d'insectes :")
-    for key, value in orders.items():
-        print(f"{key}. {value.capitalize()}")
-    order_choice = input("Entrez le numéro correspondant : ")
-
-    if order_choice not in orders:
-        print("Choix invalide.")
-        return None
-
-    selected_order = orders[order_choice]
-
-    # Sélection de la famille
-    print(f"Sélectionnez la famille d'insectes dans l'ordre {selected_order} :")
-    for key, value in families[selected_order].items():
-        print(f"{key}. {value.capitalize()}")
-    family_choice = input("Entrez le numéro correspondant : ")
-
-    if family_choice not in families[selected_order]:
-        print("Choix invalide.")
-        return None
-
-    selected_family = families[selected_order][family_choice]
-
-    # Sélection de l'espèce
-    print(f"Sélectionnez l'espèce d'insectes dans la famille {selected_family} :")
-    for key, value in species[selected_family].items():
-        print(f"{key}. {value.replace('_', ' ').capitalize()}")
-    species_choice = input("Entrez le numéro correspondant : ")
-
-    if species_choice not in species[selected_family]:
-        print("Choix invalide.")
-        return None
-
-    selected_species = species[selected_family][species_choice]
-
-    # Construction du chemin vers le fichier de configuration
-    config_path = os.path.join("config", selected_order, selected_family, f"{selected_species}.json")
+    species = {}
+    config_dir = "config"
     
-    # Vérification de l'existence du fichier
-    if not os.path.exists(config_path):
-        print(f"Erreur: Le fichier de configuration {config_path} n'existe pas.")
-        return None
+    try:
+        # Parcourir les ordres
+        for order in os.listdir(config_dir):
+            order_path = os.path.join(config_dir, order)
+            if os.path.isdir(order_path) and not order.startswith('.'):
+                # Parcourir les familles
+                for family in os.listdir(order_path):
+                    family_path = os.path.join(order_path, family)
+                    if os.path.isdir(family_path) and not family.startswith('.'):
+                        # Parcourir les espèces
+                        for species_file in os.listdir(family_path):
+                            if species_file.endswith('.json'):
+                                species_name = species_file.replace('.json', '')
+                                species_path = os.path.join(family_path, species_file)
+                                
+                                try:
+                                    with open(species_path, 'r', encoding='utf-8') as f:
+                                        species_data = json.load(f)
+                                    
+                                    species[f"{order}/{family}/{species_name}"] = {
+                                        'name': species_data.get('species_name', species_name),
+                                        'common_name': species_data.get('common_name', ''),
+                                        'order': order,
+                                        'family': family,
+                                        'path': species_path,
+                                        'classification': species_data.get('classification', {})
+                                    }
+                                except Exception as e:
+                                    logging.warning(f"Erreur lors du chargement de {species_path}: {e}")
+                                    
+    except Exception as e:
+        logging.error(f"Erreur lors de la recherche des espèces: {e}")
+    
+    return species
+
+def select_species_config(species_path: str) -> Tuple[str, str]:
+    """
+    Sélectionne la configuration pour une espèce spécifique.
+    
+    :param species_path: Chemin vers la configuration de l'espèce (ex: "orthopteres/mantidae/mantis_religiosa")
+    :return: Tuple (chemin_config_commune, chemin_config_espece)
+    """
+    # Configuration commune
+    common_config_path = "config/config.json"
+    
+    # Configuration spécifique à l'espèce
+    specific_config_path = f"config/{species_path}.json"
+    
+    if not os.path.exists(common_config_path):
+        raise FileNotFoundError(f"Configuration commune non trouvée: {common_config_path}")
+    
+    if not os.path.exists(specific_config_path):
+        raise FileNotFoundError(f"Configuration de l'espèce non trouvée: {specific_config_path}")
+    
+    return common_config_path, specific_config_path
+
+def load_species_config(species_path: str) -> SystemConfig:
+    """
+    Charge la configuration complète pour une espèce.
+    
+    :param species_path: Chemin vers la configuration de l'espèce
+    :return: Configuration système chargée
+    """
+    try:
+        common_path, specific_path = select_species_config(species_path)
+        config = SystemConfig.from_json(common_path, specific_path)
+        logging.info(f"Configuration chargée pour {species_path}")
+        return config
+    except Exception as e:
+        logging.error(f"Erreur lors du chargement de la configuration: {e}")
+        raise
+
+def get_default_species() -> str:
+    """
+    Récupère l'espèce par défaut depuis la configuration.
+    
+    :return: Chemin de l'espèce par défaut
+    """
+    try:
+        with open("config/config.json", 'r', encoding='utf-8') as f:
+            config_data = json.load(f)
         
-    print(f"Configuration sélectionnée: {config_path}")
-    return config_path
+        default_profile = config_data.get('species_profiles', {}).get('default_profile', 'mantis_religiosa')
+        profiles_dir = config_data.get('species_profiles', {}).get('profiles_directory', 'config/orthopteres/mantidae/')
+        
+        # Construire le chemin complet
+        if profiles_dir.startswith('config/'):
+            profiles_dir = profiles_dir[7:]  # Enlever "config/"
+        
+        return f"{profiles_dir.rstrip('/')}/{default_profile}"
+        
+    except Exception as e:
+        logging.warning(f"Impossible de récupérer l'espèce par défaut: {e}")
+        return "orthopteres/mantidae/mantis_religiosa"
 
-def create_custom_config():
+def list_species_by_order() -> Dict[str, Dict[str, Any]]:
     """
-    Permet à l'utilisateur de créer une configuration personnalisée.
+    Liste les espèces organisées par ordre taxonomique.
     
-    Returns:
-        str: Chemin vers le fichier de configuration créé ou None si annulé
+    :return: Dictionnaire organisé par ordre
     """
-    config = {}
-
-    # Informations de base
-    config['species_name'] = input("Entrez le nom scientifique de l'espèce : ")
-    config['common_name'] = input("Entrez le nom commun de l'espèce : ")
+    species = get_available_species()
+    organized = {}
     
-    # Configuration de température
-    config['temperature'] = {
-        'optimal': float(input("Entrez la température optimale (en °C) : ")),
-        'tolerance': float(input("Entrez la tolérance de température (en °C) : "))
-    }
-
-    # Configuration d'humidité
-    config['humidity'] = {
-        'optimal': float(input("Entrez le taux d'humidité optimal (en %) : ")),
-        'tolerance': float(input("Entrez la tolérance d'humidité (en %) : "))
-    }
-
-    # Configuration d'alimentation
-    config['feeding'] = {
-        'interval_days': int(input("Entrez l'intervalle de jours entre les nourrissages : ")),
-        'feed_count': int(input("Entrez la quantité de nourriture à distribuer : "))
-    }
-
-    # Emplacement de sauvegarde
-    filename = input("Entrez le nom du fichier de configuration (sans extension) : ")
-    filepath = os.path.join("config", "custom", f"{filename}.json")
+    for path, info in species.items():
+        order = info['order']
+        if order not in organized:
+            organized[order] = {}
+        
+        family = info['family']
+        if family not in organized[order]:
+            organized[order][family] = {}
+        
+        species_name = path.split('/')[-1]
+        organized[order][family][species_name] = info
     
-    # Création du dossier custom s'il n'existe pas
-    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    return organized
 
-    # Sauvegarde du fichier
-    with open(filepath, 'w', encoding='utf-8') as f:
-        json.dump(config, f, ensure_ascii=False, indent=4)
-
-    print(f"Configuration sauvegardée dans {filepath}")
-    return filepath
+def validate_species_config(species_path: str) -> bool:
+    """
+    Valide la configuration d'une espèce.
+    
+    :param species_path: Chemin vers la configuration de l'espèce
+    :return: True si la configuration est valide
+    """
+    try:
+        config = load_species_config(species_path)
+        
+        # Vérifications de base
+        required_fields = ['temperature', 'humidity', 'feeding', 'lighting']
+        for field in required_fields:
+            if not getattr(config, field):
+                logging.warning(f"Champ manquant: {field}")
+                return False
+        
+        # Vérification des valeurs de température
+        temp_config = config.get_temperature_config()
+        if not temp_config.get('optimal') or not temp_config.get('tolerance'):
+            logging.warning("Configuration de température incomplète")
+            return False
+        
+        # Vérification des valeurs d'humidité
+        humidity_config = config.get_humidity_config()
+        if not humidity_config.get('optimal') or not humidity_config.get('tolerance'):
+            logging.warning("Configuration d'humidité incomplète")
+            return False
+        
+        logging.info(f"Configuration de {species_path} validée avec succès")
+        return True
+        
+    except Exception as e:
+        logging.error(f"Erreur lors de la validation de {species_path}: {e}")
+        return False

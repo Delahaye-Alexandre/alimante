@@ -1,11 +1,11 @@
 """
 feeding_controller.py
-Module pour la gestion de l'alimentation via GPIO Raspberry Pi.
+Module pour la gestion de l'alimentation automatique via GPIO Raspberry Pi.
 
 Fonctionnalités :
-- Contrôle automatique de l'alimentation selon un planning.
-- Déclenchement manuel de l'alimentation.
-- Gestion du servo pour ouvrir/fermer la trappe.
+- Contrôle automatique de l'alimentation selon un planning configuré.
+- Utilisation d'un servo-moteur pour ouvrir/fermer une trappe.
+- Gestion des intervalles et quantités d'alimentation.
 """
 
 import logging
@@ -13,7 +13,7 @@ import time
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
-
+from src.controllers.base_controller import BaseController
 from src.utils.gpio_manager import GPIOManager, PinAssignments, PinConfig, PinMode
 
 @dataclass
@@ -25,7 +25,7 @@ class FeedingConfig:
     servo_close_angle: int = 0   # Angle de fermeture du servo
     trap_open_duration: int = 5  # Durée d'ouverture en secondes
 
-class FeedingController:
+class FeedingController(BaseController):
     """
     Classe pour gérer l'alimentation avec GPIO.
     """
@@ -36,8 +36,9 @@ class FeedingController:
         :param gpio_manager: Instance du gestionnaire GPIO.
         :param config: Configuration pour l'alimentation.
         """
-        self.gpio_manager = gpio_manager
-        self.config = FeedingConfig(
+        super().__init__(gpio_manager, config)
+        
+        self.feeding_config = FeedingConfig(
             interval_days=config['interval_days'],
             feed_count=config['feed_count'],
             prey_type=config['prey_type'],
@@ -52,6 +53,8 @@ class FeedingController:
         # Historique des repas
         self.last_feeding_time: Optional[datetime] = None
         self.feeding_count = 0
+        
+        self.initialized = True
         
     def _setup_pins(self):
         """Configure les pins GPIO nécessaires"""
@@ -78,9 +81,9 @@ class FeedingController:
         days_since_last = time_since_last.days
         
         # Vérification de l'intervalle
-        if days_since_last >= self.config.interval_days:
+        if days_since_last >= self.feeding_config.interval_days:
             # Vérification du nombre de repas par cycle
-            if self.feeding_count < self.config.feed_count:
+            if self.feeding_count < self.feeding_config.feed_count:
                 return True
         
         return False
@@ -93,15 +96,20 @@ class FeedingController:
         """
         try:
             if self.should_feed_now():
-                logging.info("Déclenchement de l'alimentation automatique")
+                self.logger.info("Déclenchement de l'alimentation automatique")
                 return self.trigger_feeding()
             else:
-                logging.debug("Pas encore l'heure de nourrir")
+                self.logger.debug("Pas encore l'heure de nourrir")
                 return False
                 
         except Exception as e:
-            logging.error(f"Erreur lors du contrôle de l'alimentation: {e}")
+            self.logger.error(f"Erreur lors du contrôle de l'alimentation: {e}")
+            self.record_error(e)
             return False
+
+    def control(self) -> bool:
+        """Méthode principale de contrôle - alias pour control_feeding"""
+        return self.control_feeding()
 
     def trigger_feeding(self) -> bool:
         """
@@ -110,30 +118,30 @@ class FeedingController:
         :return: True si l'alimentation a réussi
         """
         try:
-            logging.info("Ouverture de la trappe d'alimentation")
+            self.logger.info("Ouverture de la trappe d'alimentation")
             
             # Ouverture de la trappe
             if not self.open_trap():
-                logging.error("Échec de l'ouverture de la trappe")
+                self.logger.error("Échec de l'ouverture de la trappe")
                 return False
             
             # Attente de la durée configurée
-            time.sleep(self.config.trap_open_duration)
+            time.sleep(self.feeding_config.trap_open_duration)
             
             # Fermeture de la trappe
             if not self.close_trap():
-                logging.error("Échec de la fermeture de la trappe")
+                self.logger.error("Échec de la fermeture de la trappe")
                 return False
             
             # Mise à jour de l'historique
             self.last_feeding_time = datetime.now()
             self.feeding_count += 1
             
-            logging.info(f"Alimentation terminée. Repas #{self.feeding_count}")
+            self.logger.info(f"Alimentation terminée. Repas #{self.feeding_count}")
             return True
             
         except Exception as e:
-            logging.error(f"Erreur lors du déclenchement de l'alimentation: {e}")
+            self.logger.error(f"Erreur lors du déclenchement de l'alimentation: {e}")
             return False
 
     def open_trap(self) -> bool:
@@ -145,7 +153,7 @@ class FeedingController:
         try:
             # Conversion de l'angle en duty cycle PWM (0-100%)
             # Servo standard: 0° = 2.5%, 90° = 7.5%, 180° = 12.5%
-            duty_cycle = 2.5 + (self.config.servo_open_angle / 180.0) * 10.0
+            duty_cycle = 2.5 + (self.feeding_config.servo_open_angle / 180.0) * 10.0
             
             success = self.gpio_manager.set_pwm_duty_cycle(
                 PinAssignments.FEEDING_SERVO_PIN, 
@@ -153,14 +161,14 @@ class FeedingController:
             )
             
             if success:
-                logging.info(f"Trappe ouverte à {self.config.servo_open_angle}°")
+                self.logger.info(f"Trappe ouverte à {self.feeding_config.servo_open_angle}°")
             else:
-                logging.error("Échec de l'ouverture de la trappe")
+                self.logger.error("Échec de l'ouverture de la trappe")
             
             return success
             
         except Exception as e:
-            logging.error(f"Erreur lors de l'ouverture de la trappe: {e}")
+            self.logger.error(f"Erreur lors de l'ouverture de la trappe: {e}")
             return False
 
     def close_trap(self) -> bool:
@@ -171,7 +179,7 @@ class FeedingController:
         """
         try:
             # Conversion de l'angle en duty cycle PWM
-            duty_cycle = 2.5 + (self.config.servo_close_angle / 180.0) * 10.0
+            duty_cycle = 2.5 + (self.feeding_config.servo_close_angle / 180.0) * 10.0
             
             success = self.gpio_manager.set_pwm_duty_cycle(
                 PinAssignments.FEEDING_SERVO_PIN, 
@@ -179,14 +187,14 @@ class FeedingController:
             )
             
             if success:
-                logging.info(f"Trappe fermée à {self.config.servo_close_angle}°")
+                self.logger.info(f"Trappe fermée à {self.feeding_config.servo_close_angle}°")
             else:
-                logging.error("Échec de la fermeture de la trappe")
+                self.logger.error("Échec de la fermeture de la trappe")
             
             return success
             
         except Exception as e:
-            logging.error(f"Erreur lors de la fermeture de la trappe: {e}")
+            self.logger.error(f"Erreur lors de la fermeture de la trappe: {e}")
             return False
 
     def get_status(self) -> Dict[str, Any]:
@@ -203,9 +211,9 @@ class FeedingController:
             "last_feeding_time": self.last_feeding_time.isoformat() if self.last_feeding_time else None,
             "days_since_last_feeding": time_since_last,
             "feeding_count": self.feeding_count,
-            "interval_days": self.config.interval_days,
-            "feed_count": self.config.feed_count,
-            "prey_type": self.config.prey_type,
+            "interval_days": self.feeding_config.interval_days,
+            "feed_count": self.feeding_config.feed_count,
+            "prey_type": self.feeding_config.prey_type,
             "should_feed_now": self.should_feed_now(),
             "status": "ready" if self.should_feed_now() else "waiting"
         }
@@ -220,10 +228,10 @@ class FeedingController:
             # Test basique du servo
             return self.gpio_manager.initialized
         except Exception as e:
-            logging.error(f"Erreur lors de la vérification du statut: {e}")
+            self.logger.error(f"Erreur lors de la vérification du statut: {e}")
             return False
 
     def reset_feeding_count(self):
         """Réinitialise le compteur de repas (pour un nouveau cycle)"""
         self.feeding_count = 0
-        logging.info("Compteur de repas réinitialisé")
+        self.logger.info("Compteur de repas réinitialisé")

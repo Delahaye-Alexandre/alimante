@@ -11,6 +11,7 @@ import logging
 import time
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
+from src.controllers.base_controller import BaseController
 from src.utils.gpio_manager import GPIOManager, PinAssignments, PinConfig, PinMode
 
 @dataclass
@@ -20,7 +21,7 @@ class TemperatureConfig:
     min_temp: float
     max_temp: float
 
-class TemperatureController:
+class TemperatureController(BaseController):
     """
     Classe pour gérer la température avec GPIO.
     """
@@ -31,8 +32,9 @@ class TemperatureController:
         :param gpio_manager: Instance du gestionnaire GPIO.
         :param config: Configuration pour les seuils de température.
         """
-        self.gpio_manager = gpio_manager
-        self.config = TemperatureConfig(
+        super().__init__(gpio_manager, config)
+        
+        self.temp_config = TemperatureConfig(
             optimal=config['optimal'],
             tolerance=config['tolerance'],
             min_temp=config.get('min', 15.0),
@@ -41,6 +43,7 @@ class TemperatureController:
         
         # Configuration des pins
         self._setup_pins()
+        self.initialized = True
         
     def _setup_pins(self):
         """Configure les pins GPIO nécessaires"""
@@ -75,15 +78,16 @@ class TemperatureController:
             import random
             temp = 20 + random.uniform(-2, 2)  # Simulation 18-22°C
             
-            if temp is not None and self.config.min_temp <= temp <= self.config.max_temp:
-                logging.info(f"Température lue: {temp:.1f}°C")
+            if temp is not None and self.temp_config.min_temp <= temp <= self.temp_config.max_temp:
+                self.logger.info(f"Température lue: {temp:.1f}°C")
                 return temp
             else:
-                logging.warning(f"Température hors limites: {temp}°C")
+                self.logger.warning(f"Température hors limites: {temp}°C")
                 return None
                 
         except Exception as e:
-            logging.error(f"Erreur lors de la lecture de la température: {e}")
+            self.logger.error(f"Erreur lors de la lecture de la température: {e}")
+            self.record_error(e)
             return None
 
     def control_temperature(self) -> bool:
@@ -95,21 +99,25 @@ class TemperatureController:
         current_temperature = self.read_temperature()
 
         if current_temperature is None:
-            logging.warning("Impossible de lire la température.")
+            self.logger.warning("Impossible de lire la température.")
             return False
 
-        logging.info(f"Température actuelle: {current_temperature:.1f}°C (optimal: {self.config.optimal}°C)")
+        self.logger.info(f"Température actuelle: {current_temperature:.1f}°C (optimal: {self.temp_config.optimal}°C)")
 
         # Logique de contrôle
-        if current_temperature < self.config.optimal - self.config.tolerance:
+        if current_temperature < self.temp_config.optimal - self.temp_config.tolerance:
             self.activate_heating()
             return True
-        elif current_temperature > self.config.optimal + self.config.tolerance:
+        elif current_temperature > self.temp_config.optimal + self.temp_config.tolerance:
             self.deactivate_heating()
             return True
         else:
-            logging.info("Température dans la plage optimale.")
+            self.logger.info("Température dans la plage optimale.")
             return True
+
+    def control(self) -> bool:
+        """Méthode principale de contrôle - alias pour control_temperature"""
+        return self.control_temperature()
 
     def activate_heating(self) -> bool:
         """
@@ -119,9 +127,9 @@ class TemperatureController:
         """
         success = self.gpio_manager.write_digital(PinAssignments.HEATING_RELAY_PIN, True)
         if success:
-            logging.info("Relais de chauffage activé")
+            self.logger.info("Relais de chauffage activé")
         else:
-            logging.error("Échec de l'activation du relais de chauffage")
+            self.logger.error("Échec de l'activation du relais de chauffage")
         return success
 
     def deactivate_heating(self) -> bool:
@@ -132,9 +140,9 @@ class TemperatureController:
         """
         success = self.gpio_manager.write_digital(PinAssignments.HEATING_RELAY_PIN, False)
         if success:
-            logging.info("Relais de chauffage désactivé")
+            self.logger.info("Relais de chauffage désactivé")
         else:
-            logging.error("Échec de la désactivation du relais de chauffage")
+            self.logger.error("Échec de la désactivation du relais de chauffage")
         return success
 
     def is_heating_active(self) -> bool:
@@ -156,10 +164,10 @@ class TemperatureController:
         
         return {
             "current_temperature": current_temp,
-            "optimal_temperature": self.config.optimal,
-            "tolerance": self.config.tolerance,
+            "optimal_temperature": self.temp_config.optimal,
+            "tolerance": self.temp_config.tolerance,
             "heating_active": heating_active,
-            "status": "optimal" if current_temp and abs(current_temp - self.config.optimal) <= self.config.tolerance else "adjusting"
+            "status": "optimal" if current_temp and abs(current_temp - self.temp_config.optimal) <= self.temp_config.tolerance else "adjusting"
         }
 
     def check_status(self) -> bool:
@@ -172,5 +180,5 @@ class TemperatureController:
             temp = self.read_temperature()
             return temp is not None
         except Exception as e:
-            logging.error(f"Erreur lors de la vérification du statut: {e}")
+            self.logger.error(f"Erreur lors de la vérification du statut: {e}")
             return False

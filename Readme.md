@@ -67,7 +67,7 @@ allow_origins=[
 
 ### Électronique
 
-- **Raspberry Pi Zero W** (ou Pi 3/4)
+- **Raspberry Pi Zero 2W** (recommandé)
 - **Capteur DHT22** (température + humidité)
 - **Relais 5V** (chauffage, pulvérisateur, éclairage)
 - **Servo SG90** (trappe alimentation)

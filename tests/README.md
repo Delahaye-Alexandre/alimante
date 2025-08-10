@@ -18,7 +18,7 @@ Ce répertoire contient les programmes de test pour tous les composants du syst�
 
 ### 1. Prérequis
 
-- Raspberry Pi (recommandé: Pi 4B)
+- Raspberry Pi (recommandé: Pi Zero 2W)
 - Python 3.7+
 - Accès root pour l'installation des packages
 

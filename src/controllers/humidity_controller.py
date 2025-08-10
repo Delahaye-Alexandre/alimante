@@ -11,6 +11,7 @@ import logging
 import time
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
+from src.controllers.base_controller import BaseController
 from src.utils.gpio_manager import GPIOManager, PinAssignments, PinConfig, PinMode
 
 @dataclass
@@ -21,7 +22,7 @@ class HumidityConfig:
     max_humidity: float
     spray_duration: int  # Durée de pulvérisation en secondes
 
-class HumidityController:
+class HumidityController(BaseController):
     """
     Classe pour gérer l'humidité avec GPIO.
     """
@@ -32,8 +33,9 @@ class HumidityController:
         :param gpio_manager: Instance du gestionnaire GPIO.
         :param config: Configuration pour les seuils d'humidité.
         """
-        self.gpio_manager = gpio_manager
-        self.config = HumidityConfig(
+        super().__init__(gpio_manager, config)
+        
+        self.humidity_config = HumidityConfig(
             optimal=config['optimal'],
             tolerance=config['tolerance'],
             min_humidity=config.get('min', 30.0),
@@ -43,6 +45,7 @@ class HumidityController:
         
         # Configuration des pins
         self._setup_pins()
+        self.initialized = True
         
     def _setup_pins(self):
         """Configure les pins GPIO nécessaires"""
@@ -78,15 +81,16 @@ class HumidityController:
             # Lire l'humidité
             humidity = dht.humidity
             
-            if humidity is not None and self.config.min_humidity <= humidity <= self.config.max_humidity:
-                logging.info(f"Humidité lue: {humidity:.1f}%")
+            if humidity is not None and self.humidity_config.min_humidity <= humidity <= self.humidity_config.max_humidity:
+                self.logger.info(f"Humidité lue: {humidity:.1f}%")
                 return humidity
             else:
-                logging.warning(f"Humidité hors limites: {humidity}%")
+                self.logger.warning(f"Humidité hors limites: {humidity}%")
                 return None
                 
         except Exception as e:
-            logging.error(f"Erreur lors de la lecture de l'humidité: {e}")
+            self.logger.error(f"Erreur lors de la lecture de l'humidité: {e}")
+            self.record_error(e)
             return None
 
     def control_humidity(self) -> bool:
@@ -98,21 +102,25 @@ class HumidityController:
         current_humidity = self.read_humidity()
 
         if current_humidity is None:
-            logging.warning("Impossible de lire l'humidité.")
+            self.logger.warning("Impossible de lire l'humidité.")
             return False
 
-        logging.info(f"Humidité actuelle: {current_humidity:.1f}% (optimal: {self.config.optimal}%)")
+        self.logger.info(f"Humidité actuelle: {current_humidity:.1f}% (optimal: {self.humidity_config.optimal}%)")
 
         # Logique de contrôle
-        if current_humidity < self.config.optimal - self.config.tolerance:
+        if current_humidity < self.humidity_config.optimal - self.humidity_config.tolerance:
             self.activate_sprayer()
             return True
-        elif current_humidity > self.config.optimal + self.config.tolerance:
+        elif current_humidity > self.humidity_config.optimal + self.humidity_config.tolerance:
             self.deactivate_sprayer()
             return True
         else:
-            logging.info("Humidité dans la plage optimale.")
+            self.logger.info("Humidité dans la plage optimale.")
             return True
+
+    def control(self) -> bool:
+        """Méthode principale de contrôle - alias pour control_humidity"""
+        return self.control_humidity()
 
     def activate_sprayer(self) -> bool:
         """
@@ -122,12 +130,12 @@ class HumidityController:
         """
         success = self.gpio_manager.write_digital(PinAssignments.HUMIDITY_RELAY_PIN, True)
         if success:
-            logging.info(f"Pulvérisateur activé pour {self.config.spray_duration} secondes")
+            self.logger.info(f"Pulvérisateur activé pour {self.humidity_config.spray_duration} secondes")
             # Désactivation automatique après la durée configurée
-            time.sleep(self.config.spray_duration)
+            time.sleep(self.humidity_config.spray_duration)
             self.deactivate_sprayer()
         else:
-            logging.error("Échec de l'activation du pulvérisateur")
+            self.logger.error("Échec de l'activation du pulvérisateur")
         return success
 
     def deactivate_sprayer(self) -> bool:
@@ -138,9 +146,9 @@ class HumidityController:
         """
         success = self.gpio_manager.write_digital(PinAssignments.HUMIDITY_RELAY_PIN, False)
         if success:
-            logging.info("Pulvérisateur désactivé")
+            self.logger.info("Pulvérisateur désactivé")
         else:
-            logging.error("Échec de la désactivation du pulvérisateur")
+            self.logger.error("Échec de la désactivation du pulvérisateur")
         return success
 
     def is_sprayer_active(self) -> bool:
@@ -162,10 +170,10 @@ class HumidityController:
         
         return {
             "current_humidity": current_humidity,
-            "optimal_humidity": self.config.optimal,
-            "tolerance": self.config.tolerance,
+            "optimal_humidity": self.humidity_config.optimal,
+            "tolerance": self.humidity_config.tolerance,
             "sprayer_active": sprayer_active,
-            "status": "optimal" if current_humidity and abs(current_humidity - self.config.optimal) <= self.config.tolerance else "adjusting"
+            "status": "optimal" if current_humidity and abs(current_humidity - self.humidity_config.optimal) <= self.humidity_config.tolerance else "adjusting"
         }
 
     def check_status(self) -> bool:
@@ -178,5 +186,5 @@ class HumidityController:
             humidity = self.read_humidity()
             return humidity is not None
         except Exception as e:
-            logging.error(f"Erreur lors de la vérification du statut: {e}")
+            self.logger.error(f"Erreur lors de la vérification du statut: {e}")
             return False
