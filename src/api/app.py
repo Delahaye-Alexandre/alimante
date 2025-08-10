@@ -11,7 +11,7 @@ import asyncio
 import io
 import json
 import logging
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from datetime import datetime
 
 from src.utils.config_manager import SystemConfig
@@ -57,6 +57,7 @@ from src.controllers.lcd_menu_controller import LCDMenuController
 from src.controllers.camera_controller import CameraController
 from src.controllers.water_level_controller import WaterLevelController
 from src.controllers.radiator_temp_controller import RadiatorTempController
+from src.services.watchdog_service import WatchdogService, AlertLevel
 
 # Import des services
 from src.services.system_service import system_service
@@ -127,7 +128,8 @@ async def startup_event():
             'lcd_menu': LCDMenuController(gpio_manager, config.get("lcd_config", {})),
             'camera': CameraController(config.get("camera_config", {})),
             'water_level': WaterLevelController(gpio_manager, config.get("water_level_sensor", {})),
-            'radiator_temp': RadiatorTempController(gpio_manager, config.get("radiator_temp_sensor", {}))
+            'radiator_temp': RadiatorTempController(gpio_manager, config.get("radiator_temp_sensor", {})),
+            'watchdog': WatchdogService(gpio_manager, config.get("watchdog_config", {}))
         }
         
         # Enregistrer les contrôleurs dans les services
@@ -151,6 +153,9 @@ async def startup_event():
                     f"Échec d'initialisation du contrôleur {name}",
                     {"controller": name, "status": "failed"}
                 )
+        
+        # Initialisation du service watchdog
+        controllers['watchdog'].start()
         
         log_system_start()
         logger.info("✅ API Alimante démarrée avec succès")
@@ -193,6 +198,10 @@ async def shutdown_event():
             logger.info("✅ GPIO nettoyé")
         except Exception as e:
             logger.error(f"Erreur lors du nettoyage GPIO: {e}")
+    
+    # Arrêt du watchdog
+    if 'watchdog' in controllers:
+        controllers['watchdog'].stop()
     
     log_system_stop()
 
@@ -1163,6 +1172,135 @@ async def stop_camera_streaming(current_user: User = Depends(get_current_user)):
             "Impossible d'arrêter le streaming",
             {"original_error": str(e)}
         )
+
+# Endpoints pour le watchdog
+@app.get("/api/watchdog/status")
+async def get_watchdog_status(current_user: User = Depends(get_current_user)):
+    """Récupère le statut complet du watchdog"""
+    try:
+        watchdog = controllers.get('watchdog')
+        if not watchdog:
+            raise HTTPException(status_code=500, detail="Service watchdog non disponible")
+        
+        return {
+            "status": "success",
+            "data": watchdog.get_system_status()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/watchdog/alerts")
+async def get_watchdog_alerts(
+    level: Optional[str] = None,
+    source: Optional[str] = None,
+    limit: int = 100,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère les alertes du watchdog"""
+    try:
+        watchdog = controllers.get('watchdog')
+        if not watchdog:
+            raise HTTPException(status_code=500, detail="Service watchdog non disponible")
+        
+        # Conversion du niveau d'alerte
+        alert_level = None
+        if level:
+            try:
+                alert_level = AlertLevel(level)
+            except ValueError:
+                raise HTTPException(status_code=400, detail=f"Niveau d'alerte invalide: {level}")
+        
+        alerts = watchdog.get_alerts(level=alert_level, source=source, limit=limit)
+        
+        # Conversion des alertes en format JSON
+        alerts_data = []
+        for alert in alerts:
+            alerts_data.append({
+                "level": alert.level.value,
+                "message": alert.message,
+                "timestamp": alert.timestamp.isoformat(),
+                "source": alert.source,
+                "details": alert.details,
+                "resolved": alert.resolved
+            })
+        
+        return {
+            "status": "success",
+            "data": {
+                "alerts": alerts_data,
+                "total": len(alerts_data)
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/watchdog/alerts/{alert_index}/resolve")
+async def resolve_watchdog_alert(
+    alert_index: int,
+    current_user: User = Depends(get_current_user)
+):
+    """Marque une alerte comme résolue"""
+    try:
+        watchdog = controllers.get('watchdog')
+        if not watchdog:
+            raise HTTPException(status_code=500, detail="Service watchdog non disponible")
+        
+        watchdog.resolve_alert(alert_index)
+        
+        return {
+            "status": "success",
+            "message": f"Alerte {alert_index} marquée comme résolue"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/watchdog/restart")
+async def trigger_watchdog_restart(
+    reason: str = "API",
+    current_user: User = Depends(get_current_user)
+):
+    """Déclenche un redémarrage manuel via le watchdog"""
+    try:
+        watchdog = controllers.get('watchdog')
+        if not watchdog:
+            raise HTTPException(status_code=500, detail="Service watchdog non disponible")
+        
+        # Déclenche le redémarrage dans un thread séparé
+        import threading
+        restart_thread = threading.Thread(
+            target=watchdog.trigger_manual_restart,
+            args=(reason,),
+            daemon=True
+        )
+        restart_thread.start()
+        
+        return {
+            "status": "success",
+            "message": f"Redémarrage déclenché: {reason}",
+            "warning": "Le système va redémarrer dans 5 secondes"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/watchdog/cleanup")
+async def cleanup_watchdog_alerts(
+    days: int = 7,
+    current_user: User = Depends(get_current_user)
+):
+    """Nettoie les anciennes alertes"""
+    try:
+        watchdog = controllers.get('watchdog')
+        if not watchdog:
+            raise HTTPException(status_code=500, detail="Service watchdog non disponible")
+        
+        watchdog.clear_old_alerts(days)
+        
+        return {
+            "status": "success",
+            "message": f"Anciennes alertes supprimées (plus de {days} jours)"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

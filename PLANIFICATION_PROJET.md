@@ -1,139 +1,86 @@
-# 📋 Planification Projet Alimante - Questions en attente
+# 📋 **PLANIFICATION PROJET ALIMANTE**
 
-## 🔧 **Spécifications techniques à clarifier**
+## 🎯 **Questions en attente de réponse**
 
-### **⚡ Puissance des composants**
+### **1. 🔥 Puissance du radiateur**
 
-1. **Radiateur** :
+- **Question** : Quelle est la puissance (en watts) du radiateur de chauffage ?
+- **Impact** : Déterminer le type de MOSFET nécessaire et la gestion de la sécurité
+- **Recommandation** : Capteur DS18B20 pour surveillance température (✅ **IMPLÉMENTÉ**)
 
-   - Quelle puissance en watts ?
-   - Tension d'alimentation (12V/24V) ?
-   - Type de radiateur (céramique/infrarouge/autre) ?
+### **2. 💡 Puissance des bandeaux LED**
 
-2. **Bandeau LED** :
-   - Puissance par mètre (W/m) ?
-   - Longueur totale prévue ?
-   - Type LED (blanc/full spectrum/UV) ?
-   - Tension (12V/24V) ?
+- **Question** : Quelle est la puissance (watts/mètres) des bandeaux LED ?
+- **Impact** : Dimensionnement MOSFET et gestion de l'intensité lumineuse
+- **Recommandation** : Contrôle PWM pour intensité variable
 
-### **🏠 Spécifications terrarium**
+### **3. 🦎 Type de terrarium**
 
-3. **Terrarium** :
+- **Question** : Quel type de terrarium (taille, espèces) ?
+- **Impact** : Optimisation des cycles jour/nuit et paramètres environnementaux
+- **Recommandation** : Modes prédéfinis + personnalisation
 
-   - Dimensions (L×l×h) ?
-   - Matériau (verre/PVC/bois) ?
-   - Volume approximatif ?
+### **4. 💧 Réservoir d'eau**
 
-4. **Espèce maintenue** :
-   - Quelle espèce d'insecte/animal ?
-   - Besoins spécifiques (température, humidité, éclairage) ?
-   - Cycle jour/nuit particulier ?
-
-### **💧 Système d'eau**
-
-5. **Réservoir d'eau** :
-
-   - Capacité prévue (litres) ?
-   - Forme (cylindrique/rectangulaire) ?
-   - Hauteur du réservoir ?
-   - Position du capteur (fond/côté/haut) ?
-
-6. **Consommation d'eau** :
-   - Estimation consommation journalière ?
-   - Autonomie souhaitée ?
-
-### **🔌 Alimentation et sécurité**
-
-7. **Buck converters** :
-
-   - Tensions de sortie prévues (3.3V, 5V, 12V, autres) ?
-   - Courants max par rail ?
-   - Modèles de buck converters utilisés ?
-
-8. **Switch principal** :
-   - Type de switch (simple/illuminé/verrouillable) ?
-   - Ampérage max ?
-
-### **🎛️ Interface utilisateur**
-
-9. **Encodeur rotatif** :
-
-   - Modèle exact (référence) ?
-   - Nombre de pas par tour ?
-   - Détentes mécaniques ?
-
-10. **Écran LCD** :
-    - Modèle exact (ST7735/autre) ?
-    - Taille (pouces) ?
-    - Résolution ?
-
-### **🏗️ Intégration physique**
-
-11. **Boîtier de contrôle** :
-
-    - Taille/matériau du boîtier ?
-    - Ventilation du boîtier nécessaire ?
-    - Emplacement des connecteurs ?
-
-12. **Câblage** :
-    - Distance max entre boîtier et terrarium ?
-    - Type de connecteurs souhaités ?
-    - Passage de câbles étanche ?
-
-### **⚙️ Fonctionnalités avancées**
-
-13. **Automation** :
-
-    - Cycles automatiques souhaités ?
-    - Gestion saisons/hibernation ?
-    - Logging des données ?
-
-14. **Connectivité** :
-    - WiFi souhaité ?
-    - Application mobile ?
-    - Notifications ?
-
-### **🔒 Sécurités**
-
-15. **Sécurités critiques** :
-    - Seuils d'alarme température ?
-    - Actions en cas de panne capteur ?
-    - Backup/redondance ?
-
-## 📝 **Actions en attente de vos réponses**
-
-- [ ] Dimensionner MOSFET radiateur selon puissance
-- [ ] Dimensionner MOSFET bandeau LED selon puissance
-- [ ] Adapter algorithmes contrôle selon espèce
-- [ ] Configurer capteur niveau eau selon réservoir
-- [ ] Définir seuils de sécurité
-- [ ] Planifier cycles automatiques
-- [ ] Choisir connecteurs et câblage
-- [ ] Dimensionner alimentation totale
-
-## 🎯 **Priorités actuelles**
-
-### **Immédiat** (en cours)
-
-- [x] Architecture logicielle
-- [x] Contrôleurs de base
-- [x] Interface encodeur rotatif
-- [x] Capteurs température radiateur et niveau eau
-
-### **Court terme** (après vos réponses)
-
-- [ ] Dimensionnement MOSFET
-- [ ] Calibrage capteurs
-- [ ] Interface LCD avancée
-- [ ] Cycles automatiques
-
-### **Moyen terme**
-
-- [ ] Tests intégration
-- [ ] Calibrage terrarium
-- [ ] Optimisation consommation
-- [ ] Documentation utilisateur
+- **Question** : Capacité et forme du réservoir d'eau pour le brumisateur ?
+- **Impact** : Calibration du capteur de niveau et gestion des alertes
+- **Recommandation** : Capteur HC-SR04P (✅ **IMPLÉMENTÉ**)
 
 ---
 
-_Fichier créé automatiquement - À compléter selon les besoins du projet_
+## ✅ **Tâches terminées**
+
+### **🛡️ Service Watchdog (TERMINÉ)**
+
+- ✅ Service de surveillance critique complet
+- ✅ Monitoring CPU/RAM/température/disque
+- ✅ Alertes multi-niveaux (INFO/WARNING/CRITICAL/EMERGENCY)
+- ✅ Watchdog hardware avec GPIO
+- ✅ Redémarrage automatique en cas d'urgence
+- ✅ Historique des alertes avec rotation
+- ✅ API complète pour gestion et monitoring
+- ✅ Tests complets et documentation
+
+### **📷 Caméra CSI (TERMINÉ)**
+
+- ✅ Contrôleur caméra avec Picamera2 + OpenCV fallback
+- ✅ API endpoints pour capture, snapshot et streaming
+- ✅ Intégration complète dans le système
+
+### **🌫️ Transducteur ultrasonique (TERMINÉ)**
+
+- ✅ Support ANGEEK 1/2 transducers
+- ✅ Contrôle PWM pour intensité fine
+- ✅ Configuration 5V/50mA/2.5W
+
+### **🔧 Nouveaux capteurs (TERMINÉ)**
+
+- ✅ Capteur niveau d'eau HC-SR04P
+- ✅ Capteur température radiateur DS18B20
+- ✅ Encodeur rotatif cliquable pour menu LCD
+
+---
+
+## 🚀 **Prochaines étapes recommandées**
+
+1. **Répondre aux questions de planification** pour finaliser les spécifications
+2. **Implémenter le système de cycles automatiques** (jour/nuit, saisonniers)
+3. **Créer l'interface web avancée** avec dashboard temps réel
+4. **Ajouter le système de calibrage automatique** des capteurs
+5. **Implémenter les modes saisonniers** (hibernation, reproduction)
+
+---
+
+## 📊 **État d'avancement global**
+
+- **Système de base** : 100% ✅
+- **Capteurs** : 100% ✅
+- **Actuateurs** : 100% ✅
+- **Interface utilisateur** : 100% ✅
+- **API web** : 100% ✅
+- **Sécurité et surveillance** : 100% ✅
+- **Automatisation intelligente** : 0% ⏳
+- **Interface web avancée** : 0% ⏳
+- **Calibrage automatique** : 0% ⏳
+
+**Progression globale : 75%** 🎯

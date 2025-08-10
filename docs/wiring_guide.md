@@ -29,7 +29,12 @@
 | **Encodeur rotatif CLK** | 3.3V    | négligeable | 5        | Navigation menu (horloge) |
 | **Encodeur rotatif DT**  | 3.3V    | négligeable | 6        | Navigation menu (data)    |
 | **Encodeur rotatif SW**  | 3.3V    | négligeable | 13       | Validation menu (bouton)  |
-| **Switch principal**     | 12V     | selon alim  | externe  | On/Off système            |
+
+### **Sécurité et surveillance**
+
+| Composant             | Tension | Courant     | Pin GPIO | Description                   |
+| --------------------- | ------- | ----------- | -------- | ----------------------------- |
+| **Watchdog Hardware** | 3.3V    | négligeable | 18       | Surveillance système critique |
 
 ### **Indicateurs**
 
@@ -136,6 +141,11 @@ Encodeur rotatif (Pins 5/6/13)
 ├── CLK → GPIO 5 (pull-up)
 ├── DT → GPIO 6 (pull-up)
 ├── SW → GPIO 13 (pull-up)
+├── VCC → 3.3V
+└── GND → GND
+
+Watchdog Hardware (Pin 18)
+├── SIGNAL → GPIO 18 (sortie)
 ├── VCC → 3.3V
 └── GND → GND
 ```
