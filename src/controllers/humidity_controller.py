@@ -10,8 +10,8 @@ Fonctionnalités :
 import time
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
-from src.controllers.base_controller import BaseController
-from src.utils.gpio_manager import GPIOManager, PinConfig, PinMode
+from .base_controller import BaseController
+from ..utils.gpio_manager import GPIOManager, PinConfig, PinMode
 
 @dataclass
 class HumidityConfig:

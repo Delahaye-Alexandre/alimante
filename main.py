@@ -23,6 +23,8 @@ from src.controllers.temperature_controller import TemperatureController
 from src.controllers.light_controller import LightController
 from src.controllers.humidity_controller import HumidityController
 from src.controllers.feeding_controller import FeedingController
+from src.controllers.air_quality_controller import AirQualityController
+from src.controllers.fan_controller import FanController
 from src.utils.select_config import select_config
 
 logger = get_logger("main")
@@ -65,6 +67,23 @@ def initialize_system(config: SystemConfig) -> Dict[str, Any]:
         
         feeding_config = config.feeding.copy()
         feeding_config['gpio_config'] = config.gpio_config
+        
+        # Configuration pour la qualité de l'air et les ventilateurs
+        air_quality_config = {
+            "pin": config.gpio_config.pin_assignments.get("AIR_QUALITY_PIN", 27),
+            "voltage": "5V",
+            "current": 120
+        }
+        air_quality_config['gpio_config'] = config.gpio_config
+        
+        fan_config = {
+            "count": config.gpio_config.hardware_config.get("fan", {}).get("count", 4),
+            "relay_pin": config.gpio_config.pin_assignments.get("FAN_RELAY_PIN", 25),
+            "voltage": config.gpio_config.hardware_config.get("fan", {}).get("voltage", "5V"),
+            "current_per_fan": config.gpio_config.hardware_config.get("fan", {}).get("current_per_fan", "200mA"),
+            "total_current": config.gpio_config.hardware_config.get("fan", {}).get("total_current", "800mA")
+        }
+        fan_config['gpio_config'] = config.gpio_config
         
         # Contrôleur de température
         try:
@@ -138,6 +157,42 @@ def initialize_system(config: SystemConfig) -> Dict[str, Any]:
                 {"controller": "feeding", "original_error": str(e)}
             )
         
+        # Contrôleur de qualité de l'air
+        try:
+            controllers['air_quality'] = AirQualityController(gpio_manager, air_quality_config)
+            if not controllers['air_quality'].check_status():
+                raise create_exception(
+                    ErrorCode.CONTROLLER_INIT_FAILED,
+                    "Échec d'initialisation du contrôleur de qualité de l'air",
+                    {"controller": "air_quality"}
+                )
+            logger.info("✅ Contrôleur de qualité de l'air initialisé")
+        except Exception as e:
+            logger.exception("❌ Erreur initialisation contrôleur qualité de l'air")
+            raise create_exception(
+                ErrorCode.CONTROLLER_INIT_FAILED,
+                f"Erreur contrôleur qualité de l'air: {str(e)}",
+                {"controller": "air_quality", "original_error": str(e)}
+            )
+        
+        # Contrôleur de ventilateurs
+        try:
+            controllers['fan'] = FanController(gpio_manager, fan_config)
+            if not controllers['fan'].check_status():
+                raise create_exception(
+                    ErrorCode.CONTROLLER_INIT_FAILED,
+                    "Échec d'initialisation du contrôleur de ventilateurs",
+                    {"controller": "fan"}
+                )
+            logger.info("✅ Contrôleur de ventilateurs initialisé")
+        except Exception as e:
+            logger.exception("❌ Erreur initialisation contrôleur ventilateurs")
+            raise create_exception(
+                ErrorCode.CONTROLLER_INIT_FAILED,
+                f"Erreur contrôleur ventilateurs: {str(e)}",
+                {"controller": "fan", "original_error": str(e)}
+            )
+        
         logger.info("🎉 Tous les contrôleurs initialisés avec succès")
         return controllers
         
@@ -199,6 +254,54 @@ async def run_system_loop(controllers: Dict[str, Any]):
                     logger.error(f"❌ Erreur contrôle alimentation: {e}")
                     log_controller_action("feeding", "control", False, {"error": str(e)})
             
+            # Contrôle de la qualité de l'air et ventilation
+            if 'air_quality' in controllers and 'fan' in controllers:
+                try:
+                    # Lire la qualité de l'air et ajuster automatiquement les ventilateurs
+                    success = controllers['air_quality'].control_ventilation(controllers['fan'])
+                    log_controller_action("air_quality", "control_ventilation", success)
+                    
+                    if success:
+                        # Obtenir le statut pour le logging
+                        air_status = controllers['air_quality'].get_status()
+                        fan_status = controllers['fan'].get_status()
+                        logger.debug(f"Qualité air: {air_status.get('current_quality', 'unknown')} - Ventilateurs: {fan_status.get('current_speed', 0)}%")
+                    
+                except Exception as e:
+                    logger.error(f"❌ Erreur contrôle qualité air/ventilation: {e}")
+                    log_controller_action("air_quality", "control_ventilation", False, {"error": str(e)})
+            
+            # Contrôle autonome des ventilateurs (température et humidité)
+            elif 'fan' in controllers:
+                try:
+                    # Obtenir les valeurs actuelles depuis les autres contrôleurs
+                    temp_value = None
+                    humidity_value = None
+                    
+                    if 'temperature' in controllers:
+                        temp_status = controllers['temperature'].get_status()
+                        temp_value = temp_status.get('current_temperature', None)
+                    
+                    if 'humidity' in controllers:
+                        humidity_status = controllers['humidity'].get_status()
+                        humidity_value = humidity_status.get('current_humidity', None)
+                    
+                    # Contrôle automatique des ventilateurs basé sur température/humidité
+                    if temp_value is not None or humidity_value is not None:
+                        success = controllers['fan'].control_ventilation(
+                            temperature=temp_value or 25.0,
+                            humidity=humidity_value or 60.0
+                        )
+                        log_controller_action("fan", "control_ventilation", success)
+                        
+                        if success:
+                            fan_status = controllers['fan'].get_status()
+                            logger.debug(f"Ventilateurs: {fan_status.get('fans_active', False)} - Vitesse: {fan_status.get('current_speed', 0)}%")
+                    
+                except Exception as e:
+                    logger.error(f"❌ Erreur contrôle ventilateurs: {e}")
+                    log_controller_action("fan", "control_ventilation", False, {"error": str(e)})
+            
             # Pause entre les cycles
             await asyncio.sleep(30)  # Contrôle toutes les 30 secondes
             
@@ -215,11 +318,21 @@ async def run_system_loop(controllers: Dict[str, Any]):
         # Nettoyage
         logger.info("🧹 Nettoyage des ressources")
         try:
+            # Nettoyer les contrôleurs
+            for controller_name, controller in controllers.items():
+                try:
+                    if hasattr(controller, 'cleanup'):
+                        controller.cleanup()
+                        logger.debug(f"✅ Contrôleur {controller_name} nettoyé")
+                except Exception as e:
+                    logger.warning(f"⚠️ Erreur lors du nettoyage du contrôleur {controller_name}: {e}")
+            
+            # Nettoyer GPIO
             if 'gpio_manager' in globals():
                 gpio_manager.cleanup()
                 logger.info("✅ GPIO nettoyé")
         except Exception as e:
-            logger.error(f"❌ Erreur lors du nettoyage GPIO: {e}")
+            logger.error(f"❌ Erreur lors du nettoyage: {e}")
 
 def main():
     """Point d'entrée principal avec gestion d'erreurs complète"""

@@ -13,8 +13,8 @@ from typing import Dict, List, Optional, Callable
 from dataclasses import dataclass
 from enum import Enum
 
-from src.utils.gpio_manager import GPIOManager
-from src.utils.logging_config import setup_logger
+from ..utils.gpio_manager import GPIOManager
+from ..utils.logging_config import setup_logger
 
 
 class AlertLevel(Enum):

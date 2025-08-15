@@ -1,124 +1,150 @@
 {
     "gpio_pins": {
+        "power_connections": {
+            "5v1_power_rail": {
+                "source": "buck_12v_to_5v1",
+                "description": "Rail d'alimentation 5.1V depuis buck 12V→5.1V"
+            },
+            "3v3_power_rail": {
+                "source": "buck_5v1_to_3v3",
+                "description": "Rail d'alimentation 3.3V depuis buck 5.1V→3.3V"
+            },
+            "12v_power_rail": {
+                "source": "adaptateur_externe",
+                "description": "Rail d'alimentation 12V direct depuis l'adaptateur externe"
+            }
+        },
         "sensors": {
             "temp_humidity": {
-                "pin": 4,
+                "gpio_pin": 4,
                 "type": "DHT22",
                 "voltage": "3.3V",
                 "current": "5mA",
-                "description": "Capteur température et humidité DHT22"
+                "power_connection": "3v3_power_rail",
+                "description": "Capteur température et humidité DHT22 - Alimentation directe depuis rail 3.3V, Pin GPIO 4: signal de données uniquement"
             },
             "light": {
-                "pin": 17,
+                "gpio_pin": 17,
                 "type": "LDR",
                 "voltage": "3.3V",
                 "current": "1mA",
-                "description": "Capteur de lumière LDR"
+                "power_connection": "3v3_power_rail",
+                "description": "Capteur de lumière LDR - Alimentation directe depuis rail 3.3V, Pin GPIO 17: signal analogique uniquement"
             },
             "air_quality": {
-                "pin": 27,
+                "gpio_pin": 27,
                 "type": "MQ135",
-                "voltage": "5V",
+                "voltage": "3.3V",
                 "current": "120mA",
-                "description": "Capteur qualité de l'air MQ135"
+                "power_connection": "3v3_power_rail",
+                "description": "Capteur qualité de l'air MQ135 - Alimentation directe depuis rail 3.3V, Pin GPIO 27: signal de données uniquement"
             },
             "water_level": {
-                "trigger_pin": 20,
-                "echo_pin": 21,
+                "trigger_gpio": 20,
+                "echo_gpio": 21,
                 "type": "HC-SR04P",
                 "voltage": "3.3V",
                 "current": "15mA",
-                "description": "Capteur niveau d'eau réservoir HC-SR04P"
+                "power_connection": "3v3_power_rail",
+                "description": "Capteur niveau d'eau HC-SR04P - Alimentation directe depuis rail 3.3V, Pins GPIO 20/21: signaux trigger/echo uniquement"
             },
             "radiator_temp": {
-                "pin": 26,
+                "gpio_pin": 26,
                 "type": "DS18B20",
                 "voltage": "3.3V",
                 "current": "1mA",
-                "description": "Température radiateur (sécurité) DS18B20"
+                "power_connection": "3v3_power_rail",
+                "description": "Température radiateur DS18B20 - Alimentation directe depuis rail 3.3V, Pin GPIO 26: signal OneWire uniquement"
             }
         },
         "actuators": {
             "heating_relay": {
-                "pin": 18,
+                "gpio_pin": 18,
                 "type": "relay",
-                "voltage": "5V",
+                "voltage": "5.1V",
                 "current": "30mA",
-                "description": "Relais chauffage"
+                "power_connection": "5v1_power_rail",
+                "description": "Relais chauffage - Alimentation directe depuis rail 5.1V, Pin GPIO 18: signal de contrôle uniquement"
             },
             "humidity_relay": {
-                "pin": 23,
+                "gpio_pin": 23,
                 "type": "relay",
-                "voltage": "5V",
+                "voltage": "5.1V",
                 "current": "30mA",
-                "description": "Relais ultrasonic mist"
+                "power_connection": "5v1_power_rail",
+                "description": "Relais ultrasonic mist - Alimentation directe depuis rail 5.1V, Pin GPIO 23: signal de contrôle uniquement"
             },
             "feeding_servo": {
-                "pin": 12,
+                "gpio_pin": 12,
                 "type": "servo",
-                "voltage": "5V",
+                "voltage": "5.1V",
                 "current": "100-250mA",
                 "frequency": 50,
-                "description": "Servo trappe alimentation"
+                "power_connection": "5v1_power_rail",
+                "description": "Servo trappe alimentation - Alimentation directe depuis rail 5.1V, Pin GPIO 12: signal PWM uniquement"
             },
             "light_relay": {
-                "pin": 24,
+                "gpio_pin": 24,
                 "type": "relay",
-                "voltage": "5V",
+                "voltage": "5.1V",
                 "current": "30mA",
-                "description": "Relais éclairage LED 12V"
+                "power_connection": "5v1_power_rail",
+                "description": "Relais éclairage LED 12V - Alimentation directe depuis rail 5.1V, Pin GPIO 24: signal de contrôle uniquement"
             },
             "fan_relay": {
-                "pin": 25,
+                "gpio_pin": 25,
                 "type": "relay",
-                "voltage": "5V",
+                "voltage": "5.1V",
                 "current": "30mA",
-                "description": "Relais ventilateurs"
+                "power_connection": "5v1_power_rail",
+                "description": "Relais ventilateurs - Alimentation directe depuis rail 5.1V, Pin GPIO 25: signal de contrôle uniquement"
             },
-            "ultrasonic_mist": {
-                "pin": 22,
-                "type": "ultrasonic_transducer",
-                "voltage": "5V",
-                "current": "50mA",
-                "power_watts": 2.5,
-                "frequency": 1700000,
-                "pwm_frequency": 1000,
-                "description": "Transducteur ultrasonique ANGEEK 1/2 avec contrôle PWM"
-            }
+
         },
         "interface": {
             "rotary_encoder": {
-                "clk_pin": 5,
-                "dt_pin": 6,
-                "sw_pin": 13,
+                "clk_gpio": 5,
+                "dt_gpio": 6,
+                "sw_gpio": 13,
                 "type": "rotary_encoder",
                 "voltage": "3.3V",
                 "current": "negligible",
+                "power_connection": "3v3_power_rail",
                 "pull_up": true,
-                "description": "Encodeur rotatif pour navigation menu"
+                "description": "Encodeur rotatif - Alimentation directe depuis rail 3.3V, Pins GPIO 5/6/13: signaux de communication uniquement"
             },
             "lcd_st7735": {
                 "type": "ST7735",
                 "resolution": "128x160",
-                "spi_pins": {
+                "spi_gpios": {
                     "dc": 8,
                     "cs": 7,
                     "rst": 9
                 },
                 "voltage": "3.3V",
                 "current": "150mA",
-                "backlight_pin": 10,
-                "description": "Écran LCD couleur ST7735"
+                "backlight_gpio": 10,
+                "power_connection": "3v3_power_rail",
+                "description": "Écran LCD ST7735 - Alimentation directe depuis rail 3.3V, Pins GPIO 7/8/9/10: signaux SPI et backlight uniquement"
             }
         },
         "status": {
             "status_led": {
-                "pin": 19,
+                "gpio_pin": 19,
                 "type": "led",
                 "voltage": "3.3V",
                 "current": "20mA",
-                "description": "LED de statut système"
+                "power_connection": "3v3_power_rail",
+                "description": "LED de statut - Alimentation directe depuis rail 3.3V, Pin GPIO 19: signal de contrôle uniquement"
             }
+        },
+        "led_strip": {
+            "gpio_pin": 24,
+            "type": "led_strip_12v",
+            "voltage": "12V",
+            "current": "600mA",
+            "power_connection": "12v_power_rail",
+            "description": "Ruban LED 12V - Alimentation directe depuis rail 12V, Pin GPIO 24: signal de contrôle uniquement"
         }
     },
     "pin_assignments": {
@@ -137,15 +163,81 @@
         "AIR_QUALITY_PIN": 27,
         "ROTARY_ENCODER_CLK_PIN": 5,
         "ROTARY_ENCODER_DT_PIN": 6,
-        "ROTARY_ENCODER_SW_PIN": 13
+        "ROTARY_ENCODER_SW_PIN": 13,
+        "MAIN_POWER_RELAY_PIN": 11,
+        "EMERGENCY_SHUTDOWN_PIN": 16
     },
     "power_supply": {
-        "main_voltage": "5V",
-        "led_strip_voltage": "12V",
-        "servo_voltage": "5V",
-        "sensors_voltage": "3.3V",
-        "relay_voltage": "5V",
-        "ultrasonic_voltage": "5V"
+        "power_management": "external_adapter",
+        "main_adapter": {
+            "voltage": "12V",
+            "current": "5A",
+            "power": "60W",
+            "description": "Adaptateur externe principal pour toute l'alimentation"
+        },
+        "voltage_distribution": {
+            "main_voltage": "12V",
+            "intermediate_voltage": "5.1V",
+            "led_strip_voltage": "12V",
+            "servo_voltage": "5.1V",
+            "sensors_voltage": "3.3V",
+            "relay_voltage": "5.1V",
+            "rpi_voltage": "5.1V"
+        },
+        "voltage_regulators": {
+            "buck_12v_to_5v1": {
+                "type": "buck_converter",
+                "input_voltage": "12V",
+                "output_voltage": "5.1V",
+                "max_current": "3A",
+                "efficiency": "92%",
+                "description": "Premier buck converter: 12V vers 5.1V pour servos, relais et RPi"
+            },
+            "buck_5v1_to_3v3": {
+                "type": "buck_converter",
+                "input_voltage": "5.1V",
+                "output_voltage": "3.3V",
+                "max_current": "1A",
+                "efficiency": "90%",
+                "description": "Deuxième buck converter: 5.1V vers 3.3V pour capteurs et interface"
+            }
+        },
+        "power_control": {
+            "main_power_relay": {
+                "pin": 11,
+                "type": "relay",
+                "voltage": "5.1V",
+                "current": "30mA",
+                "description": "Relais principal pour couper/remettre l'alimentation complète (alimenté via buck 12V→5.1V)"
+            },
+            "emergency_shutdown": {
+                "enabled": true,
+                "pin": 16,
+                "type": "emergency_button",
+                "description": "Bouton d'arrêt d'urgence pour couper toute l'alimentation"
+            }
+        },
+        "current_monitoring": {
+            "enabled": true,
+            "shunt_resistor": "0.1ohm",
+            "max_current": "5A",
+            "warning_threshold": "4A",
+            "shutdown_threshold": "4.5A"
+        },
+        "power_separation": {
+            "rpi_power": {
+                "source": "buck_12v_to_5v1",
+                "description": "Raspberry Pi alimenté directement via buck 12V→5.1V (désoudage micro USB)"
+            },
+            "component_power": {
+                "source": "direct_from_buck_converters",
+                "description": "Tous les composants alimentés directement depuis les buck converters, pas via le Pi"
+            },
+            "gpio_function": {
+                "purpose": "signals_only",
+                "description": "Pins GPIO utilisés uniquement pour les signaux de contrôle, PWM et communication - AUCUNE alimentation fournie"
+            }
+        }
     },
     "hardware_config": {
         "servo": {
@@ -164,7 +256,7 @@
         },
         "fan": {
             "count": 4,
-            "voltage": "5V",
+            "voltage": "5.1V",
             "current_per_fan": "200mA",
             "total_current": "800mA",
             "control": "relay",
@@ -172,21 +264,12 @@
         },
         "led_strip": {
             "voltage": "12V",
-            "current_per_meter": "600mA",
-            "length_meters": 1,
-            "total_power": "7.2W",
+            "current_per_meter": "300mA",
+            "length_meters": 0.6,
+            "total_power": "1.8W",
             "control": "relay_with_converter"
         },
-        "ultrasonic_mist": {
-            "voltage": "5V",
-            "current": "50mA",
-            "power_watts": 2.5,
-            "frequency": 1700000,
-            "pwm_frequency": 1000,
-            "max_continuous_time": 300,
-            "cooldown_time": 60,
-            "description": "Transducteur ultrasonique ANGEEK 1/2 avec contrôle PWM"
-        },
+
         "camera": {
             "type": "CSI",
             "resolution": "1920x1080",

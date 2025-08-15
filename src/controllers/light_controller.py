@@ -12,8 +12,8 @@ import time
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
-from src.controllers.base_controller import BaseController
-from src.utils.gpio_manager import GPIOManager, PinConfig, PinMode
+from .base_controller import BaseController
+from ..utils.gpio_manager import GPIOManager, PinConfig, PinMode
 
 # Import pour le calcul des heures de soleil
 try:

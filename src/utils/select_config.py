@@ -7,7 +7,7 @@ import os
 import json
 import logging
 from typing import Dict, Any, Optional, Tuple
-from src.utils.config_manager import SystemConfig
+from .config_manager import SystemConfig
 
 def get_available_species() -> Dict[str, Dict[str, Any]]:
     """

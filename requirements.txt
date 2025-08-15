@@ -8,10 +8,18 @@ adafruit-circuitpython-register>=1.9.8
 # Calcul des heures de soleil
 astral>=3.2
 
-# API et web
-Flask>=2.3.0
-Flask-CORS>=4.0.0
-Werkzeug>=2.3.0
+# API FastAPI (remplace Flask)
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0
+
+# Authentification et sécurité
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+python-multipart>=0.0.6
+
+# CORS et middleware
+fastapi-cors>=0.0.6
 
 # Utilitaires
 python-dotenv>=1.0.0
@@ -24,3 +32,4 @@ colorlog>=6.7.0
 # Tests
 pytest>=7.4.0
 pytest-mock>=3.11.0
+pytest-asyncio>=0.21.0

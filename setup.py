@@ -1,39 +1,54 @@
+"""
+Setup script pour le package Alimante
+"""
+
 from setuptools import setup, find_packages
+
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
+
+with open("requirements.txt", "r", encoding="utf-8") as fh:
+    requirements = [line.strip() for line in fh if line.strip() and not line.startswith("#")]
 
 setup(
     name="alimante",
     version="1.0.0",
-    packages=find_packages(),
-    install_requires=[
-        'fastapi>=0.104.0',
-        'uvicorn>=0.24.0',
-        'websockets>=12.0',
-        'sqlalchemy>=2.0.0',
-        'pydantic>=2.5.0',
-        'RPi.GPIO>=0.7.0',
-        'adafruit-circuitpython-dht>=3.7.0',
-        'schedule>=1.1.0',
-        'astral>=3.2',
-        'requests>=2.31.0',
-        'pytest>=7.0.0',
-        'pytest-mock>=3.10.0',
-        'pytest-asyncio>=0.21.0',
-        'python-dotenv>=1.0.0',
-    ],
-    author="Alexandre Delahaye",
-    author_email="alexandre-delahaye@outmlook.fr",
-    description="Système de gestion automatisé pour l'élevage de mantes avec Raspberry Pi",
-    long_description=open('README.md').read(),
+    author="Alimante Team",
+    author_email="contact@alimante.com",
+    description="Système de gestion automatisée des mantes avec Raspberry Pi",
+    long_description=long_description,
     long_description_content_type="text/markdown",
+    url="https://github.com/alimante/alimante",
+    packages=find_packages(),
     classifiers=[
-        "Programming Language :: Python :: 3",
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
-        "Operating System :: Linux Raspbian",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
     ],
-    python_requires='>=3.8',
-    entry_points={
-        'console_scripts': [
-            'alimante=main:main',
+    python_requires=">=3.8",
+    install_requires=requirements,
+    extras_require={
+        "dev": [
+            "pytest>=7.4.0",
+            "pytest-mock>=3.11.0",
+            "pytest-asyncio>=0.21.0",
+            "black>=23.0.0",
+            "flake8>=6.0.0",
         ],
+    },
+    entry_points={
+        "console_scripts": [
+            "alimante=main:main",
+        ],
+    },
+    include_package_data=True,
+    package_data={
+        "": ["*.json", "*.yaml", "*.yml"],
     },
 )

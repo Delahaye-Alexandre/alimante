@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional
-from src.utils.gpio_manager import GPIOManager
-from src.utils.logging_config import get_logger
+from ..utils.gpio_manager import GPIOManager
+from ..utils.logging_config import get_logger
 
 class BaseController(ABC):
     """Classe de base pour tous les contrôleurs Alimante"""

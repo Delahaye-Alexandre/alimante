@@ -38,10 +38,36 @@
         "adult_lifespan_days": 180
     },
     "enclosure": {
-        "min_height_cm": 35,
+        "min_height_cm": 40,
         "min_width_cm": 25,
         "min_depth_cm": 25,
-        "climbing_surfaces_required": true,
-        "special_requirements": "Plantes vivantes recommandées pour l'humidité et le camouflage"
+        "substrate_type": "Terreau humide avec mousse",
+        "climbing_structures": true,
+        "ventilation_required": true
+    },
+    "ventilation": {
+        "enabled": true,
+        "fan_count": 4,
+        "auto_mode": true,
+        "air_quality_thresholds": {
+            "excellent": 0,
+            "good": 50,
+            "moderate": 100,
+            "poor": 150,
+            "unhealthy": 200,
+            "very_unhealthy": 300
+        },
+        "fan_speed_levels": {
+            "excellent": 0,
+            "good": 25,
+            "moderate": 50,
+            "poor": 75,
+            "unhealthy": 100,
+            "very_unhealthy": 100
+        },
+        "temperature_threshold": 30.0,
+        "humidity_threshold": 85.0,
+        "min_runtime_seconds": 30,
+        "max_runtime_seconds": 3600
     }
 } 

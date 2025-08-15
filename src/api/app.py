@@ -14,12 +14,12 @@ import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 
-from src.utils.config_manager import SystemConfig
-from src.utils.gpio_manager import GPIOManager
-from src.utils.logging_config import get_logger, log_system_start, log_system_stop
-from src.utils.error_handler import register_error_handlers, create_api_error
-from src.utils.exceptions import ErrorCode, AlimanteException
-from src.utils.auth import (
+from ..utils.config_manager import SystemConfig
+from ..utils.gpio_manager import GPIOManager
+from ..utils.logging_config import get_logger, log_system_start, log_system_stop
+from ..utils.error_handler import register_error_handlers, create_api_error
+from ..utils.exceptions import ErrorCode, AlimanteException
+from ..utils.auth import (
     auth_manager,
     get_current_user,
     require_admin,
@@ -30,7 +30,7 @@ from src.utils.auth import (
     create_user_token,
     log_auth_event
 )
-from src.api.models import (
+from .models import (
     ControlRequest,
     FeedingTriggerRequest,
     ConfigUpdateRequest,
@@ -46,24 +46,24 @@ from src.api.models import (
     ControllerInfo
 )
 # Import des contrôleurs
-from src.controllers.temperature_controller import TemperatureController
-from src.controllers.light_controller import LightController
-from src.controllers.humidity_controller import HumidityController
-from src.controllers.feeding_controller import FeedingController
-from src.controllers.fan_controller import FanController
-from src.controllers.ultrasonic_mist_controller import UltrasonicMistController
-from src.controllers.air_quality_controller import AirQualityController
-from src.controllers.lcd_menu_controller import LCDMenuController
-from src.controllers.camera_controller import CameraController
-from src.controllers.water_level_controller import WaterLevelController
-from src.controllers.radiator_temp_controller import RadiatorTempController
-from src.services.watchdog_service import WatchdogService, AlertLevel
+from ..controllers.temperature_controller import TemperatureController
+from ..controllers.light_controller import LightController
+from ..controllers.humidity_controller import HumidityController
+from ..controllers.feeding_controller import FeedingController
+from ..controllers.fan_controller import FanController
+from ..controllers.ultrasonic_mist_controller import UltrasonicMistController
+from ..controllers.air_quality_controller import AirQualityController
+from ..controllers.lcd_menu_controller import LCDMenuController
+from ..controllers.camera_controller import CameraController
+from ..controllers.water_level_controller import WaterLevelController
+from ..controllers.radiator_temp_controller import RadiatorTempController
+from ..services.watchdog_service import WatchdogService, AlertLevel
 
 # Import des services
-from src.services.system_service import system_service
-from src.services.control_service import control_service
-from src.services.config_service import config_service
-from src.services.sensor_service import sensor_service
+from ..services.system_service import system_service
+from ..services.control_service import control_service
+from ..services.config_service import config_service
+from ..services.sensor_service import sensor_service
 
 # Configuration de l'application
 app = FastAPI(
