@@ -83,14 +83,7 @@
                 "power_connection": "5v1_power_rail",
                 "description": "Servo trappe alimentation - Alimentation directe depuis rail 5.1V, Pin GPIO 12: signal PWM uniquement"
             },
-            "light_relay": {
-                "gpio_pin": 24,
-                "type": "relay",
-                "voltage": "5.1V",
-                "current": "30mA",
-                "power_connection": "5v1_power_rail",
-                "description": "Relais éclairage LED 12V - Alimentation directe depuis rail 5.1V, Pin GPIO 24: signal de contrôle uniquement"
-            },
+
             "fan_relay": {
                 "gpio_pin": 25,
                 "type": "relay",
@@ -140,11 +133,12 @@
         },
         "led_strip": {
             "gpio_pin": 24,
-            "type": "led_strip_12v",
+            "type": "led_strip_12v_mosfet",
             "voltage": "12V",
             "current": "600mA",
             "power_connection": "12v_power_rail",
-            "description": "Ruban LED 12V - Alimentation directe depuis rail 12V, Pin GPIO 24: signal de contrôle uniquement"
+            "control_type": "mosfet",
+            "description": "Ruban LED 12V - Contrôlé via MOSFET depuis GPIO 24, alimentation directe depuis rail 12V"
         }
     },
     "pin_assignments": {
@@ -153,17 +147,20 @@
         "HEATING_RELAY_PIN": 18,
         "HUMIDITY_RELAY_PIN": 23,
         "FEEDING_SERVO_PIN": 12,
-        "LIGHT_RELAY_PIN": 24,
         "FAN_RELAY_PIN": 25,
+        "LED_STRIP_PIN": 24,
         "STATUS_LED_PIN": 19,
         "WATER_LEVEL_TRIGGER_PIN": 20,
         "WATER_LEVEL_ECHO_PIN": 21,
-        "ULTRASONIC_MIST_PIN": 22,
         "RADIATOR_TEMP_PIN": 26,
         "AIR_QUALITY_PIN": 27,
         "ROTARY_ENCODER_CLK_PIN": 5,
         "ROTARY_ENCODER_DT_PIN": 6,
         "ROTARY_ENCODER_SW_PIN": 13,
+        "LCD_DC_PIN": 8,
+        "LCD_CS_PIN": 7,
+        "LCD_RST_PIN": 9,
+        "LCD_BACKLIGHT_PIN": 10,
         "MAIN_POWER_RELAY_PIN": 11,
         "EMERGENCY_SHUTDOWN_PIN": 16
     },
@@ -267,7 +264,10 @@
             "current_per_meter": "300mA",
             "length_meters": 0.6,
             "total_power": "1.8W",
-            "control": "relay_with_converter"
+            "control": "mosfet",
+            "mosfet_type": "logic_level",
+            "gate_voltage": "3.3V",
+            "description": "Ruban LED 12V contrôlé via MOSFET logique niveau 3.3V"
         },
 
         "camera": {
