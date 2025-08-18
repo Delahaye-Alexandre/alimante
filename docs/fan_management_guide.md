@@ -8,14 +8,14 @@ Le système Alimante intègre une gestion complète des ventilateurs qui s'adapt
 
 ### Composants Principaux
 
-1. **AirQualityController** - Gère le capteur MQ135 et détermine la qualité de l'air
+1. **AirQualityController** - Gère le capteur MQ2 et détermine la qualité de l'air
 2. **FanController** - Contrôle les ventilateurs et leur vitesse
 3. **Intégration automatique** dans la boucle principale du système
 
 ### Flux de Contrôle
 
 ```
-Capteur MQ135 → AirQualityController → FanController → Ventilateurs
+Capteur MQ2 → AirQualityController → FanController → Ventilateurs
      ↓
 Qualité de l'air (PPM) → Niveau de qualité → Vitesse des ventilateurs
 ```
@@ -99,7 +99,7 @@ Chaque espèce peut avoir sa propre configuration de ventilation :
 
 ### Logique de Contrôle
 
-1. **Lecture continue** du capteur MQ135
+1. **Lecture continue** du capteur MQ2
 2. **Détermination automatique** du niveau de qualité
 3. **Ajustement de la vitesse** des ventilateurs
 4. **Surveillance des seuils** de température et humidité
@@ -203,7 +203,7 @@ WARNING - ⚠️ Qualité de l'air dégradée: poor (175.0 ppm)
 ### Vérifications Régulières
 
 1. **Nettoyage des ventilateurs** (poussière, débris)
-2. **Calibration du capteur MQ135** (mensuelle)
+2. **Calibration du capteur MQ2** (mensuelle)
 3. **Vérification des connexions GPIO**
 4. **Test des seuils** de qualité de l'air
 
@@ -228,7 +228,7 @@ if not success:
 
 2. **Qualité de l'air incorrecte**
 
-   - Recalibrer le capteur MQ135
+   - Recalibrer le capteur MQ2
    - Vérifier l'alimentation du capteur
    - Contrôler les connexions
 

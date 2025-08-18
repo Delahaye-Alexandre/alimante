@@ -51,7 +51,7 @@ def analyze_controllers():
             'pins_needed': ['ultrasonic_mist']
         },
         'air_quality': {
-            'sensor': 'MQ135',
+            'sensor': 'MQ2',
             'pins_needed': ['air_quality']
         },
         'lcd_menu': {

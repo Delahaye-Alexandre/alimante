@@ -31,13 +31,20 @@
                 "power_connection": "3v3_power_rail",
                 "description": "Capteur de lumière LDR - Alimentation directe depuis rail 3.3V, Pin GPIO 17: signal analogique uniquement"
             },
-            "air_quality": {
-                "gpio_pin": 27,
-                "type": "MQ135",
-                "voltage": "3.3V",
-                "current": "120mA",
-                "power_connection": "3v3_power_rail",
-                "description": "Capteur qualité de l'air MQ135 - Alimentation directe depuis rail 3.3V, Pin GPIO 27: signal de données uniquement"
+
+            "mq2_gas": {
+                "gpio_pin": 22,
+                "type": "MQ2",
+                "voltage": "5.1V",
+                "current": "150mA",
+                "power_connection": "5v1_power_rail",
+                "adc_converter": "ADS1115",
+                "adc_voltage": "3.3V",
+                "adc_current": "10mA",
+                "adc_power_connection": "3v3_power_rail",
+                "adc_channel": 0,
+                "i2c_address": "0x48",
+                "description": "Capteur de gaz MQ2 (5.1V) + convertisseur A/N ADS1115 (3.3V) - MQ2 alimenté depuis rail 5.1V, ADS1115 alimenté depuis rail 3.3V, Communication I2C via GPIO 22 (SDA) et GPIO 3 (SCL)"
             },
             "water_level": {
                 "trigger_gpio": 20,
@@ -153,7 +160,10 @@
         "WATER_LEVEL_TRIGGER_PIN": 20,
         "WATER_LEVEL_ECHO_PIN": 21,
         "RADIATOR_TEMP_PIN": 26,
-        "AIR_QUALITY_PIN": 27,
+
+        "MQ2_GAS_PIN": 22,
+        "I2C_SDA_PIN": 22,
+        "I2C_SCL_PIN": 3,
         "ROTARY_ENCODER_CLK_PIN": 5,
         "ROTARY_ENCODER_DT_PIN": 6,
         "ROTARY_ENCODER_SW_PIN": 13,
@@ -315,7 +325,20 @@
         "i2c": {
             "enabled": true,
             "bus": 1,
-            "address": "0x48"
+            "address": "0x48",
+            "sda_pin": 22,
+            "scl_pin": 3,
+            "speed": 100000,
+            "devices": [
+                {
+                    "name": "ADS1115",
+                    "address": "0x48",
+                    "type": "adc_converter",
+                    "channels": 4,
+                    "resolution": "16-bit",
+                    "description": "Convertisseur analogique-numérique 16-bit pour capteur MQ2"
+                }
+            ]
         },
         "onewire": {
             "enabled": true,

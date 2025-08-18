@@ -17,11 +17,13 @@ def test_air_quality_controller():
     print("=" * 50)
     
     try:
-        # Configuration de test
+        # Configuration de test pour MQ2 + ADS1115
         air_quality_config = {
-            "pin": 27,
-            "voltage": "5V",
-            "current": 120
+            "pin": 22,  # I2C SDA
+            "i2c_address": "0x48",
+            "adc_channel": 0,
+            "voltage": "5.1V",
+            "current": 150
         }
         
         fan_config = {

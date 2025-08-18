@@ -7,7 +7,8 @@
 | Composant    | Tension | Courant | Pin GPIO | Description                     |
 | ------------ | ------- | ------- | -------- | ------------------------------- |
 | **DHT22**    | 3.3V    | 5mA     | 4        | Température et humidité         |
-| **MQ135**    | 5V      | 120mA   | 27       | Qualité de l'air                |
+
+| **MQ2**      | 5.1V    | 150mA   | 22       | Détection gaz (via ADS1115)     |
 | **HC-SR04P** | 3.3V    | 15mA    | 20/21    | Niveau d'eau (trigger/echo)     |
 | **DS18B20**  | 3.3V    | 1mA     | 26       | Température radiateur (OneWire) |
 
@@ -75,10 +76,14 @@ LDR (Pin 17)
 ├── SIGNAL → GPIO 17
 └── GND → GND
 
-MQ135 (Pin 27)
-├── VCC → 5V
-├── SIGNAL → GPIO 27
-└── GND → GND
+
+
+MQ2 + ADS1115 (Pins 22/3)
+├── MQ2 VCC → 5.1V
+├── ADS1115 VCC → 3.3V
+├── SDA → GPIO 22 (I2C)
+├── SCL → GPIO 3 (I2C)
+└── GND → GND (commun)
 
 HC-SR04P Niveau d'eau (Pins 20/21)
 ├── VCC → 3.3V
@@ -215,11 +220,7 @@ Alimentation 5V séparée
 - Utiliser des diodes de protection
 - Isoler les circuits haute tension
 
-### **4. Capteur MQ135**
 
-- Consomme 120mA à 5V
-- Vérifier la capacité de l'alimentation
-- Chauffe pendant le fonctionnement
 
 ### **5. Ventilateurs**
 
@@ -238,6 +239,8 @@ Alimentation 5V séparée
 - [ ] Diodes de protection pour les relais
 - [ ] Condensateurs de découplage (100µF)
 - [ ] Convertisseur 12V → 5V pour LED
+- [ ] Convertisseur A/N ADS1115 (16-bit, I2C)
+- [ ] Capteur de gaz MQ2
 
 ### **Câblage**
 
@@ -332,17 +335,18 @@ GPIO.output(22, GPIO.LOW)   # Désactiver
 
 ```
 Raspberry Pi Zero 2W: ~500mA @ 5V
-Capteurs: ~126mA @ 5V
+Capteurs: ~6mA @ 5V
 Relais: ~120mA @ 5V
 Servomoteur: ~250mA @ 5V (pic)
 Ventilateurs: ~800mA @ 5V
 Transducteur ultrasonique ANGEEK: ~50mA @ 5V
 Capteur niveau d'eau HC-SR04P: ~15mA @ 3.3V
 Capteur température DS18B20: ~1mA @ 3.3V
+Convertisseur ADS1115: ~10mA @ 3.3V
 Caméra CSI: ~200mA @ 3.3V
 LEDs: ~40mA @ 3.3V
 
-TOTAL: ~1.85A @ 5V + 0.256A @ 3.3V + 0.1A @ 12V (pic)
+TOTAL: ~2.0A @ 5V + 0.266A @ 3.3V + 0.1A @ 12V (pic)
 ```
 
 ### **Recommandations**

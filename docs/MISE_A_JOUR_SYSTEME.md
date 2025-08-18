@@ -66,7 +66,7 @@
 | 24   | Relais LED          | Digital | Bandeau LED 12V             |
 | 25   | Relais ventilateurs | Digital | 4 ventilateurs terrarium    |
 | 26   | DS18B20             | OneWire | Température radiateur       |
-| 27   | MQ135               | Analog  | Qualité air                 |
+| 22   | MQ2                 | I2C     | Qualité air (via ADS1115)   |
 | CSI  | Caméra              | CSI-2   | Surveillance terrarium      |
 
 ## 🛡️ **Sécurités implémentées**
@@ -131,7 +131,7 @@ w1thermsensor>=2.0.0       # Capteur OneWire DS18B20
 
 ```
 Raspberry Pi Zero 2W: ~500mA @ 5V
-Capteurs: ~141mA @ 5V (DHT22 + MQ135)
+Capteurs: ~171mA @ 5V (DHT22 + MQ2)
 Capteurs 3.3V: ~216mA @ 3.3V (HC-SR04P + DS18B20 + Caméra)
 Relais: ~120mA @ 5V
 Servomoteur: ~250mA @ 5V (pics)

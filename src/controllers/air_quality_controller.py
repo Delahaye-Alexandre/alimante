@@ -1,6 +1,6 @@
 """
 Contrôleur pour la qualité de l'air
-Gestion du capteur MQ135 et contrôle des ventilateurs
+Gestion du capteur MQ2 avec convertisseur ADS1115 et contrôle des ventilateurs
 """
 
 import time
@@ -13,17 +13,19 @@ from ..utils.exceptions import create_exception, ErrorCode
 
 
 class AirQualityController:
-    """Contrôleur pour la qualité de l'air avec capteur MQ135"""
+    """Contrôleur pour la qualité de l'air avec capteur MQ2 et ADS1115"""
     
     def __init__(self, gpio_manager: GPIOManager, config: Dict[str, Any]):
         self.logger = get_logger("air_quality_controller")
         self.gpio_manager = gpio_manager
         self.config = config
         
-        # Configuration du capteur MQ135
-        self.mq135_pin = config.get("pin", 27)
-        self.voltage = config.get("voltage", "5V")
-        self.current = config.get("current", 120)  # mA
+        # Configuration du capteur MQ2 avec ADS1115
+        self.mq2_pin = config.get("pin", 22)  # I2C SDA
+        self.i2c_address = config.get("i2c_address", "0x48")
+        self.adc_channel = config.get("adc_channel", 0)
+        self.voltage = config.get("voltage", "5.1V")
+        self.current = config.get("current", 150)  # mA
         
         # Seuils de qualité de l'air (ppm)
         self.air_quality_thresholds = {
@@ -64,28 +66,24 @@ class AirQualityController:
         self.logger.info("Contrôleur qualité de l'air initialisé")
     
     def _setup_gpio(self):
-        """Configure le GPIO pour le capteur MQ135"""
+        """Configure le GPIO pour le capteur MQ2 avec ADS1115"""
         try:
-            # Le MQ135 utilise un ADC, donc on configure le pin en entrée
-            pin_config = {
-                "pin": self.mq135_pin,
-                "mode": "input",
-                "pull_up_down": "none"
-            }
-            self.gpio_manager.setup_pin(pin_config)
-            self.logger.info(f"GPIO configuré pour MQ135 sur pin {self.mq135_pin}")
+            # Le MQ2 utilise l'ADS1115 via I2C, donc on configure les pins I2C
+            # SDA (GPIO 22) et SCL (GPIO 3) sont configurés automatiquement par le système
+            self.logger.info(f"Configuration I2C pour MQ2 + ADS1115 sur adresse {self.i2c_address}")
+            self.logger.info(f"Pins I2C: SDA={self.mq2_pin}, SCL=3, Canal ADC={self.adc_channel}")
         except Exception as e:
-            self.logger.error(f"Erreur configuration GPIO MQ135: {e}")
+            self.logger.error(f"Erreur configuration I2C MQ2: {e}")
             raise create_exception(
                 ErrorCode.GPIO_SETUP_FAILED,
-                f"Impossible de configurer le GPIO pour MQ135: {e}",
-                {"pin": self.mq135_pin, "original_error": str(e)}
+                f"Impossible de configurer l'I2C pour MQ2: {e}",
+                {"i2c_address": self.i2c_address, "original_error": str(e)}
             )
     
     def calibrate_sensor(self) -> bool:
-        """Calibre le capteur MQ135"""
+        """Calibre le capteur MQ2"""
         try:
-            self.logger.info("Début de la calibration du capteur MQ135...")
+            self.logger.info("Début de la calibration du capteur MQ2...")
             self.logger.info("Veuillez vous assurer que l'air ambiant est propre")
             
             readings = []
@@ -112,26 +110,26 @@ class AirQualityController:
             return False
     
     def _read_raw_sensor(self) -> Optional[float]:
-        """Lit la valeur brute du capteur MQ135"""
+        """Lit la valeur brute du capteur MQ2 via ADS1115"""
         try:
-            # Simulation pour le moment - à remplacer par la vraie lecture ADC
+            # Lecture via ADS1115 via I2C
             # import board
             # import adafruit_ads1x15.ads1115 as ADS
             # from adafruit_ads1x15.analog_in import AnalogIn
             
             # i2c = board.I2C()
-            # ads = ADS.ADS1115(i2c)
-            # channel = AnalogIn(ads, ADS.P0)
+            # ads = ADS.ADS1115(i2c, address=int(self.i2c_address, 16))
+            # channel = AnalogIn(ads, getattr(ADS, f"P{self.adc_channel}"))
             # value = channel.value
             
-            # Simulation temporaire
+            # Simulation temporaire pour MQ2 (détection LPG, propane, méthane, etc.)
             import random
-            value = 100 + random.uniform(-20, 50)  # Simulation 80-150 ppm
+            value = 200 + random.uniform(-50, 100)  # Simulation 150-300 ppm
             
             return value
             
         except Exception as e:
-            self.logger.error(f"Erreur lecture capteur MQ135: {e}")
+            self.logger.error(f"Erreur lecture capteur MQ2: {e}")
             return None
     
     def read_air_quality(self) -> Optional[Dict[str, Any]]:
@@ -229,8 +227,8 @@ class AirQualityController:
         """Retourne le statut du contrôleur"""
         return {
             "controller": "air_quality",
-            "sensor_type": "MQ135",
-            "pin": self.mq135_pin,
+            "sensor_type": "MQ2",
+            "pin": self.mq2_pin,
             "voltage": self.voltage,
             "current_quality": self.current_quality,
             "is_calibrated": self.is_calibrated,
@@ -252,8 +250,8 @@ class AirQualityController:
             
             # Vérifier que les valeurs sont dans des plages raisonnables
             ppm = reading.get("ppm", 0)
-            if ppm < 0 or ppm > 1000:  # Plage raisonnable pour MQ135
-                self.logger.warning(f"Valeur MQ135 suspecte: {ppm} ppm")
+                    if ppm < 0 or ppm > 5000:  # Plage raisonnable pour MQ2 (LPG, propane, etc.)
+            self.logger.warning(f"Valeur MQ2 suspecte: {ppm} ppm")
                 return False
             
             return True

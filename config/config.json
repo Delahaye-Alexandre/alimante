@@ -16,7 +16,7 @@
     "sensors": {
       "temperature_humidity": "DHT22",
       "water_level": "Capteur ultrasonique",
-      "air_quality": "MQ135",
+      "air_quality": "MQ2",
       "light": "LDR (Light Dependent Resistor)"
     },
     "actuators": {
