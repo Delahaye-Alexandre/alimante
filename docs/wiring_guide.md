@@ -4,13 +4,13 @@
 
 ### **Capteurs**
 
-| Composant    | Tension | Courant | Pin GPIO | Description                     |
-| ------------ | ------- | ------- | -------- | ------------------------------- |
-| **DHT22**    | 3.3V    | 5mA     | 4        | Température et humidité         |
+| Composant | Tension | Courant | Pin GPIO | Description             |
+| --------- | ------- | ------- | -------- | ----------------------- |
+| **DHT22** | 3.3V    | 5mA     | 4        | Température et humidité |
 
-| **MQ2**      | 5.1V    | 150mA   | 22       | Détection gaz (via ADS1115)     |
-| **HC-SR04P** | 3.3V    | 15mA    | 20/21    | Niveau d'eau (trigger/echo)     |
-| **DS18B20**  | 3.3V    | 1mA     | 26       | Température radiateur (OneWire) |
+| **MQ2** | 5.1V | 150mA | 22 | Détection gaz (via PCF8591) |
+| **HC-SR04P** | 3.3V | 15mA | 20/21 | Niveau d'eau (trigger/echo) |
+| **DS18B20** | 3.3V | 1mA | 26 | Température radiateur (OneWire) |
 
 ### **Actionneurs**
 
@@ -78,9 +78,9 @@ LDR (Pin 17)
 
 
 
-MQ2 + ADS1115 (Pins 22/3)
+MQ2 + PCF8591 (Pins 22/3)
 ├── MQ2 VCC → 5.1V
-├── ADS1115 VCC → 3.3V
+├── PCF8591 VCC → 3.3V
 ├── SDA → GPIO 22 (I2C)
 ├── SCL → GPIO 3 (I2C)
 └── GND → GND (commun)
@@ -220,8 +220,6 @@ Alimentation 5V séparée
 - Utiliser des diodes de protection
 - Isoler les circuits haute tension
 
-
-
 ### **5. Ventilateurs**
 
 - 4 ventilateurs = 800mA à 5V
@@ -239,7 +237,7 @@ Alimentation 5V séparée
 - [ ] Diodes de protection pour les relais
 - [ ] Condensateurs de découplage (100µF)
 - [ ] Convertisseur 12V → 5V pour LED
-- [ ] Convertisseur A/N ADS1115 (16-bit, I2C)
+- [ ] Convertisseur A/N PCF8591 (8-bit, I2C)
 - [ ] Capteur de gaz MQ2
 
 ### **Câblage**
@@ -342,7 +340,7 @@ Ventilateurs: ~800mA @ 5V
 Transducteur ultrasonique ANGEEK: ~50mA @ 5V
 Capteur niveau d'eau HC-SR04P: ~15mA @ 3.3V
 Capteur température DS18B20: ~1mA @ 3.3V
-Convertisseur ADS1115: ~10mA @ 3.3V
+Convertisseur PCF8591: ~10mA @ 3.3V
 Caméra CSI: ~200mA @ 3.3V
 LEDs: ~40mA @ 3.3V
 

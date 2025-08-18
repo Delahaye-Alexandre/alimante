@@ -110,7 +110,7 @@ class GPIOManager:
         try:
             # Note: Raspberry Pi n'a pas de pins analogiques natifs
             # Cette méthode simule une lecture analogique pour compatibilité
-            # En production, utiliser un ADC externe (MCP3008, ADS1115, etc.)
+            # En production, utiliser un ADC externe (MCP3008, PCF8591, etc.)
             
             # Simulation temporaire - retourne une valeur entre 0 et 1
             import random

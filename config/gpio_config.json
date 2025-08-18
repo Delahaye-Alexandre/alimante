@@ -38,13 +38,13 @@
                 "voltage": "5.1V",
                 "current": "150mA",
                 "power_connection": "5v1_power_rail",
-                "adc_converter": "ADS1115",
+                "adc_converter": "PCF8591",
                 "adc_voltage": "3.3V",
                 "adc_current": "10mA",
                 "adc_power_connection": "3v3_power_rail",
                 "adc_channel": 0,
                 "i2c_address": "0x48",
-                "description": "Capteur de gaz MQ2 (5.1V) + convertisseur A/N ADS1115 (3.3V) - MQ2 alimenté depuis rail 5.1V, ADS1115 alimenté depuis rail 3.3V, Communication I2C via GPIO 22 (SDA) et GPIO 3 (SCL)"
+                "description": "Capteur de gaz MQ2 (5.1V) + convertisseur A/N PCF8591 (3.3V) - MQ2 alimenté depuis rail 5.1V, PCF8591 alimenté depuis rail 3.3V, Communication I2C via GPIO 22 (SDA) et GPIO 3 (SCL)"
             },
             "water_level": {
                 "trigger_gpio": 20,
@@ -331,12 +331,12 @@
             "speed": 100000,
             "devices": [
                 {
-                    "name": "ADS1115",
+                    "name": "PCF8591",
                     "address": "0x48",
                     "type": "adc_converter",
                     "channels": 4,
-                    "resolution": "16-bit",
-                    "description": "Convertisseur analogique-numérique 16-bit pour capteur MQ2"
+                    "resolution": "8-bit",
+                    "description": "Convertisseur analogique-numérique 8-bit pour capteur MQ2"
                 }
             ]
         },

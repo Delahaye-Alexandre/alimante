@@ -90,7 +90,7 @@ def main():
     print()
     
     try:
-        # Configuration pour MQ2 + ADS1115
+        # Configuration pour MQ2 + PCF8591
         air_quality_config = {
             "pin": 22,  # I2C SDA
             "i2c_address": "0x48",

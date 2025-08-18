@@ -66,7 +66,7 @@
 | 24   | Relais LED          | Digital | Bandeau LED 12V             |
 | 25   | Relais ventilateurs | Digital | 4 ventilateurs terrarium    |
 | 26   | DS18B20             | OneWire | Température radiateur       |
-| 22   | MQ2                 | I2C     | Qualité air (via ADS1115)   |
+| 22   | MQ2                 | I2C     | Qualité air (via PCF8591)   |
 | CSI  | Caméra              | CSI-2   | Surveillance terrarium      |
 
 ## 🛡️ **Sécurités implémentées**

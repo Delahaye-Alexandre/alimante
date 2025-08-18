@@ -144,6 +144,10 @@ alimante/
 
 Consultez `docs/wiring_guide.md` pour le schéma de câblage détaillé.
 
+### ⚡ Migration vers PCF8591
+
+Le projet utilise maintenant le **PCF8591** (8-bit) au lieu de l'ADS1115 (16-bit) pour une meilleure simplicité et réduction des coûts. Consultez `docs/pcf8591_integration.md` pour les détails de cette migration.
+
 ## 📱 Application Mobile
 
 L'application mobile est dans le dossier `mobile/`. Consultez `mobile/README.md` pour l'installation.

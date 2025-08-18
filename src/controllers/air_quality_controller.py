@@ -1,6 +1,6 @@
 """
 Contrôleur pour la qualité de l'air
-Gestion du capteur MQ2 avec convertisseur ADS1115 et contrôle des ventilateurs
+Gestion du capteur MQ2 avec convertisseur PCF8591 et contrôle des ventilateurs
 """
 
 import time
@@ -13,17 +13,17 @@ from ..utils.exceptions import create_exception, ErrorCode
 
 
 class AirQualityController:
-    """Contrôleur pour la qualité de l'air avec capteur MQ2 et ADS1115"""
+    """Contrôleur pour la qualité de l'air avec capteur MQ2 et PCF8591"""
     
     def __init__(self, gpio_manager: GPIOManager, config: Dict[str, Any]):
         self.logger = get_logger("air_quality_controller")
         self.gpio_manager = gpio_manager
         self.config = config
         
-        # Configuration du capteur MQ2 avec ADS1115
+        # Configuration du capteur MQ2 avec PCF8591
         self.mq2_pin = config.get("pin", 22)  # I2C SDA
-        self.i2c_address = config.get("i2c_address", "0x48")
-        self.adc_channel = config.get("adc_channel", 0)
+        self.i2c_address = config.get("i2c_address", "0x48")  # Adresse I2C par défaut du PCF8591
+        self.adc_channel = config.get("adc_channel", 0)  # Canal AIN0 du PCF8591
         self.voltage = config.get("voltage", "5.1V")
         self.current = config.get("current", 150)  # mA
         
@@ -66,11 +66,11 @@ class AirQualityController:
         self.logger.info("Contrôleur qualité de l'air initialisé")
     
     def _setup_gpio(self):
-        """Configure le GPIO pour le capteur MQ2 avec ADS1115"""
+        """Configure le GPIO pour le capteur MQ2 avec PCF8591"""
         try:
-            # Le MQ2 utilise l'ADS1115 via I2C, donc on configure les pins I2C
+            # Le MQ2 utilise le PCF8591 via I2C, donc on configure les pins I2C
             # SDA (GPIO 22) et SCL (GPIO 3) sont configurés automatiquement par le système
-            self.logger.info(f"Configuration I2C pour MQ2 + ADS1115 sur adresse {self.i2c_address}")
+            self.logger.info(f"Configuration I2C pour MQ2 + PCF8591 sur adresse {self.i2c_address}")
             self.logger.info(f"Pins I2C: SDA={self.mq2_pin}, SCL=3, Canal ADC={self.adc_channel}")
         except Exception as e:
             self.logger.error(f"Erreur configuration I2C MQ2: {e}")
@@ -110,23 +110,37 @@ class AirQualityController:
             return False
     
     def _read_raw_sensor(self) -> Optional[float]:
-        """Lit la valeur brute du capteur MQ2 via ADS1115"""
+        """Lit la valeur brute du capteur MQ2 via PCF8591"""
         try:
-            # Lecture via ADS1115 via I2C
-            # import board
-            # import adafruit_ads1x15.ads1115 as ADS
-            # from adafruit_ads1x15.analog_in import AnalogIn
+            # Lecture via PCF8591 via I2C
+            from smbus2 import SMBus
             
-            # i2c = board.I2C()
-            # ads = ADS.ADS1115(i2c, address=int(self.i2c_address, 16))
-            # channel = AnalogIn(ads, getattr(ADS, f"P{self.adc_channel}"))
-            # value = channel.value
-            
-            # Simulation temporaire pour MQ2 (détection LPG, propane, méthane, etc.)
-            import random
-            value = 200 + random.uniform(-50, 100)  # Simulation 150-300 ppm
-            
-            return value
+            # Ouvrir le bus I2C
+            with SMBus(1) as bus:  # Bus I2C 1 sur Raspberry Pi
+                # Adresse I2C du PCF8591 (0x48 par défaut)
+                address = int(self.i2c_address, 16)
+                
+                # Configuration du PCF8591 pour lecture analogique
+                # Bit 7: Enable (1), Bit 6-4: Canal (000 pour AIN0), Bit 3-0: Auto-increment (0000)
+                config_byte = 0x40 | (self.adc_channel << 4)
+                
+                # Envoyer la configuration
+                bus.write_byte(address, config_byte)
+                
+                # Lire la valeur (2 bytes: 1er byte = ancienne valeur, 2ème = nouvelle)
+                data = bus.read_i2c_block_data(address, config_byte, 2)
+                
+                # La valeur analogique est dans le 2ème byte (0-255 pour 8-bit)
+                raw_value = data[1]
+                
+                # Convertir en tension (0-255 -> 0-3.3V)
+                voltage = (raw_value / 255.0) * 3.3
+                
+                # Convertir en ppm (formule simplifiée pour MQ2)
+                # MQ2: tension plus élevée = concentration plus élevée
+                ppm = (voltage / 3.3) * 1000  # 0-1000 ppm
+                
+                return ppm
             
         except Exception as e:
             self.logger.error(f"Erreur lecture capteur MQ2: {e}")

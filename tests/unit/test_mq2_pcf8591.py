@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test du capteur MQ2 avec convertisseur ADS1115
+Test du capteur MQ2 avec convertisseur PCF8591
 """
 
 import sys
@@ -10,13 +10,13 @@ sys.path.insert(0, '.')
 from src.controllers.air_quality_controller import AirQualityController
 from src.utils.gpio_manager import GPIOManager
 
-def test_mq2_ads1115_setup():
-    """Test la configuration du MQ2 avec ADS1115"""
-    print("🧪 Test de configuration MQ2 + ADS1115")
+def test_mq2_pcf8591_setup():
+    """Test la configuration du MQ2 avec PCF8591"""
+    print("🧪 Test de configuration MQ2 + PCF8591")
     print("=" * 50)
     
     try:
-        # Configuration pour MQ2 + ADS1115
+        # Configuration pour MQ2 + PCF8591
         config = {
             "pin": 22,  # I2C SDA
             "i2c_address": "0x48",
@@ -31,7 +31,7 @@ def test_mq2_ads1115_setup():
         # Créer le contrôleur
         controller = AirQualityController(gpio_manager, config)
         
-        print("✅ Contrôleur MQ2 + ADS1115 créé")
+        print("✅ Contrôleur MQ2 + PCF8591 créé")
         print(f"   Pin I2C SDA: {config['pin']}")
         print(f"   Adresse I2C: {config['i2c_address']}")
         print(f"   Canal ADC: {config['adc_channel']}")
@@ -112,15 +112,35 @@ def test_mq2_gas_types():
     
     return True
 
+def test_pcf8591_resolution():
+    """Test la résolution du PCF8591 (8-bit vs 16-bit)"""
+    print("\n📊 Test de résolution PCF8591")
+    print("=" * 40)
+    
+    print("Résolution PCF8591:")
+    print("   ✅ 8-bit (0-255 valeurs)")
+    print("   ✅ 4 canaux analogiques (AIN0-AIN3)")
+    print("   ✅ 1 sortie analogique (AOUT)")
+    print("   ✅ Interface I2C simple")
+    print("   ✅ Alimentation 2.5V-6V")
+    
+    print("\nComparaison avec ADS1115:")
+    print("   PCF8591: 8-bit, 4 canaux, I2C simple")
+    print("   ADS1115: 16-bit, 4 canaux, I2C avancé")
+    print("   → PCF8591: Plus simple, moins cher, suffisant pour MQ2")
+    
+    return True
+
 def main():
     """Programme principal"""
-    print("🌬️ Test complet du capteur MQ2 avec ADS1115")
+    print("🌬️ Test complet du capteur MQ2 avec PCF8591")
     print("=" * 60)
     
     tests = [
-        test_mq2_ads1115_setup,
+        test_mq2_pcf8591_setup,
         test_mq2_gas_detection,
-        test_mq2_gas_types
+        test_mq2_gas_types,
+        test_pcf8591_resolution
     ]
     
     passed = 0

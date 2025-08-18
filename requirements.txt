@@ -4,7 +4,8 @@ adafruit-circuitpython-dht>=1.4.0
 adafruit-circuitpython-servokit>=1.3.8
 adafruit-circuitpython-busdevice>=5.2.6
 adafruit-circuitpython-register>=1.9.8
-adafruit-circuitpython-ads1x15>=1.3.8
+# PCF8591 I2C ADC/DAC (remplace ADS1115)
+smbus2>=0.4.3
 
 # Calcul des heures de soleil
 astral>=3.2
