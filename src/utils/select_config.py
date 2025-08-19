@@ -142,6 +142,35 @@ def get_default_species() -> str:
         logging.warning(f"Impossible de récupérer l'espèce par défaut: {e}")
         return "orthopteres/mantidae/mantis_religiosa"
 
+def select_config() -> str:
+    """
+    Sélectionne la configuration par défaut pour le système.
+    Cette fonction est utilisée par main.py pour obtenir le chemin de configuration.
+    
+    :return: Chemin vers le fichier de configuration de l'espèce par défaut
+    """
+    try:
+        # Essayer de récupérer l'espèce par défaut depuis la configuration
+        default_species = get_default_species()
+        
+        # Construire le chemin complet vers le fichier de configuration
+        config_path = f"config/{default_species}.json"
+        
+        # Vérifier que le fichier existe
+        if os.path.exists(config_path):
+            logging.info(f"Configuration sélectionnée: {config_path}")
+            return config_path
+        else:
+            # Fallback vers une configuration par défaut
+            fallback_path = "config/orthopteres/mantidae/mantis_religiosa.json"
+            logging.warning(f"Configuration par défaut non trouvée, utilisation du fallback: {fallback_path}")
+            return fallback_path
+            
+    except Exception as e:
+        logging.error(f"Erreur lors de la sélection de la configuration: {e}")
+        # Retourner une configuration de fallback en cas d'erreur
+        return "config/orthopteres/mantidae/mantis_religiosa.json"
+
 def list_species_by_order() -> Dict[str, Dict[str, Any]]:
     """
     Liste les espèces organisées par ordre taxonomique.
