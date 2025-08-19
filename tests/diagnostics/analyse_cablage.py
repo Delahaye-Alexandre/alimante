@@ -89,37 +89,49 @@ def analyze_gpio_pins(gpio_config):
     all_pins = {}
     
     # Collecter tous les pins depuis les différentes sections
-    sections = ['sensors', 'actuators', 'interface', 'status', 'led_strip']
+    sections = ['sensors', 'actuators', 'interface', 'status']
     
     for section in sections:
         if section in gpio_pins:
             components = gpio_pins[section]
             if isinstance(components, dict):
                 for name, config in components.items():
-                    # Gérer les capteurs spéciaux comme water_level
-                    if 'trigger_gpio' in config:
-                        # Capteur ultrasonique
-                        all_pins[f"{name}_trigger"] = {
-                            'pin': config.get('trigger_gpio'),
-                            'type': config.get('type'),
-                            'voltage': config.get('voltage'),
-                            'category': section
-                        }
-                        all_pins[f"{name}_echo"] = {
-                            'pin': config.get('echo_gpio'),
-                            'type': config.get('type'),
-                            'voltage': config.get('voltage'),
-                            'category': section
-                        }
-                    else:
-                        # Capteur/actionneur standard
-                        pin_key = 'gpio_pin' if 'gpio_pin' in config else 'pin'
-                        all_pins[name] = {
-                            'pin': config.get(pin_key),
-                            'type': config.get('type'),
-                            'voltage': config.get('voltage'),
-                            'category': section
-                        }
+                    if isinstance(config, dict):
+                        # Gérer les capteurs spéciaux comme water_level
+                        if 'trigger_gpio' in config:
+                            # Capteur ultrasonique
+                            all_pins[f"{name}_trigger"] = {
+                                'pin': config.get('trigger_gpio'),
+                                'type': config.get('type'),
+                                'voltage': config.get('voltage'),
+                                'category': section
+                            }
+                            all_pins[f"{name}_echo"] = {
+                                'pin': config.get('echo_gpio'),
+                                'type': config.get('type'),
+                                'voltage': config.get('voltage'),
+                                'category': section
+                            }
+                        else:
+                            # Capteur/actionneur standard
+                            pin_key = 'gpio_pin' if 'gpio_pin' in config else 'pin'
+                            all_pins[name] = {
+                                'pin': config.get(pin_key),
+                                'type': config.get('type'),
+                                'voltage': config.get('voltage'),
+                                'category': section
+                            }
+    
+    # Gérer led_strip séparément car c'est un objet direct
+    if 'led_strip' in gpio_pins:
+        led_config = gpio_pins['led_strip']
+        if isinstance(led_config, dict):
+            all_pins['led_strip'] = {
+                'pin': led_config.get('gpio_pin'),
+                'type': led_config.get('type'),
+                'voltage': led_config.get('voltage'),
+                'category': 'led_strip'
+            }
     
     return all_pins
 
