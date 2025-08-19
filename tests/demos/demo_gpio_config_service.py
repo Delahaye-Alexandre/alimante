@@ -87,6 +87,11 @@ def demo_gpio_config_service():
         if temp_pin is not None:
             print(f"   - Pin capteur température/humidité: GPIO {temp_pin}")
         
+        # Récupérer les pins du capteur de niveau d'eau
+        water_pins = gpio_service.get_water_level_pins()
+        if water_pins is not None:
+            print(f"   - Pins capteur niveau d'eau: Trigger GPIO {water_pins['trigger']}, Echo GPIO {water_pins['echo']}")
+        
         # Récupérer le pin du relais de chauffage
         heating_pin = gpio_service.get_actuator_pin('heating_relay')
         if heating_pin is not None:

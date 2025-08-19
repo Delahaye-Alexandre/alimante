@@ -10,7 +10,7 @@ from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
 
 from ..utils.logging_config import get_logger
-from ..utils.exceptions import create_exception, ErrorCode
+from ..utils.exceptions import create_exception, ErrorCode, AlimanteException
 
 
 @dataclass
@@ -33,8 +33,26 @@ class GPIOPinConfig:
 class GPIOConfigService:
     """Service de gestion de la configuration GPIO"""
     
-    def __init__(self, config_path: str = "config/gpio_config.json"):
+    def __init__(self, config_path: str = None):
         self.logger = get_logger("gpio_config_service")
+        
+        # Déterminer le chemin de configuration par défaut
+        if config_path is None:
+            # Essayer de trouver le fichier de configuration depuis différents emplacements
+            possible_paths = [
+                "config/gpio_config.json",
+                "../../config/gpio_config.json",
+                "../config/gpio_config.json"
+            ]
+            
+            for path in possible_paths:
+                if Path(path).exists():
+                    config_path = path
+                    break
+            else:
+                # Si aucun chemin ne fonctionne, utiliser le chemin par défaut
+                config_path = "config/gpio_config.json"
+        
         self.config_path = Path(config_path)
         self.gpio_config: Dict[str, Any] = {}
         self.pin_assignments: Dict[str, int] = {}
@@ -69,7 +87,7 @@ class GPIOConfigService:
             
         except Exception as e:
             self.logger.exception("Erreur lors du chargement de la configuration GPIO")
-            if isinstance(e, create_exception):
+            if isinstance(e, AlimanteException):
                 raise
             else:
                 raise create_exception(
@@ -88,25 +106,52 @@ class GPIOConfigService:
         sensors = self.gpio_config.get('gpio_pins', {}).get('sensors', {})
         
         for sensor_name, sensor_config in sensors.items():
-            # Créer une configuration de pin standardisée
-            pin_config = GPIOPinConfig(
-                pin=sensor_config.get('gpio_pin', 0),
-                type=sensor_config.get('type', 'unknown'),
-                voltage=sensor_config.get('voltage', '3.3V'),
-                current=sensor_config.get('current', '1mA'),
-                power_connection=sensor_config.get('power_connection', '3v3_power_rail'),
-                description=sensor_config.get('description', ''),
-                mode='input',
-                adc_channel=sensor_config.get('adc_channel'),
-                i2c_address=sensor_config.get('i2c_address')
-            )
-            
             # Gérer les capteurs spéciaux (ultrasonique, etc.)
             if 'trigger_gpio' in sensor_config:
-                pin_config.pin = sensor_config['trigger_gpio']
-                pin_config.mode = 'output'
-            
-            self.sensors_config[sensor_name] = pin_config
+                # Capteur ultrasonique avec trigger et echo
+                trigger_pin_config = GPIOPinConfig(
+                    pin=sensor_config['trigger_gpio'],
+                    type=sensor_config.get('type', 'unknown'),
+                    voltage=sensor_config.get('voltage', '3.3V'),
+                    current=sensor_config.get('current', '1mA'),
+                    power_connection=sensor_config.get('power_connection', '3v3_power_rail'),
+                    description=f"{sensor_config.get('description', '')} - Trigger",
+                    mode='output',
+                    adc_channel=sensor_config.get('adc_channel'),
+                    i2c_address=sensor_config.get('i2c_address')
+                )
+                
+                echo_pin_config = GPIOPinConfig(
+                    pin=sensor_config['echo_gpio'],
+                    type=sensor_config.get('type', 'unknown'),
+                    voltage=sensor_config.get('voltage', '3.3V'),
+                    current=sensor_config.get('current', '1mA'),
+                    power_connection=sensor_config.get('power_connection', '3v3_power_rail'),
+                    description=f"{sensor_config.get('description', '')} - Echo",
+                    mode='input',
+                    adc_channel=sensor_config.get('adc_channel'),
+                    i2c_address=sensor_config.get('i2c_address')
+                )
+                
+                # Stocker les deux configurations avec des noms distincts
+                self.sensors_config[f"{sensor_name}_trigger"] = trigger_pin_config
+                self.sensors_config[f"{sensor_name}_echo"] = echo_pin_config
+                
+            else:
+                # Capteur standard avec un seul pin
+                pin_config = GPIOPinConfig(
+                    pin=sensor_config.get('gpio_pin', 0),
+                    type=sensor_config.get('type', 'unknown'),
+                    voltage=sensor_config.get('voltage', '3.3V'),
+                    current=sensor_config.get('current', '1mA'),
+                    power_connection=sensor_config.get('power_connection', '3v3_power_rail'),
+                    description=sensor_config.get('description', ''),
+                    mode='input',
+                    adc_channel=sensor_config.get('adc_channel'),
+                    i2c_address=sensor_config.get('i2c_address')
+                )
+                
+                self.sensors_config[sensor_name] = pin_config
         
         self.logger.debug(f"Configuration des capteurs extraite: {len(self.sensors_config)} capteurs")
     
@@ -140,6 +185,26 @@ class GPIOConfigService:
         """Récupère le pin d'un capteur"""
         if sensor_name in self.sensors_config:
             return self.sensors_config[sensor_name].pin
+        
+        # Gérer les capteurs spéciaux avec des noms spécifiques
+        if sensor_name == 'water_level':
+            # Pour la compatibilité, retourner le pin trigger par défaut
+            trigger_config = self.sensors_config.get('water_level_trigger')
+            if trigger_config:
+                return trigger_config.pin
+        
+        return None
+    
+    def get_water_level_pins(self) -> Optional[Dict[str, int]]:
+        """Récupère les pins du capteur de niveau d'eau (trigger et echo)"""
+        trigger_config = self.sensors_config.get('water_level_trigger')
+        echo_config = self.sensors_config.get('water_level_echo')
+        
+        if trigger_config and echo_config:
+            return {
+                'trigger': trigger_config.pin,
+                'echo': echo_config.pin
+            }
         return None
     
     def get_actuator_pin(self, actuator_name: str) -> Optional[int]:
