@@ -77,10 +77,10 @@ class GPIOConfigService:
                 self.gpio_config = json.load(f)
             
             # Extraire les différentes sections
-            self._extract_pin_assignments()
             self._extract_sensors_config()
             self._extract_actuators_config()
             self._extract_interface_config()
+            self._extract_pin_assignments()  # Doit être appelé après les autres extractions
             
             self.logger.info("Configuration GPIO chargée avec succès")
             return self.gpio_config
@@ -98,7 +98,17 @@ class GPIOConfigService:
     
     def _extract_pin_assignments(self):
         """Extrait les assignations de pins"""
-        self.pin_assignments = self.gpio_config.get('pin_assignments', {})
+        # Créer un dictionnaire des assignations de pins depuis les capteurs et actionneurs
+        self.pin_assignments = {}
+        
+        # Ajouter les pins des capteurs
+        for sensor_name, sensor_config in self.sensors_config.items():
+            self.pin_assignments[f"{sensor_name.upper()}_PIN"] = sensor_config.pin
+        
+        # Ajouter les pins des actionneurs
+        for actuator_name, actuator_config in self.actuators_config.items():
+            self.pin_assignments[f"{actuator_name.upper()}_PIN"] = actuator_config.pin
+        
         self.logger.debug(f"Assignations de pins extraites: {len(self.pin_assignments)} pins")
     
     def _extract_sensors_config(self):
@@ -241,6 +251,10 @@ class GPIOConfigService:
         """Récupère les informations d'un rail d'alimentation"""
         power_connections = self.gpio_config.get('gpio_pins', {}).get('power_connections', {})
         return power_connections.get(rail_name)
+    
+    def get_hardware_config(self) -> Dict[str, Any]:
+        """Récupère la configuration matérielle (hardware)"""
+        return self.gpio_config.get('hardware_config', {})
     
     def validate_pin_config(self, pin: int) -> bool:
         """Valide qu'un pin est configuré et disponible"""

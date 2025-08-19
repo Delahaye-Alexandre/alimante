@@ -56,6 +56,28 @@ def initialize_system(config: SystemConfig) -> Dict[str, Any]:
         controllers = {}
         
         # Préparer la configuration complète avec GPIO pour chaque contrôleur
+        # Vérifier que les configurations existent
+        if not config.temperature:
+            raise create_exception(
+                ErrorCode.CONFIGURATION_INVALID,
+                "Configuration de température manquante",
+                {"config_keys": list(config.__dict__.keys())}
+            )
+        
+        if not config.humidity:
+            raise create_exception(
+                ErrorCode.CONFIGURATION_INVALID,
+                "Configuration d'humidité manquante",
+                {"config_keys": list(config.__dict__.keys())}
+            )
+        
+        if not config.feeding:
+            raise create_exception(
+                ErrorCode.CONFIGURATION_INVALID,
+                "Configuration d'alimentation manquante",
+                {"config_keys": list(config.__dict__.keys())}
+            )
+        
         temp_config = config.temperature.copy()
         temp_config['gpio_config'] = config.gpio_config
         
@@ -70,18 +92,18 @@ def initialize_system(config: SystemConfig) -> Dict[str, Any]:
         
         # Configuration pour la qualité de l'air et les ventilateurs
         air_quality_config = {
-            "pin": config.gpio_config.pin_assignments.get("AIR_QUALITY_PIN", 27),
-            "voltage": "5V",
-            "current": 120
+            "pin": config.gpio_config.get("gpio_pins", {}).get("sensors", {}).get("mq2_gas", {}).get("gpio_pin", 22),
+            "voltage": "5.1V",
+            "current": 150
         }
         air_quality_config['gpio_config'] = config.gpio_config
         
         fan_config = {
-            "count": config.gpio_config.hardware_config.get("fan", {}).get("count", 4),
-            "relay_pin": config.gpio_config.pin_assignments.get("FAN_RELAY_PIN", 25),
-            "voltage": config.gpio_config.hardware_config.get("fan", {}).get("voltage", "5V"),
-            "current_per_fan": config.gpio_config.hardware_config.get("fan", {}).get("current_per_fan", "200mA"),
-            "total_current": config.gpio_config.hardware_config.get("fan", {}).get("total_current", "800mA")
+            "count": config.gpio_config.get("hardware_config", {}).get("fan", {}).get("count", 4),
+            "relay_pin": config.gpio_config.get("gpio_pins", {}).get("actuators", {}).get("fan_relay", {}).get("gpio_pin", 25),
+            "voltage": config.gpio_config.get("hardware_config", {}).get("fan", {}).get("voltage", "5.1V"),
+            "current_per_fan": config.gpio_config.get("hardware_config", {}).get("fan", {}).get("current_per_fan", "200mA"),
+            "total_current": config.gpio_config.get("hardware_config", {}).get("fan", {}).get("total_current", "800mA")
         }
         fan_config['gpio_config'] = config.gpio_config
         
@@ -357,6 +379,14 @@ def main():
         common_config_path = 'config/config.json'
         gpio_config_path = 'config/gpio_config.json'
         config = SystemConfig.from_json(common_config_path, specific_config_path, gpio_config_path)
+        
+        # Debug: afficher la structure de la configuration
+        logger.info(f"📋 Structure de la configuration: {list(config.__dict__.keys())}")
+        logger.info(f"🌡️ Configuration température: {config.temperature is not None}")
+        logger.info(f"💧 Configuration humidité: {config.humidity is not None}")
+        logger.info(f"🍽️ Configuration alimentation: {config.feeding is not None}")
+        logger.info(f"💡 Configuration éclairage: {config.lighting is not None}")
+        logger.info(f"🔌 Configuration GPIO: {config.gpio_config is not None}")
         
         logger.info("✅ Configuration chargée avec succès")
         

@@ -73,16 +73,16 @@ class SystemConfig:
                 logging=combined_data.get('logging', {}),
                 performance=combined_data.get('performance', {}),
                 
-                # Configuration spécifique à l'espèce
-                species_name=specific_data.get('species_name'),
-                common_name=specific_data.get('common_name'),
-                classification=specific_data.get('classification'),
-                temperature=specific_data.get('temperature'),
-                humidity=specific_data.get('humidity'),
-                feeding=specific_data.get('feeding'),
-                lighting=specific_data.get('lighting'),
+                # Configuration spécifique à l'espèce (extraire des structures imbriquées)
+                species_name=specific_data.get('species_info', {}).get('species_name'),
+                common_name=specific_data.get('species_info', {}).get('common_name'),
+                classification=specific_data.get('species_info', {}).get('taxonomy'),
+                temperature=specific_data.get('environmental_requirements', {}).get('temperature'),
+                humidity=specific_data.get('environmental_requirements', {}).get('humidity'),
+                feeding=specific_data.get('feeding_requirements'),
+                lighting=specific_data.get('environmental_requirements', {}).get('lighting'),
                 lifecycle=specific_data.get('lifecycle'),
-                enclosure=specific_data.get('enclosure'),
+                enclosure=specific_data.get('enclosure_requirements'),
                 
                 # Configuration GPIO
                 gpio_config=gpio_data
