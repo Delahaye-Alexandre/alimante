@@ -73,12 +73,15 @@ class LightController(BaseController):
     def _setup_pins(self):
         """Configure les pins GPIO nécessaires"""
         try:
-            # Récupérer la configuration GPIO depuis la config système
-            gpio_config = self.config.get('gpio_config', {})
-            pin_assignments = gpio_config.get('pin_assignments', {})
+            # Utiliser le service de configuration GPIO
+            from ..services.gpio_config_service import GPIOConfigService
+            gpio_service = GPIOConfigService()
             
             # Pin du relais d'éclairage
-            light_relay_pin = pin_assignments.get('LIGHT_RELAY_PIN', 24)
+            light_relay_pin = gpio_service.get_actuator_pin('led_strip')
+            if light_relay_pin is None:
+                light_relay_pin = gpio_service.get_pin_assignment('LED_STRIP_PIN')
+            
             light_relay_config = PinConfig(
                 pin=light_relay_pin,
                 mode=PinMode.OUTPUT,
@@ -87,7 +90,10 @@ class LightController(BaseController):
             self.gpio_manager.setup_pin(light_relay_config)
             
             # Pin du capteur de lumière (optionnel)
-            light_sensor_pin = pin_assignments.get('LIGHT_SENSOR_PIN', 17)
+            light_sensor_pin = gpio_service.get_sensor_pin('light')
+            if light_sensor_pin is None:
+                light_sensor_pin = gpio_service.get_pin_assignment('LIGHT_SENSOR_PIN')
+            
             light_sensor_config = PinConfig(
                 pin=light_sensor_pin,
                 mode=PinMode.INPUT

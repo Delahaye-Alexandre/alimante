@@ -47,17 +47,37 @@ class LCDMenuController:
         self.lcd_config = config.get("lcd_config", {})
         self.menu_config = config.get("menu_config", {})
         
+        # Récupérer la configuration depuis le service GPIO
+        from ..services.gpio_config_service import GPIOConfigService
+        gpio_service = GPIOConfigService()
+        
         # Pins SPI pour ST7735
-        self.dc_pin = self.lcd_config.get("spi_pins", {}).get("dc", 8)
-        self.cs_pin = self.lcd_config.get("spi_pins", {}).get("cs", 7)
-        self.rst_pin = self.lcd_config.get("spi_pins", {}).get("rst", 9)
-        self.backlight_pin = self.lcd_config.get("backlight_pin", 10)
+        lcd_interface_config = gpio_service.get_interface_config('lcd_st7735')
+        if lcd_interface_config:
+            spi_pins = lcd_interface_config.get('spi_gpios', {})
+            self.dc_pin = spi_pins.get('dc', 8)
+            self.cs_pin = spi_pins.get('cs', 7)
+            self.rst_pin = spi_pins.get('rst', 9)
+            self.backlight_pin = lcd_interface_config.get('backlight_gpio', 10)
+        else:
+            # Fallback vers la configuration locale
+            self.dc_pin = self.lcd_config.get("spi_pins", {}).get("dc", 8)
+            self.cs_pin = self.lcd_config.get("spi_pins", {}).get("cs", 7)
+            self.rst_pin = self.lcd_config.get("spi_pins", {}).get("rst", 9)
+            self.backlight_pin = self.lcd_config.get("backlight_pin", 10)
         
         # Configuration encodeur rotatif
-        self.rotary_config = self.menu_config.get("rotary_encoder", {})
-        self.clk_pin = self.rotary_config.get("clk_pin", 5)
-        self.dt_pin = self.rotary_config.get("dt_pin", 6)
-        self.sw_pin = self.rotary_config.get("sw_pin", 13)
+        rotary_interface_config = gpio_service.get_interface_config('rotary_encoder')
+        if rotary_interface_config:
+            self.clk_pin = rotary_interface_config.get('clk_gpio', 5)
+            self.dt_pin = rotary_interface_config.get('dt_gpio', 6)
+            self.sw_pin = rotary_interface_config.get('sw_gpio', 13)
+        else:
+            # Fallback vers la configuration locale
+            self.rotary_config = self.menu_config.get("rotary_encoder", {})
+            self.clk_pin = self.rotary_config.get("clk_pin", 5)
+            self.dt_pin = self.rotary_config.get("dt_pin", 6)
+            self.sw_pin = self.rotary_config.get("sw_pin", 13)
         self.rotation_sensitivity = self.menu_config.get("rotation_sensitivity", 1)
         
         # État de l'encodeur rotatif

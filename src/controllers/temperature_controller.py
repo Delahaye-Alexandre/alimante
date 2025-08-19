@@ -49,12 +49,15 @@ class TemperatureController(BaseController):
     def _setup_pins(self):
         """Configure les pins GPIO nécessaires"""
         try:
-            # Récupérer la configuration GPIO depuis la config système
-            gpio_config = self.config.get('gpio_config', {})
-            pin_assignments = gpio_config.get('pin_assignments', {})
+            # Utiliser le service de configuration GPIO
+            from ..services.gpio_config_service import GPIOConfigService
+            gpio_service = GPIOConfigService()
             
             # Pin du capteur DHT22
-            temp_sensor_pin = pin_assignments.get('TEMP_HUMIDITY_PIN', 4)
+            temp_sensor_pin = gpio_service.get_sensor_pin('temp_humidity')
+            if temp_sensor_pin is None:
+                temp_sensor_pin = gpio_service.get_pin_assignment('TEMP_HUMIDITY_PIN')
+            
             temp_sensor_config = PinConfig(
                 pin=temp_sensor_pin,
                 mode=PinMode.INPUT
@@ -62,7 +65,10 @@ class TemperatureController(BaseController):
             self.gpio_manager.setup_pin(temp_sensor_config)
             
             # Pin du relais de chauffage
-            heating_relay_pin = pin_assignments.get('HEATING_RELAY_PIN', 18)
+            heating_relay_pin = gpio_service.get_actuator_pin('heating_relay')
+            if heating_relay_pin is None:
+                heating_relay_pin = gpio_service.get_pin_assignment('HEATING_RELAY_PIN')
+            
             heating_relay_config = PinConfig(
                 pin=heating_relay_pin,
                 mode=PinMode.OUTPUT,

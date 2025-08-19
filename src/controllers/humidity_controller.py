@@ -51,12 +51,15 @@ class HumidityController(BaseController):
     def _setup_pins(self):
         """Configure les pins GPIO nécessaires"""
         try:
-            # Récupérer la configuration GPIO depuis la config système
-            gpio_config = self.config.get('gpio_config', {})
-            pin_assignments = gpio_config.get('pin_assignments', {})
+            # Utiliser le service de configuration GPIO
+            from ..services.gpio_config_service import GPIOConfigService
+            gpio_service = GPIOConfigService()
             
             # Pin du capteur DHT22 (partagé avec température)
-            temp_humidity_pin = pin_assignments.get('TEMP_HUMIDITY_PIN', 4)
+            temp_humidity_pin = gpio_service.get_sensor_pin('temp_humidity')
+            if temp_humidity_pin is None:
+                temp_humidity_pin = gpio_service.get_pin_assignment('TEMP_HUMIDITY_PIN')
+            
             humidity_sensor_config = PinConfig(
                 pin=temp_humidity_pin,
                 mode=PinMode.INPUT
@@ -64,7 +67,10 @@ class HumidityController(BaseController):
             self.gpio_manager.setup_pin(humidity_sensor_config)
             
             # Pin du relais de pulvérisation
-            humidity_relay_pin = pin_assignments.get('HUMIDITY_RELAY_PIN', 23)
+            humidity_relay_pin = gpio_service.get_actuator_pin('humidity_relay')
+            if humidity_relay_pin is None:
+                humidity_relay_pin = gpio_service.get_pin_assignment('HUMIDITY_RELAY_PIN')
+            
             spray_relay_config = PinConfig(
                 pin=humidity_relay_pin,
                 mode=PinMode.OUTPUT,

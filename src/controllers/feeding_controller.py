@@ -60,12 +60,15 @@ class FeedingController(BaseController):
     def _setup_pins(self):
         """Configure les pins GPIO nécessaires"""
         try:
-            # Récupérer la configuration GPIO depuis la config système
-            gpio_config = self.config.get('gpio_config', {})
-            pin_assignments = gpio_config.get('pin_assignments', {})
+            # Utiliser le service de configuration GPIO
+            from ..services.gpio_config_service import GPIOConfigService
+            gpio_service = GPIOConfigService()
             
             # Pin du servo pour la trappe
-            feeding_servo_pin = pin_assignments.get('FEEDING_SERVO_PIN', 12)
+            feeding_servo_pin = gpio_service.get_actuator_pin('feeding_servo')
+            if feeding_servo_pin is None:
+                feeding_servo_pin = gpio_service.get_pin_assignment('FEEDING_SERVO_PIN')
+            
             servo_config = PinConfig(
                 pin=feeding_servo_pin,
                 mode=PinMode.PWM,

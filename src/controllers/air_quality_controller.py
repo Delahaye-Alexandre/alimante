@@ -21,11 +21,23 @@ class AirQualityController:
         self.config = config
         
         # Configuration du capteur MQ2 avec PCF8591
-        self.mq2_pin = config.get("pin", 22)  # I2C SDA
-        self.i2c_address = config.get("i2c_address", "0x48")  # Adresse I2C par défaut du PCF8591
-        self.adc_channel = config.get("adc_channel", 0)  # Canal AIN0 du PCF8591
         self.voltage = config.get("voltage", "5.1V")
         self.current = config.get("current", 150)  # mA
+        
+        # Récupérer la configuration depuis le service GPIO
+        from ..services.gpio_config_service import GPIOConfigService
+        gpio_service = GPIOConfigService()
+        
+        mq2_sensor_config = gpio_service.get_sensor_config('mq2_gas')
+        if mq2_sensor_config:
+            self.mq2_pin = mq2_sensor_config.pin
+            self.i2c_address = mq2_sensor_config.i2c_address or "0x48"
+            self.adc_channel = mq2_sensor_config.adc_channel or 0
+        else:
+            # Fallback vers les assignations de pins
+            self.mq2_pin = gpio_service.get_pin_assignment('MQ2_GAS_PIN')
+            self.i2c_address = config.get("i2c_address", "0x48")
+            self.adc_channel = config.get("adc_channel", 0)
         
         # Seuils de qualité de l'air (ppm)
         self.air_quality_thresholds = {

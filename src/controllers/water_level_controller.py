@@ -21,11 +21,25 @@ class WaterLevelController:
         self.config = config
         
         # Configuration du capteur ultrasonique
-        self.trigger_pin = config.get("trigger_pin", 20)
-        self.echo_pin = config.get("echo_pin", 21)
         self.sensor_type = config.get("type", "HC-SR04P")
         self.voltage = config.get("voltage", "3.3V")
         self.current = config.get("current", 15)  # mA
+        
+        # Récupérer les pins depuis la configuration GPIO
+        from ..services.gpio_config_service import GPIOConfigService
+        gpio_service = GPIOConfigService()
+        
+        # Pins du capteur ultrasonique
+        water_sensor_config = gpio_service.get_sensor_config('water_level')
+        if water_sensor_config:
+            self.trigger_pin = water_sensor_config.pin
+            # Pour les capteurs ultrasoniques, on utilise le pin trigger comme référence
+            # Le pin echo est généralement le suivant ou configuré séparément
+            self.echo_pin = self.trigger_pin + 1  # Fallback
+        else:
+            # Fallback vers les assignations de pins
+            self.trigger_pin = gpio_service.get_pin_assignment('WATER_LEVEL_TRIGGER_PIN')
+            self.echo_pin = gpio_service.get_pin_assignment('WATER_LEVEL_ECHO_PIN')
         
         # Configuration de mesure
         self.min_distance = config.get("min_distance", 5)  # cm - distance minimum fiable

@@ -22,10 +22,16 @@ class FanController:
         
         # Configuration des ventilateurs
         self.fan_count = config.get("count", 4)
-        self.fan_relay_pin = config.get("relay_pin", 25)
         self.voltage = config.get("voltage", "5V")
         self.current_per_fan = config.get("current_per_fan", 200)  # mA
         self.total_current = config.get("total_current", 800)  # mA
+        
+        # Récupérer le pin depuis la configuration GPIO
+        from ..services.gpio_config_service import GPIOConfigService
+        gpio_service = GPIOConfigService()
+        self.fan_relay_pin = gpio_service.get_actuator_pin('fan_relay')
+        if self.fan_relay_pin is None:
+            self.fan_relay_pin = gpio_service.get_pin_assignment('FAN_RELAY_PIN')
         
         # État des ventilateurs
         self.fans_active = False

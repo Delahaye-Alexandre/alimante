@@ -21,11 +21,20 @@ class RadiatorTempController:
         self.config = config
         
         # Configuration du capteur DS18B20
-        self.sensor_pin = config.get("pin", 26)
         self.sensor_type = config.get("type", "DS18B20")
         self.sensor_address = config.get("address", "auto")
         self.voltage = config.get("voltage", "3.3V")
         self.current = config.get("current", 1)  # mA
+        
+        # Récupérer le pin depuis la configuration GPIO
+        from ..services.gpio_config_service import GPIOConfigService
+        gpio_service = GPIOConfigService()
+        
+        radiator_sensor_config = gpio_service.get_sensor_config('radiator_temp')
+        if radiator_sensor_config:
+            self.sensor_pin = radiator_sensor_config.pin
+        else:
+            self.sensor_pin = gpio_service.get_pin_assignment('RADIATOR_TEMP_PIN')
         
         # État du contrôleur
         self.current_temperature = None
