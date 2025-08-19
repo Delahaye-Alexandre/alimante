@@ -11,8 +11,23 @@ from typing import Dict, Any, List, Set
 def load_gpio_config():
     """Charge la configuration GPIO"""
     try:
-        with open('config/pin_config.json', 'r', encoding='utf-8') as f:
-            return json.load(f)
+        # Essayer plusieurs chemins possibles
+        possible_paths = [
+            'config/gpio_config.json',
+            '../../config/gpio_config.json',
+            '../config/gpio_config.json'
+        ]
+        
+        for path in possible_paths:
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except FileNotFoundError:
+                continue
+        
+        print("❌ Fichier gpio_config.json non trouvé")
+        return None
+        
     except Exception as e:
         print(f"❌ Erreur chargement GPIO config: {e}")
         return None
@@ -66,22 +81,45 @@ def analyze_gpio_pins(gpio_config):
     """Analyse les pins GPIO configurés"""
     print("🔍 Analyse des pins GPIO...")
     
-    if not gpio_config or 'pins' not in gpio_config:
+    if not gpio_config or 'gpio_pins' not in gpio_config:
         print("❌ Configuration GPIO invalide")
         return None
     
-    pins = gpio_config['pins']
+    gpio_pins = gpio_config['gpio_pins']
     all_pins = {}
     
-    # Collecter tous les pins
-    for category, components in pins.items():
-        for name, config in components.items():
-            all_pins[name] = {
-                'pin': config.get('pin'),
-                'type': config.get('type'),
-                'voltage': config.get('voltage'),
-                'category': category
-            }
+    # Collecter tous les pins depuis les différentes sections
+    sections = ['sensors', 'actuators', 'interface', 'status', 'led_strip']
+    
+    for section in sections:
+        if section in gpio_pins:
+            components = gpio_pins[section]
+            if isinstance(components, dict):
+                for name, config in components.items():
+                    # Gérer les capteurs spéciaux comme water_level
+                    if 'trigger_gpio' in config:
+                        # Capteur ultrasonique
+                        all_pins[f"{name}_trigger"] = {
+                            'pin': config.get('trigger_gpio'),
+                            'type': config.get('type'),
+                            'voltage': config.get('voltage'),
+                            'category': section
+                        }
+                        all_pins[f"{name}_echo"] = {
+                            'pin': config.get('echo_gpio'),
+                            'type': config.get('type'),
+                            'voltage': config.get('voltage'),
+                            'category': section
+                        }
+                    else:
+                        # Capteur/actionneur standard
+                        pin_key = 'gpio_pin' if 'gpio_pin' in config else 'pin'
+                        all_pins[name] = {
+                            'pin': config.get(pin_key),
+                            'type': config.get('type'),
+                            'voltage': config.get('voltage'),
+                            'category': section
+                        }
     
     return all_pins
 
