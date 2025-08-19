@@ -276,8 +276,8 @@ class AirQualityController:
             
             # Vérifier que les valeurs sont dans des plages raisonnables
             ppm = reading.get("ppm", 0)
-                    if ppm < 0 or ppm > 5000:  # Plage raisonnable pour MQ2 (LPG, propane, etc.)
-            self.logger.warning(f"Valeur MQ2 suspecte: {ppm} ppm")
+            if ppm < 0 or ppm > 5000:  # Plage raisonnable pour MQ2 (LPG, propane, etc.)
+                self.logger.warning(f"Valeur MQ2 suspecte: {ppm} ppm")
                 return False
             
             return True
