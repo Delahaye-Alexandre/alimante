@@ -98,8 +98,7 @@
                 "current": "30mA",
                 "power_connection": "5v1_power_rail",
                 "description": "Relais ventilateurs - Alimentation directe depuis rail 5.1V, Pin GPIO 25: signal de contrôle uniquement"
-            },
-
+            }
         },
         "interface": {
             "rotary_encoder": {
