@@ -1,37 +1,37 @@
-# Dépendances principales
-RPi.GPIO>=0.7.1
-adafruit-circuitpython-dht>=1.4.0
-adafruit-circuitpython-servokit>=1.3.8
-adafruit-circuitpython-busdevice>=5.2.6
-adafruit-circuitpython-register>=1.9.8
-# PCF8591 I2C ADC/DAC (remplace ADS1115)
-smbus2>=0.4.3
+# Dépendances principales pour Alimante - Raspberry Pi Zero 2W
+# Optimisées pour les ressources limitées
 
-# Calcul des heures de soleil
-astral>=3.2
-
-# API FastAPI (remplace Flask)
-fastapi>=0.104.0
-uvicorn[standard]>=0.24.0
-pydantic>=2.5.0
+# API et serveur web
+fastapi>=0.104.0,<0.105.0
+uvicorn[standard]>=0.24.0,<0.25.0
+pydantic>=2.5.0,<3.0.0
 
 # Authentification et sécurité
-python-jose[cryptography]>=3.3.0
-passlib[bcrypt]>=1.7.4
-python-multipart>=0.0.6
+PyJWT>=2.8.0,<3.0.0
+bcrypt>=4.0.0,<5.0.0
+python-multipart>=0.0.6,<1.0.0
 
-# CORS et middleware
-fastapi-cors>=0.0.6
+# GPIO et matériel
+RPi.GPIO>=0.7.1,<1.0.0
+smbus2>=0.4.3,<1.0.0
 
-# Utilitaires
-python-dotenv>=1.0.0
-requests>=2.31.0
-psutil>=5.9.0
+# Capteurs et composants
+adafruit-circuitpython-dht>=3.7.0,<4.0.0
+adafruit-circuitpython-pcf8591>=1.0.0,<2.0.0
 
-# Logging et monitoring
-colorlog>=6.7.0
+# Utilitaires système
+psutil>=5.9.0,<6.0.0
+python-dateutil>=2.8.0,<3.0.0
+pytz>=2023.3,<2024.0
 
-# Tests
-pytest>=7.4.0
-pytest-mock>=3.11.0
-pytest-asyncio>=0.21.0
+# Logging et configuration
+PyYAML>=6.0.1,<7.0.0
+colorama>=0.4.6,<1.0.0
+
+# Tests (optionnel pour production)
+pytest>=7.4.0,<8.0.0
+pytest-asyncio>=0.21.0,<1.0.0
+
+# Développement (optionnel pour production)
+black>=23.0.0,<24.0.0
+flake8>=6.0.0,<7.0.0
