@@ -13,7 +13,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
 from src.utils.gpio_manager import GPIOManager
 from src.services.watchdog_service import WatchdogService, AlertLevel
-from src.utils.logging_config import setup_logger
+from src.utils.logging_config import setup_logging
 
 def test_watchdog_basic():
     """Test basique du service watchdog"""

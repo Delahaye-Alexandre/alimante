@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from ..utils.gpio_manager import GPIOManager
-from ..utils.logging_config import setup_logger
+from ..utils.logging_config import setup_logging
 
 
 class AlertLevel(Enum):
@@ -52,7 +52,7 @@ class WatchdogService:
     def __init__(self, gpio_manager: GPIOManager, config: Dict = None):
         self.config = config or {}
         self.gpio_manager = gpio_manager
-        self.logger = setup_logger("watchdog_service")
+        self.logger = setup_logging("watchdog_service")
         
         # Configuration watchdog
         self.watchdog_pin = self.config.get("watchdog_pin", 18)
