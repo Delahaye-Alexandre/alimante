@@ -87,14 +87,6 @@ chmod +x install_raspberry.sh
 ./install_raspberry.sh
 ```
 
-### Installation Alternative (Sans Git)
-
-Si git ne fonctionne pas, consultez `INSTALL_MANUAL.md` pour les alternatives :
-
-- Téléchargement direct avec wget
-- Transfert manuel du fichier ZIP
-- Installation étape par étape
-
 ### Installation Manuelle
 
 ```bash
