@@ -5,6 +5,7 @@
 fastapi>=0.104.0,<0.105.0
 uvicorn[standard]>=0.24.0,<0.25.0
 pydantic>=2.5.0,<3.0.0
+passlib>=1.7.4,<2.0.0
 
 # Authentification et sécurité
 PyJWT>=2.8.0,<3.0.0

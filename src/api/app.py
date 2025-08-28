@@ -118,18 +118,18 @@ async def startup_event():
         
         # Initialisation des contrôleurs
         controllers = {
-            'temperature': TemperatureController(gpio_manager, config.temperature),
-            'humidity': HumidityController(gpio_manager, config.humidity),
-            'light': LightController(gpio_manager, config.location),
-            'feeding': FeedingController(gpio_manager, config.feeding),
-            'fan': FanController(gpio_manager, config.get("fan", {})),
-            'ultrasonic_mist': UltrasonicMistController(gpio_manager, config.get("ultrasonic_mist", {})),
-            'air_quality': AirQualityController(gpio_manager, config.get("air_quality", {})),
-            'lcd_menu': LCDMenuController(gpio_manager, config.get("lcd_config", {})),
-            'camera': CameraController(config.get("camera_config", {})),
-            'water_level': WaterLevelController(gpio_manager, config.get("water_level_sensor", {})),
-            'radiator_temp': RadiatorTempController(gpio_manager, config.get("radiator_temp_sensor", {})),
-            'watchdog': WatchdogService(gpio_manager, config.get("watchdog_config", {}))
+            'temperature': TemperatureController(gpio_manager, config.get_temperature_config()),
+            'humidity': HumidityController(gpio_manager, config.get_humidity_config()),
+            'light': LightController(gpio_manager, config.get_location_config()),
+            'feeding': FeedingController(gpio_manager, config.get_feeding_config()),
+            'fan': FanController(gpio_manager, config.get_controller_config('fan')),
+            'ultrasonic_mist': UltrasonicMistController(gpio_manager, config.get_controller_config('ultrasonic_mist')),
+            'air_quality': AirQualityController(gpio_manager, config.get_controller_config('air_quality')),
+            'lcd_menu': LCDMenuController(gpio_manager, config.get_controller_config('lcd_config')),
+            'camera': CameraController(config.get_controller_config('camera_config')),
+            'water_level': WaterLevelController(gpio_manager, config.get_controller_config('water_level_sensor')),
+            'radiator_temp': RadiatorTempController(gpio_manager, config.get_controller_config('radiator_temp_sensor')),
+            'watchdog': WatchdogService(gpio_manager, config.get_controller_config('watchdog_config'))
         }
         
         # Enregistrer les contrôleurs dans les services

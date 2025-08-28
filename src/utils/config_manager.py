@@ -145,6 +145,63 @@ class SystemConfig:
         gpio_config = self.get_gpio_config()
         return gpio_config.get('hardware_config', {})
     
+    def get_controller_config(self, controller_name: str) -> Dict[str, Any]:
+        """Retourne la configuration spécifique à un contrôleur"""
+        # Configuration par défaut pour chaque contrôleur
+        default_configs = {
+            'fan': {
+                'count': 4,
+                'voltage': '5V',
+                'current_per_fan': 200,
+                'total_current': 800
+            },
+            'ultrasonic_mist': {
+                'pin': 22,
+                'voltage': '5V',
+                'current': 50,
+                'frequency': 1700000,
+                'power_watts': 2.5,
+                'pwm_frequency': 1000
+            },
+            'air_quality': {
+                'sensor_type': 'MQ2',
+                'adc_channel': 0,
+                'calibration_points': []
+            },
+            'lcd_config': {
+                'i2c_address': '0x27',
+                'rows': 2,
+                'columns': 16
+            },
+            'camera_config': {
+                'type': 'CSI',
+                'resolution': '1920x1080',
+                'framerate': 30
+            },
+            'water_level_sensor': {
+                'type': 'HC-SR04P',
+                'voltage': '3.3V',
+                'current': 15,
+                'trigger_pin': 17,
+                'echo_pin': 18
+            },
+            'radiator_temp_sensor': {
+                'type': 'DS18B20',
+                'voltage': '3.3V',
+                'current': 1
+            },
+            'watchdog_config': {
+                'watchdog_pin': 18,
+                'timeout_seconds': 30,
+                'max_cpu_temp': 80.0,
+                'max_cpu_usage': 90.0,
+                'max_memory_usage': 85.0
+            }
+        }
+        
+        # Retourner la configuration par défaut pour le contrôleur demandé
+        return default_configs.get(controller_name, {})
+    
     def validate(self) -> bool:
         """
         Valide la configuration système
