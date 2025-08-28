@@ -63,6 +63,11 @@ class FanController:
     def _setup_gpio(self):
         """Configure les pins GPIO"""
         try:
+            # Vérifier que le pin est défini
+            if self.fan_relay_pin is None:
+                self.logger.warning("Pin ventilateur non défini, utilisation du pin par défaut 25")
+                self.fan_relay_pin = 25
+            
             # Configurer le pin du relais des ventilateurs
             from ..utils.gpio_manager import PinConfig, PinMode
             

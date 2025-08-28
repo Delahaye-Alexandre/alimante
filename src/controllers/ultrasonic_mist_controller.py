@@ -60,6 +60,11 @@ class UltrasonicMistController:
     def _setup_gpio(self):
         """Configure les pins GPIO avec support PWM pour transducteur ANGEEK"""
         try:
+            # Vérifier que le pin est défini
+            if self.mist_pin is None:
+                self.logger.warning("Pin brumisateur non défini, utilisation du pin par défaut 22")
+                self.mist_pin = 22
+            
             from ..utils.gpio_manager import PinConfig, PinMode
             
             # Configurer le pin du transducteur ultrasonique en mode PWM

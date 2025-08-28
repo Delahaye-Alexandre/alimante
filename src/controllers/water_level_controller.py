@@ -70,6 +70,14 @@ class WaterLevelController:
     def _setup_gpio(self):
         """Configure les pins GPIO pour le capteur ultrasonique"""
         try:
+            # Vérifier que les pins sont définis
+            if self.trigger_pin is None:
+                self.logger.warning("Pin trigger non défini, utilisation du pin par défaut 20")
+                self.trigger_pin = 20
+            if self.echo_pin is None:
+                self.logger.warning("Pin echo non défini, utilisation du pin par défaut 21")
+                self.echo_pin = 21
+            
             from ..utils.gpio_manager import PinConfig, PinMode
             
             # Configuration trigger (sortie)
