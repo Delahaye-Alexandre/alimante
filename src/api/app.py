@@ -120,15 +120,15 @@ async def startup_event():
         controllers = {
             'temperature': TemperatureController(gpio_manager, config.get_temperature_config()),
             'humidity': HumidityController(gpio_manager, config.get_humidity_config()),
-            'light': LightController(gpio_manager, config.get_location_config()),
-            'feeding': FeedingController(gpio_manager, config.get_feeding_config()),
-            'fan': FanController(gpio_manager, config.get_controller_config('fan')),
-            'ultrasonic_mist': UltrasonicMistController(gpio_manager, config.get_controller_config('ultrasonic_mist')),
-            'air_quality': AirQualityController(gpio_manager, config.get_controller_config('air_quality')),
-            'lcd_menu': LCDMenuController(gpio_manager, config.get_controller_config('lcd_config')),
+            'light': LightController(gpio_manager, config.get_gpio_pins().get('sensors', {}).get('light', {})),
+            'feeding': FeedingController(gpio_manager, config.get_gpio_pins().get('actuators', {}).get('feeding_servo', {})),
+            'fan': FanController(gpio_manager, config.get_gpio_pins().get('actuators', {}).get('fan_relay', {})),
+            'ultrasonic_mist': UltrasonicMistController(gpio_manager, config.get_gpio_pins().get('actuators', {}).get('humidity_relay', {})),
+            'air_quality': AirQualityController(gpio_manager, config.get_gpio_pins().get('sensors', {}).get('mq2_gas', {})),
+            'lcd_menu': LCDMenuController(gpio_manager, config.get_gpio_pins().get('interfaces', {})),
             'camera': CameraController(config.get_controller_config('camera_config')),
-            'water_level': WaterLevelController(gpio_manager, config.get_controller_config('water_level_sensor')),
-            'radiator_temp': RadiatorTempController(gpio_manager, config.get_controller_config('radiator_temp_sensor')),
+            'water_level': WaterLevelController(gpio_manager, config.get_gpio_pins().get('sensors', {}).get('water_level', {})),
+            'radiator_temp': RadiatorTempController(gpio_manager, config.get_gpio_pins().get('sensors', {}).get('radiator_temp', {})),
             'watchdog': WatchdogService(gpio_manager, config.get_controller_config('watchdog_config'))
         }
         
