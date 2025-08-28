@@ -82,6 +82,11 @@ class LightController(BaseController):
             if light_relay_pin is None:
                 light_relay_pin = gpio_service.get_pin_assignment('LED_STRIP_PIN')
             
+            # Vérifier que le pin est défini
+            if light_relay_pin is None:
+                self.logger.warning("Pin éclairage non défini, utilisation du pin par défaut 24")
+                light_relay_pin = 24
+            
             light_relay_config = PinConfig(
                 pin=light_relay_pin,
                 mode=PinMode.OUTPUT,
@@ -93,6 +98,11 @@ class LightController(BaseController):
             light_sensor_pin = gpio_service.get_sensor_pin('light')
             if light_sensor_pin is None:
                 light_sensor_pin = gpio_service.get_pin_assignment('LIGHT_SENSOR_PIN')
+            
+            # Vérifier que le pin capteur est défini
+            if light_sensor_pin is None:
+                self.logger.warning("Pin capteur lumière non défini, utilisation du pin par défaut 17")
+                light_sensor_pin = 17
             
             light_sensor_config = PinConfig(
                 pin=light_sensor_pin,

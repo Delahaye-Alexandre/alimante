@@ -133,8 +133,7 @@ class LCDMenuController:
                 if pin is not None:  # Vérifier que le pin est défini
                     encoder_config = PinConfig(
                         pin=pin,
-                        mode=PinMode.INPUT,
-                        pull_up_down="up"
+                        mode=PinMode.INPUT
                     )
                     self.gpio_manager.setup_pin(encoder_config)
                     self.encoder_states[pin] = False
