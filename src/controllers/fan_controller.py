@@ -64,8 +64,14 @@ class FanController:
         """Configure les pins GPIO"""
         try:
             # Configurer le pin du relais des ventilateurs
-            self.gpio_manager.setup_pin(self.fan_relay_pin, "OUT")
-            self.gpio_manager.write_pin(self.fan_relay_pin, False)  # Éteint par défaut
+            from ..utils.gpio_manager import PinConfig, PinMode
+            
+            relay_config = PinConfig(
+                pin=self.fan_relay_pin,
+                mode=PinMode.OUTPUT,
+                initial_state=False
+            )
+            self.gpio_manager.setup_pin(relay_config)
             
             self.logger.info(f"GPIO ventilateurs configuré: pin {self.fan_relay_pin}")
             

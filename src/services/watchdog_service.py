@@ -89,8 +89,14 @@ class WatchdogService:
         """Configure le GPIO pour le watchdog hardware"""
         try:
             # Pin de sortie pour le signal de heartbeat
-            self.gpio_manager.setup_pin(self.watchdog_pin, "out")
-            self.gpio_manager.write_pin(self.watchdog_pin, False)
+            from ..utils.gpio_manager import PinConfig, PinMode
+            
+            watchdog_config = PinConfig(
+                pin=self.watchdog_pin,
+                mode=PinMode.OUTPUT,
+                initial_state=False
+            )
+            self.gpio_manager.setup_pin(watchdog_config)
             self.logger.info(f"GPIO watchdog configuré sur pin {self.watchdog_pin}")
         except Exception as e:
             self.logger.error(f"Erreur configuration GPIO watchdog: {e}")

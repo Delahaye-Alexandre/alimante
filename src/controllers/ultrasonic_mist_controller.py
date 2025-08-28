@@ -60,8 +60,15 @@ class UltrasonicMistController:
     def _setup_gpio(self):
         """Configure les pins GPIO avec support PWM pour transducteur ANGEEK"""
         try:
+            from ..utils.gpio_manager import PinConfig, PinMode
+            
             # Configurer le pin du transducteur ultrasonique en mode PWM
-            self.gpio_manager.setup_pin(self.mist_pin, "OUT")
+            mist_config = PinConfig(
+                pin=self.mist_pin,
+                mode=PinMode.OUTPUT,
+                initial_state=False
+            )
+            self.gpio_manager.setup_pin(mist_config)
             
             # Initialiser PWM pour contrôle précis de l'intensité ANGEEK
             try:
