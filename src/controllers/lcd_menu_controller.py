@@ -122,30 +122,36 @@ class LCDMenuController:
     def _setup_gpio(self):
         """Configure les GPIO pour l'écran et l'encodeur rotatif"""
         try:
+            from ..utils.gpio_manager import PinConfig, PinMode
+            
             # Configuration des pins SPI (sera géré par la bibliothèque ST7735)
             
             # Configuration de l'encodeur rotatif
             encoder_pins = [self.clk_pin, self.dt_pin, self.sw_pin]
             
             for pin in encoder_pins:
-                pin_config = {
-                    "pin": pin,
-                    "mode": "input",
-                    "pull_up_down": "up"
-                }
-                self.gpio_manager.setup_pin(pin_config)
-                self.encoder_states[pin] = False
+                if pin is not None:  # Vérifier que le pin est défini
+                    encoder_config = PinConfig(
+                        pin=pin,
+                        mode=PinMode.INPUT,
+                        pull_up_down="up"
+                    )
+                    self.gpio_manager.setup_pin(encoder_config)
+                    self.encoder_states[pin] = False
             
             # Initialiser l'état CLK pour détecter les rotations
-            self.last_clk_state = self.gpio_manager.read_pin(self.clk_pin)
+            if self.clk_pin is not None:
+                self.last_clk_state = self.gpio_manager.read_pin(self.clk_pin)
             
             # Configuration du backlight
-            backlight_config = {
-                "pin": self.backlight_pin,
-                "mode": "output"
-            }
-            self.gpio_manager.setup_pin(backlight_config)
-            self.gpio_manager.write_pin(self.backlight_pin, True)  # Allumer le backlight
+            if self.backlight_pin is not None:
+                backlight_config = PinConfig(
+                    pin=self.backlight_pin,
+                    mode=PinMode.OUTPUT,
+                    initial_state=True
+                )
+                self.gpio_manager.setup_pin(backlight_config)
+                self.logger.info("Backlight LCD activé")
             
             self.logger.info("GPIO configuré pour LCD et encodeur rotatif")
             
