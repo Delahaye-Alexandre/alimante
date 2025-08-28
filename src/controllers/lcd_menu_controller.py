@@ -177,7 +177,7 @@ class LCDMenuController:
                 self.logger.info("✅ Composant LCD et encodeur rotatif configuré")
                 
                 # Initialiser l'état CLK pour détecter les rotations
-                self.last_clk_state = self.gpio_manager.read_pin(self.clk_pin)
+                self.last_clk_state = self.gpio_manager.read_digital(self.clk_pin)
             else:
                 self.is_available = False
                 self.logger.error("❌ Échec configuration encodeur rotatif")
@@ -247,11 +247,11 @@ class LCDMenuController:
     def _check_encoder_rotation(self):
         """Vérifie la rotation de l'encodeur rotatif"""
         try:
-            current_clk = self.gpio_manager.read_pin(self.clk_pin)
+            current_clk = self.gpio_manager.read_digital(self.clk_pin)
             
             # Détecter changement d'état sur CLK
             if current_clk != self.last_clk_state:
-                dt_state = self.gpio_manager.read_pin(self.dt_pin)
+                dt_state = self.gpio_manager.read_digital(self.dt_pin)
                 
                 # Déterminer le sens de rotation
                 if current_clk == 0:  # Front descendant CLK
@@ -277,7 +277,7 @@ class LCDMenuController:
             current_time = time.time()
             
             # Lire l'état du bouton (inversé car pull-up)
-            button_pressed = not self.gpio_manager.read_pin(self.sw_pin)
+            button_pressed = not self.gpio_manager.read_digital(self.sw_pin)
             
             if button_pressed and not self.encoder_states.get(self.sw_pin, False):
                 # Bouton pressé
@@ -605,7 +605,7 @@ class LCDMenuController:
             # Vérifier les boutons
             for pin in [self.up_pin, self.down_pin, self.select_pin, self.back_pin]:
                 try:
-                    self.gpio_manager.read_pin(pin)
+                    self.gpio_manager.read_digital(pin)
                 except Exception as e:
                     self.logger.error(f"Erreur lecture bouton {pin}: {e}")
                     return False
