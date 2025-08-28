@@ -38,6 +38,7 @@ class FanController:
         self.last_activation = None
         self.total_runtime = 0
         self.error_count = 0
+        self.is_available = False  # Disponibilité du composant
         
         # Configuration de contrôle
         self.auto_mode = True
@@ -65,8 +66,9 @@ class FanController:
         try:
             # Vérifier que le pin est défini
             if self.fan_relay_pin is None:
-                self.logger.warning("Pin ventilateur non défini, utilisation du pin par défaut 25")
-                self.fan_relay_pin = 25
+                self.logger.warning("❌ Composant ventilateur non détecté - PIN manquant")
+                self.is_available = False
+                return
             
             # Configurer le pin du relais des ventilateurs
             from ..utils.gpio_manager import PinConfig, PinMode
@@ -74,29 +76,45 @@ class FanController:
             relay_config = PinConfig(
                 pin=self.fan_relay_pin,
                 mode=PinMode.OUTPUT,
-                initial_state=False
+                initial_state=False,
+                component_name="Ventilateur",
+                required=True
             )
-            self.gpio_manager.setup_pin(relay_config)
             
-            self.logger.info(f"GPIO ventilateurs configuré: pin {self.fan_relay_pin}")
+            if self.gpio_manager.setup_pin(relay_config):
+                self.is_available = True
+                self.logger.info(f"✅ Composant ventilateur configuré: pin {self.fan_relay_pin}")
+            else:
+                self.is_available = False
+                self.logger.error("❌ Échec configuration ventilateur")
+                raise create_exception(
+                    ErrorCode.GPIO_SETUP_FAILED,
+                    "Impossible de configurer le ventilateur",
+                    {"relay_pin": self.fan_relay_pin}
+                )
             
         except Exception as e:
-            self.logger.exception("Erreur configuration GPIO ventilateurs")
+            self.is_available = False
+            self.logger.exception("❌ Erreur configuration GPIO ventilateurs")
             raise create_exception(
-                ErrorCode.CONTROLLER_INIT_FAILED,
+                ErrorCode.GPIO_SETUP_FAILED,
                 "Impossible de configurer les ventilateurs",
                 {"relay_pin": self.fan_relay_pin, "original_error": str(e)}
             )
     
     def activate_fans(self) -> bool:
         """Active tous les ventilateurs"""
+        if not self.is_available:
+            self.logger.warning("⚠️ Tentative d'activation ventilateur désactivé - composant non disponible")
+            return False
+        
         try:
             if not self.fans_active:
                 self.gpio_manager.write_pin(self.fan_relay_pin, True)
                 self.fans_active = True
                 self.last_activation = datetime.now()
                 
-                self.logger.info("Ventilateurs activés", {
+                self.logger.info("✅ Ventilateurs activés", {
                     "fan_count": self.fan_count,
                     "total_current": f"{self.total_current}mA",
                     "voltage": self.voltage,
@@ -110,15 +128,19 @@ class FanController:
                 
         except Exception as e:
             self.error_count += 1
-            self.logger.exception("Erreur activation ventilateurs")
+            self.logger.exception("❌ Erreur activation ventilateurs")
             raise create_exception(
-                ErrorCode.CONTROLLER_INIT_FAILED,
+                ErrorCode.CONTROLLER_CONTROL_FAILED,
                 "Impossible d'activer les ventilateurs",
                 {"original_error": str(e)}
             )
     
     def deactivate_fans(self) -> bool:
         """Désactive tous les ventilateurs"""
+        if not self.is_available:
+            self.logger.warning("⚠️ Tentative de désactivation ventilateur désactivé - composant non disponible")
+            return False
+        
         try:
             if self.fans_active:
                 self.gpio_manager.write_pin(self.fan_relay_pin, False)
@@ -130,7 +152,7 @@ class FanController:
                     runtime = (datetime.now() - self.last_activation).total_seconds()
                     self.total_runtime += runtime
                 
-                self.logger.info("Ventilateurs désactivés", {
+                self.logger.info("✅ Ventilateurs désactivés", {
                     "runtime_seconds": runtime if self.last_activation else 0,
                     "total_runtime_hours": self.total_runtime / 3600
                 })
@@ -142,9 +164,9 @@ class FanController:
                 
         except Exception as e:
             self.error_count += 1
-            self.logger.exception("Erreur désactivation ventilateurs")
+            self.logger.exception("❌ Erreur désactivation ventilateurs")
             raise create_exception(
-                ErrorCode.CONTROLLER_INIT_FAILED,
+                ErrorCode.CONTROLLER_CONTROL_FAILED,
                 "Impossible de désactiver les ventilateurs",
                 {"original_error": str(e)}
             )
@@ -264,7 +286,8 @@ class FanController:
                 runtime = (datetime.now() - self.last_activation).total_seconds()
             
             return {
-                "status": "ok" if self.error_count == 0 else "error",
+                "status": "ok" if self.error_count == 0 and self.is_available else "disabled" if not self.is_available else "error",
+                "component_available": self.is_available,
                 "fans_active": self.fans_active,
                 "auto_mode": self.auto_mode,
                 "fan_count": self.fan_count,
@@ -276,15 +299,21 @@ class FanController:
                 "error_count": self.error_count,
                 "voltage": self.voltage,
                 "total_current_ma": self.total_current,
-                "last_activation": self.last_activation.isoformat() if self.last_activation else None
+                "last_activation": self.last_activation.isoformat() if self.last_activation else None,
+                "component_info": {
+                    "available": self.is_available,
+                    "pin": self.fan_relay_pin,
+                    "reason_disabled": "Composant non détecté" if not self.is_available else None
+                }
             }
             
         except Exception as e:
-            self.logger.exception("Erreur récupération statut ventilateurs")
+            self.logger.exception("❌ Erreur récupération statut ventilateurs")
             return {
                 "status": "error",
                 "error": str(e),
-                "fans_active": False
+                "fans_active": False,
+                "component_available": False
             }
     
     def check_status(self) -> bool:

@@ -98,6 +98,12 @@ class LCDMenuController:
         self.display_start = 0
         self.items_per_page = 6
         
+        # Disponibilité du composant
+        self.is_available = False
+        
+        # Initialisation GPIO
+        self._setup_gpio()
+        
         # Gestion de l'encodeur rotatif
         self.encoder_states = {}
         self.debounce_time = self.menu_config.get("debounce_time", 50)
@@ -124,38 +130,62 @@ class LCDMenuController:
         try:
             from ..utils.gpio_manager import PinConfig, PinMode
             
+            # Vérifier que les pins essentiels sont définis
+            if self.clk_pin is None or self.dt_pin is None:
+                self.logger.warning("❌ Composant encodeur rotatif non détecté - Pins CLK/DT manquants")
+                self.is_available = False
+                return
+            
             # Configuration des pins SPI (sera géré par la bibliothèque ST7735)
             
             # Configuration de l'encodeur rotatif
             encoder_pins = [self.clk_pin, self.dt_pin, self.sw_pin]
+            encoder_success = True
             
             for pin in encoder_pins:
                 if pin is not None:  # Vérifier que le pin est défini
                     encoder_config = PinConfig(
                         pin=pin,
-                        mode=PinMode.INPUT
+                        mode=PinMode.INPUT,
+                        component_name=f"Encodeur rotatif (pin {pin})",
+                        required=(pin in [self.clk_pin, self.dt_pin])  # CLK et DT sont requis
                     )
-                    self.gpio_manager.setup_pin(encoder_config)
-                    self.encoder_states[pin] = False
+                    if not self.gpio_manager.setup_pin(encoder_config):
+                        if pin in [self.clk_pin, self.dt_pin]:
+                            encoder_success = False
+                            self.logger.error(f"❌ Échec configuration encodeur rotatif - pin {pin}")
             
-            # Initialiser l'état CLK pour détecter les rotations
-            if self.clk_pin is not None:
-                self.last_clk_state = self.gpio_manager.read_pin(self.clk_pin)
-            
-            # Configuration du backlight
+            # Configuration du backlight (optionnel)
+            backlight_success = True
             if self.backlight_pin is not None:
                 backlight_config = PinConfig(
                     pin=self.backlight_pin,
                     mode=PinMode.OUTPUT,
-                    initial_state=True
+                    initial_state=True,
+                    component_name="Backlight LCD",
+                    required=False  # Optionnel
                 )
-                self.gpio_manager.setup_pin(backlight_config)
-                self.logger.info("Backlight LCD activé")
+                backlight_success = self.gpio_manager.setup_pin(backlight_config)
+                if backlight_success:
+                    self.logger.info("✅ Backlight LCD activé")
+                else:
+                    self.logger.warning("⚠️ Backlight LCD non configuré (optionnel)")
             
-            self.logger.info("GPIO configuré pour LCD et encodeur rotatif")
+            # Définir la disponibilité globale
+            if encoder_success:
+                self.is_available = True
+                self.logger.info("✅ Composant LCD et encodeur rotatif configuré")
+                
+                # Initialiser l'état CLK pour détecter les rotations
+                self.last_clk_state = self.gpio_manager.read_pin(self.clk_pin)
+            else:
+                self.is_available = False
+                self.logger.error("❌ Échec configuration encodeur rotatif")
+                raise Exception("Impossible de configurer l'encodeur rotatif")
             
         except Exception as e:
-            self.logger.error(f"Erreur configuration GPIO LCD: {e}")
+            self.is_available = False
+            self.logger.error(f"❌ Erreur configuration GPIO LCD: {e}")
             raise create_exception(
                 ErrorCode.GPIO_SETUP_FAILED,
                 f"Impossible de configurer le GPIO pour LCD: {e}",
@@ -549,6 +579,8 @@ class LCDMenuController:
         """Retourne le statut du contrôleur"""
         return {
             "controller": "lcd_menu",
+            "status": "ok" if self.error_count == 0 and self.is_available else "disabled" if not self.is_available else "error",
+            "component_available": self.is_available,
             "display_type": "ST7735",
             "resolution": f"{self.width}x{self.height}",
             "current_menu_depth": len(self.menu_stack),
@@ -556,7 +588,11 @@ class LCDMenuController:
             "is_initialized": self.is_initialized,
             "error_count": self.error_count,
             "button_states": self.button_states,
-            "running": self.running
+            "running": self.running,
+            "component_info": {
+                "available": self.is_available,
+                "reason_disabled": "Composant non détecté" if not self.is_available else None
+            }
         }
     
     def check_status(self) -> bool:

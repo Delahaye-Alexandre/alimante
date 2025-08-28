@@ -56,6 +56,7 @@ class LightController(BaseController):
         )
         
         # Configuration des pins
+        self.is_available = False  # Disponibilité du composant
         self._setup_pins()
         
         # Calcul des heures de lever/coucher
@@ -66,7 +67,7 @@ class LightController(BaseController):
             )
         else:
             self.location = None
-            self.logger.warning("Module astral non disponible, utilisation des heures par défaut")
+            self.logger.warning("⚠️ Module astral non disponible, utilisation des heures par défaut")
             
         self.initialized = True
         
@@ -84,15 +85,25 @@ class LightController(BaseController):
             
             # Vérifier que le pin est défini
             if light_relay_pin is None:
-                self.logger.warning("Pin éclairage non défini, utilisation du pin par défaut 24")
-                light_relay_pin = 24
+                self.logger.warning("❌ Composant éclairage non détecté - PIN relais manquant")
+                self.is_available = False
+                return
             
             light_relay_config = PinConfig(
                 pin=light_relay_pin,
                 mode=PinMode.OUTPUT,
-                initial_state=False  # Éclairage désactivé au démarrage
+                initial_state=False,  # Éclairage désactivé au démarrage
+                component_name="Éclairage (relais)",
+                required=True
             )
-            self.gpio_manager.setup_pin(light_relay_config)
+            
+            if not self.gpio_manager.setup_pin(light_relay_config):
+                self.is_available = False
+                self.logger.error("❌ Échec configuration éclairage")
+                return
+            
+            # Si on arrive ici, l'éclairage est disponible
+            self.is_available = True
             
             # Pin du capteur de lumière (optionnel)
             light_sensor_pin = gpio_service.get_sensor_pin('light')
@@ -101,14 +112,17 @@ class LightController(BaseController):
             
             # Vérifier que le pin capteur est défini
             if light_sensor_pin is None:
-                self.logger.warning("Pin capteur lumière non défini, utilisation du pin par défaut 17")
-                light_sensor_pin = 17
-            
-            light_sensor_config = PinConfig(
-                pin=light_sensor_pin,
-                mode=PinMode.INPUT
-            )
-            self.gpio_manager.setup_pin(light_sensor_config)
+                self.logger.warning("⚠️ Composant capteur lumière non détecté - PIN capteur manquant")
+                # Le capteur est optionnel, on continue sans
+                light_sensor_pin = None
+            else:
+                light_sensor_config = PinConfig(
+                    pin=light_sensor_pin,
+                    mode=PinMode.INPUT,
+                    component_name="Capteur lumière",
+                    required=False  # Optionnel
+                )
+                self.gpio_manager.setup_pin(light_sensor_config)
             
             self.logger.info(f"Pins configurés - Relais: {light_relay_pin}, Capteur: {light_sensor_pin}")
             

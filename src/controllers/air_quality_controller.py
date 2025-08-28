@@ -65,6 +65,7 @@ class AirQualityController:
         self.last_reading_time = None
         self.reading_count = 0
         self.error_count = 0
+        self.is_available = False  # Disponibilité du composant
         
         # Configuration de lecture
         self.reading_interval = 30  # secondes
@@ -80,12 +81,23 @@ class AirQualityController:
     def _setup_gpio(self):
         """Configure le GPIO pour le capteur MQ2 avec PCF8591"""
         try:
+            # Vérifier que le pin est défini
+            if self.mq2_pin is None:
+                self.logger.warning("❌ Composant capteur qualité de l'air non détecté - PIN manquant")
+                self.is_available = False
+                return
+            
             # Le MQ2 utilise le PCF8591 via I2C, donc on configure les pins I2C
             # SDA (GPIO 22) et SCL (GPIO 3) sont configurés automatiquement par le système
             self.logger.info(f"Configuration I2C pour MQ2 + PCF8591 sur adresse {self.i2c_address}")
             self.logger.info(f"Pins I2C: SDA={self.mq2_pin}, SCL=3, Canal ADC={self.adc_channel}")
+            
+            # Si on arrive ici, le composant est disponible
+            self.is_available = True
+            
         except Exception as e:
-            self.logger.error(f"Erreur configuration I2C MQ2: {e}")
+            self.is_available = False
+            self.logger.error(f"❌ Erreur configuration I2C MQ2: {e}")
             raise create_exception(
                 ErrorCode.GPIO_SETUP_FAILED,
                 f"Impossible de configurer l'I2C pour MQ2: {e}",
@@ -160,6 +172,10 @@ class AirQualityController:
     
     def read_air_quality(self) -> Optional[Dict[str, Any]]:
         """Lit la qualité de l'air actuelle"""
+        if not self.is_available:
+            self.logger.warning("⚠️ Tentative de lecture capteur qualité de l'air désactivé - composant non disponible")
+            return None
+        
         try:
             if not self.is_calibrated:
                 self.logger.warning("Capteur non calibré, calibration automatique...")
@@ -253,6 +269,8 @@ class AirQualityController:
         """Retourne le statut du contrôleur"""
         return {
             "controller": "air_quality",
+            "status": "ok" if self.error_count == 0 and self.is_available else "disabled" if not self.is_available else "error",
+            "component_available": self.is_available,
             "sensor_type": "MQ2",
             "pin": self.mq2_pin,
             "voltage": self.voltage,
@@ -263,7 +281,11 @@ class AirQualityController:
             "reading_count": self.reading_count,
             "error_count": self.error_count,
             "fan_speed_levels": self.fan_speed_levels,
-            "air_quality_thresholds": self.air_quality_thresholds
+            "air_quality_thresholds": self.air_quality_thresholds,
+            "component_info": {
+                "available": self.is_available,
+                "reason_disabled": "Composant non détecté" if not self.is_available else None
+            }
         }
     
     def check_status(self) -> bool:

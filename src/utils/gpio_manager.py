@@ -21,6 +21,8 @@ class PinConfig:
     mode: PinMode
     initial_state: Optional[bool] = None
     pwm_frequency: Optional[int] = None
+    component_name: Optional[str] = None  # Nom du composant pour le logging
+    required: bool = True  # Si le composant est requis pour le fonctionnement
 
 class GPIOManager:
     """Gestionnaire GPIO pour Raspberry Pi"""
@@ -49,6 +51,16 @@ class GPIOManager:
             pin = pin_config.pin
             mode = pin_config.mode
             
+            # Vérifier si le pin est valide
+            if pin is None:
+                component_name = pin_config.component_name or "inconnu"
+                if pin_config.required:
+                    logging.error(f"❌ Composant {component_name} non détecté - PIN requis manquant")
+                    return False
+                else:
+                    logging.warning(f"⚠️ Composant {component_name} non détecté - PIN optionnel manquant")
+                    return False
+            
             if mode == PinMode.INPUT:
                 GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             elif mode == PinMode.OUTPUT:
@@ -60,11 +72,13 @@ class GPIOManager:
                 self.pwm_channels[pin] = pwm
             
             self.pins[pin] = pin_config
-            logging.info(f"Pin {pin} configuré en mode {mode.value}")
+            component_name = pin_config.component_name or f"Pin {pin}"
+            logging.info(f"✅ Composant {component_name} configuré: pin {pin} en mode {mode.value}")
             return True
             
         except Exception as e:
-            logging.error(f"Erreur lors de la configuration du pin {pin_config.pin}: {e}")
+            component_name = pin_config.component_name or f"Pin {pin_config.pin}"
+            logging.error(f"❌ Erreur configuration {component_name}: {e}")
             return False
     
     def read_digital(self, pin: int) -> Optional[bool]:

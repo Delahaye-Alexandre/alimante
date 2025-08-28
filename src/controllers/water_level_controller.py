@@ -53,6 +53,7 @@ class WaterLevelController:
         self.last_measurement = None
         self.error_count = 0
         self.is_initialized = False
+        self.is_available = False  # Disponibilité du composant
         
         # Seuils d'alerte
         self.low_level_threshold = config.get("low_level_threshold", 20)  # % - niveau bas
@@ -72,11 +73,14 @@ class WaterLevelController:
         try:
             # Vérifier que les pins sont définis
             if self.trigger_pin is None:
-                self.logger.warning("Pin trigger non défini, utilisation du pin par défaut 20")
-                self.trigger_pin = 20
+                self.logger.warning("❌ Composant capteur niveau d'eau non détecté - PIN trigger manquant")
+                self.is_available = False
+                return
+            
             if self.echo_pin is None:
-                self.logger.warning("Pin echo non défini, utilisation du pin par défaut 21")
-                self.echo_pin = 21
+                self.logger.warning("❌ Composant capteur niveau d'eau non détecté - PIN echo manquant")
+                self.is_available = False
+                return
             
             from ..utils.gpio_manager import PinConfig, PinMode
             
@@ -84,24 +88,39 @@ class WaterLevelController:
             trigger_config = PinConfig(
                 pin=self.trigger_pin,
                 mode=PinMode.OUTPUT,
-                initial_state=False
+                initial_state=False,
+                component_name="Capteur niveau d'eau (trigger)",
+                required=True
             )
-            self.gpio_manager.setup_pin(trigger_config)
             
             # Configuration echo (entrée)
             echo_config = PinConfig(
                 pin=self.echo_pin,
-                mode=PinMode.INPUT
+                mode=PinMode.INPUT,
+                component_name="Capteur niveau d'eau (echo)",
+                required=True
             )
-            self.gpio_manager.setup_pin(echo_config)
             
-            self.is_initialized = True
-            self.logger.info(f"GPIO capteur niveau configuré: trigger={self.trigger_pin}, echo={self.echo_pin}")
+            # Configurer les deux pins
+            if (self.gpio_manager.setup_pin(trigger_config) and 
+                self.gpio_manager.setup_pin(echo_config)):
+                self.is_available = True
+                self.is_initialized = True
+                self.logger.info(f"✅ Composant capteur niveau d'eau configuré: trigger={self.trigger_pin}, echo={self.echo_pin}")
+            else:
+                self.is_available = False
+                self.logger.error("❌ Échec configuration capteur niveau d'eau")
+                raise create_exception(
+                    ErrorCode.GPIO_SETUP_FAILED,
+                    "Impossible de configurer le capteur de niveau d'eau",
+                    {"trigger_pin": self.trigger_pin, "echo_pin": self.echo_pin}
+                )
             
         except Exception as e:
-            self.logger.exception("Erreur configuration GPIO capteur niveau")
+            self.is_available = False
+            self.logger.exception("❌ Erreur configuration GPIO capteur niveau")
             raise create_exception(
-                ErrorCode.CONTROLLER_INIT_FAILED,
+                ErrorCode.GPIO_SETUP_FAILED,
                 "Impossible de configurer le capteur de niveau d'eau",
                 {"trigger_pin": self.trigger_pin, "echo_pin": self.echo_pin, "original_error": str(e)}
             )
@@ -149,6 +168,14 @@ class WaterLevelController:
     
     def read_water_level(self) -> Dict[str, Any]:
         """Lit le niveau d'eau et retourne les informations complètes"""
+        if not self.is_available:
+            self.logger.warning("⚠️ Tentative de lecture capteur niveau d'eau désactivé - composant non disponible")
+            raise create_exception(
+                ErrorCode.SENSOR_READ_FAILED,
+                "Capteur de niveau d'eau non disponible",
+                {"reason": "Composant non détecté"}
+            )
+        
         try:
             if not self.is_initialized:
                 raise Exception("Capteur non initialisé")

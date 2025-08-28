@@ -35,6 +35,7 @@ class CameraController:
         self.error_count = 0
         self.last_capture = None
         self.capture_count = 0
+        self.is_available = False  # Disponibilité du composant
         
         # Streaming
         self.stream_thread = None
@@ -63,10 +64,11 @@ class CameraController:
                 self.camera.configure(config)
                 
                 self.is_initialized = True
-                self.logger.info(f"Caméra initialisée: {self.resolution}@{self.framerate}fps")
+                self.is_available = True
+                self.logger.info(f"✅ Caméra initialisée: {self.resolution}@{self.framerate}fps")
                 
             except ImportError:
-                self.logger.warning("Picamera2 non disponible, tentative avec OpenCV")
+                self.logger.warning("⚠️ Picamera2 non disponible, tentative avec OpenCV")
                 # Fallback vers OpenCV
                 try:
                     import cv2
@@ -83,13 +85,17 @@ class CameraController:
                     self.camera.set(cv2.CAP_PROP_FPS, self.framerate)
                     
                     self.is_initialized = True
-                    self.logger.info(f"Caméra OpenCV initialisée: {self.resolution}")
+                    self.is_available = True
+                    self.logger.info(f"✅ Caméra OpenCV initialisée: {self.resolution}")
                     
                 except ImportError:
+                    self.logger.error("❌ Ni Picamera2 ni OpenCV disponibles")
+                    self.is_available = False
                     raise Exception("Ni Picamera2 ni OpenCV disponibles")
                     
         except Exception as e:
-            self.logger.exception("Erreur initialisation caméra")
+            self.is_available = False
+            self.logger.exception("❌ Erreur initialisation caméra")
             self.error_count += 1
             raise create_exception(
                 ErrorCode.CONTROLLER_INIT_FAILED,
@@ -99,6 +105,14 @@ class CameraController:
     
     def capture_image(self, save_path: Optional[str] = None) -> bytes:
         """Capture une image et la retourne en bytes"""
+        if not self.is_available:
+            self.logger.warning("⚠️ Tentative de capture avec caméra désactivée - composant non disponible")
+            raise create_exception(
+                ErrorCode.CONTROLLER_CONTROL_FAILED,
+                "Caméra non disponible",
+                {"reason": "Composant non détecté"}
+            )
+        
         try:
             if not self.is_initialized:
                 raise Exception("Caméra non initialisée")
@@ -151,6 +165,10 @@ class CameraController:
     
     def start_streaming(self) -> bool:
         """Démarre le streaming vidéo"""
+        if not self.is_available:
+            self.logger.warning("⚠️ Tentative de démarrage streaming avec caméra désactivée - composant non disponible")
+            return False
+        
         try:
             if self.is_streaming:
                 self.logger.debug("Streaming déjà actif")
@@ -247,7 +265,8 @@ class CameraController:
         """Récupère le statut du contrôleur caméra"""
         try:
             return {
-                "status": "ok" if self.error_count == 0 else "error",
+                "status": "ok" if self.error_count == 0 and self.is_available else "disabled" if not self.is_available else "error",
+                "component_available": self.is_available,
                 "camera_type": self.camera_type,
                 "library": getattr(self, 'camera_library', 'unknown'),
                 "resolution": self.resolution,
@@ -258,7 +277,11 @@ class CameraController:
                 "capture_count": self.capture_count,
                 "error_count": self.error_count,
                 "last_capture": self.last_capture.isoformat() if self.last_capture else None,
-                "stream_port": self.stream_port
+                "stream_port": self.stream_port,
+                "component_info": {
+                    "available": self.is_available,
+                    "reason_disabled": "Composant non détecté" if not self.is_available else None
+                }
             }
             
         except Exception as e:

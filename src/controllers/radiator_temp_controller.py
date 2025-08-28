@@ -42,6 +42,7 @@ class RadiatorTempController:
         self.error_count = 0
         self.is_initialized = False
         self.device_path = None
+        self.is_available = False  # Disponibilité du composant
         
         # Seuils de sécurité
         self.max_safe_temp = config.get("max_safe_temp", 80.0)  # °C - seuil critique
@@ -64,6 +65,12 @@ class RadiatorTempController:
     def _setup_sensor(self):
         """Configure le capteur DS18B20"""
         try:
+            # Vérifier que le pin est défini
+            if self.sensor_pin is None:
+                self.logger.warning("❌ Composant capteur température radiateur non détecté - PIN manquant")
+                self.is_available = False
+                return
+            
             # Activer le module OneWire si nécessaire
             self._enable_onewire()
             
@@ -74,13 +81,15 @@ class RadiatorTempController:
             test_temp = self._read_raw_temperature()
             if test_temp is not None:
                 self.is_initialized = True
-                self.logger.info(f"Capteur DS18B20 initialisé: {self.device_path}")
+                self.is_available = True
+                self.logger.info(f"✅ Capteur DS18B20 initialisé: {self.device_path}")
                 self.logger.info(f"Température test: {test_temp:.2f}°C")
             else:
                 raise Exception("Impossible de lire la température de test")
                 
         except Exception as e:
-            self.logger.exception("Erreur initialisation capteur DS18B20")
+            self.is_available = False
+            self.logger.exception("❌ Erreur initialisation capteur DS18B20")
             raise create_exception(
                 ErrorCode.CONTROLLER_INIT_FAILED,
                 "Impossible d'initialiser le capteur de température radiateur",
@@ -172,6 +181,14 @@ class RadiatorTempController:
     
     def read_temperature(self) -> Dict[str, Any]:
         """Lit la température du radiateur avec analyse de sécurité"""
+        if not self.is_available:
+            self.logger.warning("⚠️ Tentative de lecture capteur température radiateur désactivé - composant non disponible")
+            raise create_exception(
+                ErrorCode.SENSOR_READ_FAILED,
+                "Capteur de température radiateur non disponible",
+                {"reason": "Composant non détecté"}
+            )
+        
         try:
             if not self.is_initialized:
                 raise Exception("Capteur non initialisé")
@@ -291,7 +308,8 @@ class RadiatorTempController:
         """Récupère le statut complet du contrôleur"""
         try:
             return {
-                "status": "ok" if self.error_count < 5 else "error",
+                "status": "ok" if self.error_count < 5 and self.is_available else "disabled" if not self.is_available else "error",
+                "component_available": self.is_available,
                 "sensor_type": self.sensor_type,
                 "is_initialized": self.is_initialized,
                 "current_temperature": self.current_temperature,
@@ -306,6 +324,10 @@ class RadiatorTempController:
                 "config": {
                     "sensor_pin": self.sensor_pin,
                     "sensor_address": self.sensor_address
+                },
+                "component_info": {
+                    "available": self.is_available,
+                    "reason_disabled": "Composant non détecté" if not self.is_available else None
                 }
             }
             

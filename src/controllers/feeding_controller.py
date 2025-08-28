@@ -49,6 +49,7 @@ class FeedingController(BaseController):
         )
         
         # Configuration des pins
+        self.is_available = False  # Disponibilité du composant
         self._setup_pins()
         
         # Historique des repas
@@ -69,17 +70,31 @@ class FeedingController(BaseController):
             if feeding_servo_pin is None:
                 feeding_servo_pin = gpio_service.get_pin_assignment('FEEDING_SERVO_PIN')
             
+            # Vérifier que le pin est défini
+            if feeding_servo_pin is None:
+                self.logger.warning("❌ Composant servo alimentation non détecté - PIN manquant")
+                self.is_available = False
+                return
+            
             servo_config = PinConfig(
                 pin=feeding_servo_pin,
                 mode=PinMode.PWM,
-                pwm_frequency=50  # 50Hz pour servo standard
+                pwm_frequency=50,  # 50Hz pour servo standard
+                component_name="Servo alimentation",
+                required=True
             )
-            self.gpio_manager.setup_pin(servo_config)
             
-            self.logger.info(f"Pin servo configuré: {feeding_servo_pin}")
+            if self.gpio_manager.setup_pin(servo_config):
+                self.is_available = True
+                self.logger.info(f"✅ Composant servo alimentation configuré: pin {feeding_servo_pin}")
+            else:
+                self.is_available = False
+                self.logger.error("❌ Échec configuration servo alimentation")
+                raise Exception("Impossible de configurer le servo d'alimentation")
             
         except Exception as e:
-            self.logger.error(f"Erreur lors de la configuration des pins: {e}")
+            self.is_available = False
+            self.logger.error(f"❌ Erreur lors de la configuration des pins: {e}")
             self.record_error(e)
             raise
 
@@ -144,6 +159,10 @@ class FeedingController(BaseController):
         
         :return: True si l'alimentation a réussi, False sinon
         """
+        if not self.is_available:
+            self.logger.warning("⚠️ Tentative d'alimentation désactivée - composant non disponible")
+            return False
+        
         try:
             self.logger.info(f"Alimentation en cours - Type: {self.feeding_config.prey_type}")
             
@@ -158,17 +177,17 @@ class FeedingController(BaseController):
                     self.last_feeding_time = datetime.now()
                     self.feeding_count += 1
                     
-                    self.logger.info(f"Alimentation terminée - Repas #{self.feeding_count}")
+                    self.logger.info(f"✅ Alimentation terminée - Repas #{self.feeding_count}")
                     return True
                 else:
-                    self.logger.error("Impossible de fermer la trappe")
+                    self.logger.error("❌ Impossible de fermer la trappe")
                     return False
             else:
-                self.logger.error("Impossible d'ouvrir la trappe")
+                self.logger.error("❌ Impossible d'ouvrir la trappe")
                 return False
                 
         except Exception as e:
-            self.logger.error(f"Erreur lors de l'alimentation: {e}")
+            self.logger.error(f"❌ Erreur lors de l'alimentation: {e}")
             self.record_error(e)
             return False
 
@@ -249,6 +268,8 @@ class FeedingController(BaseController):
         try:
             return {
                 "controller": "feeding",
+                "status": "ok" if self.error_count == 0 and self.is_available else "disabled" if not self.is_available else "error",
+                "component_available": self.is_available,
                 "initialized": self.initialized,
                 "last_feeding_time": self.last_feeding_time.isoformat() if self.last_feeding_time else None,
                 "feeding_count": self.feeding_count,
@@ -260,7 +281,11 @@ class FeedingController(BaseController):
                 "trap_open_duration": self.feeding_config.trap_open_duration,
                 "should_feed_now": self.should_feed_now(),
                 "error_count": self.error_count,
-                "last_error": str(self.last_error) if self.last_error else None
+                "last_error": str(self.last_error) if self.last_error else None,
+                "component_info": {
+                    "available": self.is_available,
+                    "reason_disabled": "Composant non détecté" if not self.is_available else None
+                }
             }
             
         except Exception as e:

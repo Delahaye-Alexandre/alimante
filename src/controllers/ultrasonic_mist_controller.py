@@ -39,6 +39,7 @@ class UltrasonicMistController:
         self.total_usage_time = 0
         self.error_count = 0
         self.mist_intensity = 50  # 0-100%
+        self.is_available = False  # Disponibilité du composant
         
         # Configuration des modes d'humidification
         self.mist_modes = {
@@ -62,8 +63,9 @@ class UltrasonicMistController:
         try:
             # Vérifier que le pin est défini
             if self.mist_pin is None:
-                self.logger.warning("Pin brumisateur non défini, utilisation du pin par défaut 22")
-                self.mist_pin = 22
+                self.logger.warning("❌ Composant brumisateur ultrasonique non détecté - PIN manquant")
+                self.is_available = False
+                return
             
             from ..utils.gpio_manager import PinConfig, PinMode
             
@@ -71,33 +73,49 @@ class UltrasonicMistController:
             mist_config = PinConfig(
                 pin=self.mist_pin,
                 mode=PinMode.OUTPUT,
-                initial_state=False
+                initial_state=False,
+                component_name="Brumisateur ultrasonique",
+                required=True
             )
-            self.gpio_manager.setup_pin(mist_config)
             
-            # Initialiser PWM pour contrôle précis de l'intensité ANGEEK
-            try:
-                import RPi.GPIO as GPIO
-                self.pwm_instance = GPIO.PWM(self.mist_pin, self.pwm_frequency)
-                self.pwm_instance.start(0)  # Démarrer avec 0% duty cycle
-                self.logger.info(f"PWM initialisé: pin {self.mist_pin}, fréquence {self.pwm_frequency}Hz")
-            except Exception as pwm_error:
-                self.logger.warning(f"Impossible d'initialiser PWM: {pwm_error}")
-                # Fallback sur contrôle digital simple
-                self.gpio_manager.write_pin(self.mist_pin, False)
-            
-            self.logger.info(f"GPIO brumisateur ANGEEK configuré: pin {self.mist_pin}")
+            if self.gpio_manager.setup_pin(mist_config):
+                # Initialiser PWM pour contrôle précis de l'intensité ANGEEK
+                try:
+                    import RPi.GPIO as GPIO
+                    self.pwm_instance = GPIO.PWM(self.mist_pin, self.pwm_frequency)
+                    self.pwm_instance.start(0)  # Démarrer avec 0% duty cycle
+                    self.logger.info(f"✅ PWM initialisé: pin {self.mist_pin}, fréquence {self.pwm_frequency}Hz")
+                except Exception as pwm_error:
+                    self.logger.warning(f"⚠️ Impossible d'initialiser PWM: {pwm_error}")
+                    # Fallback sur contrôle digital simple
+                    self.gpio_manager.write_pin(self.mist_pin, False)
+                
+                self.is_available = True
+                self.logger.info(f"✅ Composant brumisateur ultrasonique configuré: pin {self.mist_pin}")
+            else:
+                self.is_available = False
+                self.logger.error("❌ Échec configuration brumisateur ultrasonique")
+                raise create_exception(
+                    ErrorCode.GPIO_SETUP_FAILED,
+                    "Impossible de configurer le brumisateur ultrasonique",
+                    {"mist_pin": self.mist_pin}
+                )
             
         except Exception as e:
-            self.logger.exception("Erreur configuration GPIO brumisateur ANGEEK")
+            self.is_available = False
+            self.logger.exception("❌ Erreur configuration GPIO brumisateur ultrasonique")
             raise create_exception(
-                ErrorCode.CONTROLLER_INIT_FAILED,
-                "Impossible de configurer le brumisateur ultrasonique ANGEEK",
+                ErrorCode.GPIO_SETUP_FAILED,
+                "Impossible de configurer le brumisateur ultrasonique",
                 {"mist_pin": self.mist_pin, "original_error": str(e)}
             )
     
     def activate_mist(self, intensity: int = 50, duration: Optional[float] = None) -> bool:
         """Active le brumisateur ultrasonique"""
+        if not self.is_available:
+            self.logger.warning("⚠️ Tentative d'activation brumisateur désactivé - composant non disponible")
+            return False
+        
         try:
             if self.mist_active:
                 self.logger.debug("Brumisateur déjà actif")
