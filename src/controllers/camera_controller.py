@@ -44,7 +44,10 @@ class CameraController:
         # Initialisation
         self._initialize_camera()
         
-        self.logger.info("Contrôleur caméra CSI initialisé")
+        if self.is_available:
+            self.logger.info("✅ Contrôleur caméra CSI initialisé")
+        else:
+            self.logger.warning("⚠️ Contrôleur caméra CSI désactivé - composant non disponible")
     
     def _initialize_camera(self):
         """Initialise la caméra CSI"""
@@ -95,13 +98,9 @@ class CameraController:
                     
         except Exception as e:
             self.is_available = False
-            self.logger.exception("❌ Erreur initialisation caméra")
+            self.logger.warning(f"⚠️ Composant caméra non disponible - {str(e)}")
+            # Ne pas lever d'exception, juste désactiver le composant
             self.error_count += 1
-            raise create_exception(
-                ErrorCode.CONTROLLER_INIT_FAILED,
-                "Impossible d'initialiser la caméra CSI",
-                {"camera_type": self.camera_type, "original_error": str(e)}
-            )
     
     def capture_image(self, save_path: Optional[str] = None) -> bytes:
         """Capture une image et la retourne en bytes"""
