@@ -11,7 +11,7 @@ import sys
 import signal
 
 class LEDBandeauxController:
-    def __init__(self, gpio_pin=24, frequency=1000):
+    def __init__(self, gpio_pin=18, frequency=1000):
         """
         Initialise le contrôleur pour les bandeaux LED
         
@@ -175,11 +175,11 @@ def main():
     """Fonction principale de test"""
     print("=" * 50)
     print("🔧 TEST BANDEAUX LED - 4 bandeaux de 15cm")
-    print("📍 GPIO 24 - Contrôle PWM")
+    print("📍 GPIO 18 - Contrôle PWM")
     print("=" * 50)
     
     # Création du contrôleur
-    led_controller = LEDBandeauxController(gpio_pin=24)
+    led_controller = LEDBandeauxController(gpio_pin=18)
     
     try:
         # Initialisation
