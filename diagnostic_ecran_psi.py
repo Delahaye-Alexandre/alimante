@@ -101,6 +101,10 @@ class PSIDiagnostic:
         print("🔍 Test des pins GPIO...")
         
         try:
+            # Nettoyage préalable
+            GPIO.cleanup()
+            time.sleep(0.1)
+            
             # Configuration des pins
             GPIO.setup(self.reset_pin, GPIO.OUT)
             GPIO.setup(self.a0_pin, GPIO.OUT)
