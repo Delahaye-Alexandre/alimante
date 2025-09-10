@@ -51,17 +51,43 @@ class PSIDiagnostic:
                 print("❌ Périphérique SPI non trouvé")
                 return False
             
-            # Vérifier la configuration dans /boot/config.txt
-            try:
-                with open('/boot/config.txt', 'r') as f:
-                    config_content = f.read()
-                    if 'dtparam=spi=on' in config_content:
-                        print("✅ SPI activé dans /boot/config.txt")
-                    else:
-                        print("❌ SPI non activé dans /boot/config.txt")
-                        return False
-            except FileNotFoundError:
-                print("⚠️  Fichier /boot/config.txt non trouvé")
+            # Vérifier la configuration dans /boot/firmware/config.txt (nouveau) ou /boot/config.txt (ancien)
+            config_files = ['/boot/firmware/config.txt', '/boot/config.txt']
+            config_found = False
+            
+            for config_file in config_files:
+                try:
+                    with open(config_file, 'r') as f:
+                        config_content = f.read()
+                        # Chercher dtparam=spi=on sans commentaire
+                        lines = config_content.split('\n')
+                        spi_found = False
+                        for line in lines:
+                            line = line.strip()
+                            if line == 'dtparam=spi=on' or line.startswith('dtparam=spi=on '):
+                                spi_found = True
+                                break
+                            elif line.startswith('#dtparam=spi=on'):
+                                print(f"⚠️  SPI commenté dans {config_file}")
+                                return False
+                        
+                        if spi_found:
+                            print(f"✅ SPI activé dans {config_file}")
+                            config_found = True
+                            break
+                        else:
+                            print(f"❌ SPI non trouvé dans {config_file}")
+                            print("   Contenu trouvé:")
+                            for line in lines:
+                                if 'spi' in line.lower():
+                                    print(f"   {line}")
+                except FileNotFoundError:
+                    print(f"⚠️  Fichier {config_file} non trouvé")
+                    continue
+            
+            if not config_found:
+                print("❌ Aucun fichier de configuration trouvé")
+                return False
             
             return True
             

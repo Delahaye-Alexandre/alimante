@@ -52,8 +52,20 @@ def activate_spi_manual():
     """Active SPI manuellement en modifiant /boot/config.txt"""
     print("🔄 Activation manuelle de SPI...")
     
-    config_file = '/boot/config.txt'
-    backup_file = '/boot/config.txt.backup'
+    # Vérifier quel fichier de configuration utiliser
+    config_files = ['/boot/firmware/config.txt', '/boot/config.txt']
+    config_file = None
+    
+    for cf in config_files:
+        if os.path.exists(cf):
+            config_file = cf
+            break
+    
+    if not config_file:
+        print("❌ Aucun fichier de configuration trouvé")
+        return False
+    
+    backup_file = config_file + '.backup'
     
     try:
         # Sauvegarde du fichier original
@@ -98,17 +110,28 @@ def check_spi_status():
     """Vérifie le statut de SPI"""
     print("🔍 Vérification du statut SPI...")
     
-    # Vérifier /boot/config.txt
-    try:
-        with open('/boot/config.txt', 'r') as f:
-            content = f.read()
-            if 'dtparam=spi=on' in content:
-                print("✅ SPI activé dans /boot/config.txt")
-            else:
-                print("❌ SPI non activé dans /boot/config.txt")
-                return False
-    except Exception as e:
-        print(f"❌ Erreur lecture config: {e}")
+    # Vérifier les fichiers de configuration
+    config_files = ['/boot/firmware/config.txt', '/boot/config.txt']
+    config_found = False
+    
+    for config_file in config_files:
+        try:
+            with open(config_file, 'r') as f:
+                content = f.read()
+                if 'dtparam=spi=on' in content:
+                    print(f"✅ SPI activé dans {config_file}")
+                    config_found = True
+                    break
+                else:
+                    print(f"❌ SPI non activé dans {config_file}")
+        except FileNotFoundError:
+            continue
+        except Exception as e:
+            print(f"❌ Erreur lecture {config_file}: {e}")
+            continue
+    
+    if not config_found:
+        print("❌ Aucun fichier de configuration trouvé")
         return False
     
     # Vérifier les périphériques
