@@ -20,6 +20,7 @@ class PSIDiagnostic:
         # Configuration GPIO selon vos spécifications
         self.reset_pin = 24  # GPIO 24
         self.a0_pin = 25     # GPIO 25
+        self.cs_pin = 8      # GPIO 8 (CS)
         self.sda_pin = 10    # GPIO 10 (MOSI)
         self.scl_pin = 11    # GPIO 11 (SCLK)
         
@@ -103,12 +104,14 @@ class PSIDiagnostic:
             # Configuration des pins
             GPIO.setup(self.reset_pin, GPIO.OUT)
             GPIO.setup(self.a0_pin, GPIO.OUT)
+            GPIO.setup(self.cs_pin, GPIO.OUT)
             GPIO.setup(self.sda_pin, GPIO.OUT)
             GPIO.setup(self.scl_pin, GPIO.OUT)
             
             print(f"✅ Pins configurés:")
             print(f"   • Reset (GPIO {self.reset_pin})")
-            print(f"   • A0 (GPIO {self.a0_pin})")
+            print(f"   • A0/DC (GPIO {self.a0_pin})")
+            print(f"   • CS (GPIO {self.cs_pin})")
             print(f"   • SDA/MOSI (GPIO {self.sda_pin})")
             print(f"   • SCL/SCLK (GPIO {self.scl_pin})")
             
@@ -121,13 +124,21 @@ class PSIDiagnostic:
             GPIO.output(self.reset_pin, GPIO.HIGH)
             print("   ✅ Reset testé")
             
-            # Test A0
+            # Test A0/DC
             GPIO.output(self.a0_pin, GPIO.LOW)
             time.sleep(0.1)
             GPIO.output(self.a0_pin, GPIO.HIGH)
             time.sleep(0.1)
             GPIO.output(self.a0_pin, GPIO.LOW)
-            print("   ✅ A0 testé")
+            print("   ✅ A0/DC testé")
+            
+            # Test CS
+            GPIO.output(self.cs_pin, GPIO.HIGH)
+            time.sleep(0.1)
+            GPIO.output(self.cs_pin, GPIO.LOW)
+            time.sleep(0.1)
+            GPIO.output(self.cs_pin, GPIO.HIGH)
+            print("   ✅ CS testé")
             
             # Test SDA/MOSI
             GPIO.output(self.sda_pin, GPIO.LOW)
@@ -154,15 +165,17 @@ class PSIDiagnostic:
         print("Fonction        | GPIO | Pin Physique")
         print("-" * 50)
         print(f"Reset           | {self.reset_pin:4d} | 18")
-        print(f"A0              | {self.a0_pin:4d} | 22")
+        print(f"A0/DC           | {self.a0_pin:4d} | 22")
+        print(f"CS              | {self.cs_pin:4d} | 24")
         print(f"SDA/MOSI        | {self.sda_pin:4d} | 19")
         print(f"SCL/SCLK        | {self.scl_pin:4d} | 23")
         print("=" * 50)
         print()
         print("🔌 Câblage recommandé:")
-        print("   Écran PSI → Raspberry Pi")
+        print("   ST7735 AZdelivery → Raspberry Pi")
         print(f"   Reset  → Pin 18 (GPIO {self.reset_pin})")
-        print(f"   A0     → Pin 22 (GPIO {self.a0_pin})")
+        print(f"   A0/DC  → Pin 22 (GPIO {self.a0_pin})")
+        print(f"   CS     → Pin 24 (GPIO {self.cs_pin})")
         print(f"   SDA    → Pin 19 (GPIO {self.sda_pin})")
         print(f"   SCL    → Pin 23 (GPIO {self.scl_pin})")
         print("   VCC    → 3.3V")

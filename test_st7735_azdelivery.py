@@ -14,18 +14,20 @@ from datetime import datetime
 class ST7735Test:
     """Test pour l'écran ST7735 d'AZdelivery"""
     
-    def __init__(self, reset_pin=24, a0_pin=25, spi_bus=0, spi_device=0):
+    def __init__(self, reset_pin=24, a0_pin=25, cs_pin=8, spi_bus=0, spi_device=0):
         """
         Initialise le test pour ST7735
         
         Args:
             reset_pin (int): Pin Reset de l'écran
             a0_pin (int): Pin A0/DC de l'écran
+            cs_pin (int): Pin CS (Chip Select) de l'écran
             spi_bus (int): Bus SPI (généralement 0)
             spi_device (int): Device SPI (généralement 0)
         """
         self.reset_pin = reset_pin
         self.a0_pin = a0_pin
+        self.cs_pin = cs_pin
         self.spi_bus = spi_bus
         self.spi_device = spi_device
         
@@ -46,10 +48,12 @@ class ST7735Test:
             # Configuration des pins
             GPIO.setup(self.reset_pin, GPIO.OUT)
             GPIO.setup(self.a0_pin, GPIO.OUT)
+            GPIO.setup(self.cs_pin, GPIO.OUT)
             
             # État initial
             GPIO.output(self.reset_pin, GPIO.HIGH)  # Reset actif bas
             GPIO.output(self.a0_pin, GPIO.LOW)      # A0 bas (mode commande)
+            GPIO.output(self.cs_pin, GPIO.HIGH)     # CS actif bas
             
             # Initialisation SPI
             self.spi = spidev.SpiDev()
@@ -60,6 +64,9 @@ class ST7735Test:
             self.spi.mode = 0  # Mode SPI 0
             
             print("✅ Interface SPI initialisée pour ST7735")
+            print(f"   • Reset Pin: {self.reset_pin}")
+            print(f"   • A0/DC Pin: {self.a0_pin}")
+            print(f"   • CS Pin: {self.cs_pin}")
             print(f"   • Bus: {self.spi_bus}")
             print(f"   • Device: {self.spi_device}")
             print(f"   • Vitesse: {self.spi.max_speed_hz} Hz")
@@ -82,17 +89,21 @@ class ST7735Test:
     
     def send_command(self, command):
         """Envoie une commande à l'écran"""
-        GPIO.output(self.a0_pin, GPIO.LOW)  # Mode commande
+        GPIO.output(self.cs_pin, GPIO.LOW)   # Sélectionner l'écran
+        GPIO.output(self.a0_pin, GPIO.LOW)   # Mode commande
         self.spi.xfer2([command])
+        GPIO.output(self.cs_pin, GPIO.HIGH)  # Désélectionner l'écran
         time.sleep(0.001)
     
     def send_data(self, data):
         """Envoie des données à l'écran"""
+        GPIO.output(self.cs_pin, GPIO.LOW)   # Sélectionner l'écran
         GPIO.output(self.a0_pin, GPIO.HIGH)  # Mode données
         if isinstance(data, list):
             self.spi.xfer2(data)
         else:
             self.spi.xfer2([data])
+        GPIO.output(self.cs_pin, GPIO.HIGH)  # Désélectionner l'écran
         time.sleep(0.001)
     
     def init_st7735(self):
@@ -271,6 +282,7 @@ class ST7735Test:
         print(f"📅 {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
         print(f"🔌 Reset Pin: {self.reset_pin}")
         print(f"🔌 A0/DC Pin: {self.a0_pin}")
+        print(f"🔌 CS Pin: {self.cs_pin}")
         print(f"🔌 SPI Bus: {self.spi_bus}, Device: {self.spi_device}")
         print("="*60)
         
@@ -342,12 +354,14 @@ def main():
     # Configuration
     RESET_PIN = 24  # GPIO 24
     A0_PIN = 25     # GPIO 25 (DC/A0)
+    CS_PIN = 8      # GPIO 8 (CS)
     SPI_BUS = 0     # Bus SPI 0
     SPI_DEVICE = 0  # Device SPI 0
     
     print(f"🔌 Configuration:")
     print(f"   • Reset Pin: {RESET_PIN}")
     print(f"   • A0/DC Pin: {A0_PIN}")
+    print(f"   • CS Pin: {CS_PIN}")
     print(f"   • SPI Bus: {SPI_BUS}")
     print(f"   • SPI Device: {SPI_DEVICE}")
     print()
@@ -362,7 +376,7 @@ def main():
         return
     
     # Création et lancement du test
-    test = ST7735Test(RESET_PIN, A0_PIN, SPI_BUS, SPI_DEVICE)
+    test = ST7735Test(RESET_PIN, A0_PIN, CS_PIN, SPI_BUS, SPI_DEVICE)
     
     try:
         test.run_complete_test()

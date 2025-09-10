@@ -13,12 +13,13 @@ GPIO_CONFIG = {
         'SW_PIN': 22,   # Pin SW (bouton) de l'encodeur
     },
     
-    # Écran PSI
+    # Écran PSI (ST7735)
     'DISPLAY': {
         'RESET_PIN': 24,  # Pin Reset de l'écran
-        'A0_PIN': 25,     # Pin A0 de l'écran
-        'SDA_PIN': 10,    # Pin SDA (I2C) de l'écran
-        'SCL_PIN': 11,    # Pin SCL (I2C) de l'écran
+        'A0_PIN': 25,     # Pin A0/DC de l'écran
+        'CS_PIN': 8,      # Pin CS (Chip Select) de l'écran
+        'SDA_PIN': 10,    # Pin SDA/MOSI de l'écran
+        'SCL_PIN': 11,    # Pin SCL/SCLK de l'écran
     },
     
     # Bandeaux LED
