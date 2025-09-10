@@ -26,6 +26,19 @@ Système de contrôle pour bandeaux LED avec interface écran PSI et encodeur ro
 pip install RPi.GPIO
 ```
 
+### Activation de l'interface SPI
+L'écran PSI nécessite l'interface SPI qui est désactivée par défaut :
+
+```bash
+# Méthode automatique
+sudo python3 activate_spi.py
+
+# Méthode manuelle
+sudo raspi-config
+# Aller dans "Interfacing Options" > "SPI" > "Enable"
+# Redémarrer le Raspberry Pi
+```
+
 ### Câblage
 
 #### Encodeur rotatif
