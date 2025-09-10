@@ -51,6 +51,10 @@ class SimpleGPIOTest:
             GPIO.cleanup()
             time.sleep(0.1)
             
+            # Redéfinir le mode GPIO
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setwarnings(False)
+            
             # Configuration du pin
             GPIO.setup(pin, GPIO.OUT)
             
@@ -118,6 +122,10 @@ class SimpleGPIOTest:
             # Nettoyage préalable
             GPIO.cleanup()
             time.sleep(0.1)
+            
+            # Redéfinir le mode GPIO
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setwarnings(False)
             
             # Configuration de tous les pins
             for name, pin in self.pins.items():
