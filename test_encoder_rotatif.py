@@ -42,18 +42,32 @@ class EncoderTest:
     def initialize(self):
         """Initialise les pins GPIO de l'encodeur"""
         try:
+            # Nettoyage préalable des GPIO
+            GPIO.cleanup()
+            
             # Configuration des pins d'entrée avec pull-up interne
             GPIO.setup(self.clk_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             GPIO.setup(self.dt_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             GPIO.setup(self.sw_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             
-            # Configuration des interruptions
-            GPIO.add_event_detect(self.clk_pin, GPIO.BOTH, callback=self._clk_callback, bouncetime=2)
-            GPIO.add_event_detect(self.sw_pin, GPIO.BOTH, callback=self._sw_callback, bouncetime=2)
-            
-            # Lecture de l'état initial
+            # Lecture de l'état initial AVANT de configurer les interruptions
             self.last_clk_state = GPIO.input(self.clk_pin)
             self.last_sw_state = GPIO.input(self.sw_pin)
+            
+            # Configuration des interruptions avec gestion d'erreur
+            try:
+                GPIO.add_event_detect(self.clk_pin, GPIO.BOTH, callback=self._clk_callback, bouncetime=2)
+                print(f"✅ Interruption CLK configurée sur GPIO {self.clk_pin}")
+            except Exception as e:
+                print(f"❌ Erreur configuration interruption CLK: {e}")
+                return False
+                
+            try:
+                GPIO.add_event_detect(self.sw_pin, GPIO.BOTH, callback=self._sw_callback, bouncetime=2)
+                print(f"✅ Interruption SW configurée sur GPIO {self.sw_pin}")
+            except Exception as e:
+                print(f"❌ Erreur configuration interruption SW: {e}")
+                return False
             
             self.is_running = True
             print("✅ Encodeur rotatif initialisé")
