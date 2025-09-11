@@ -177,7 +177,7 @@ class EncoderDisplayTest:
             draw.rectangle([10, 100, 118, 110], outline=(0, 255, 0))
             draw.rectangle([10, 100, 118, 110], fill=(0, 255, 0))
             
-            self.display.image(image)
+            self.display.display(image)
             self.display.display()
             
         except Exception as e:
@@ -213,7 +213,7 @@ class EncoderDisplayTest:
             if end_idx < len(self.menu_items):
                 draw.text((self.width - 20, self.height - 20), "↓", fill=(255, 255, 255), font=ImageFont.load_default())
             
-            self.display.image(image)
+            self.display.display(image)
             self.display.display()
             
         except Exception as e:
@@ -262,7 +262,7 @@ class EncoderDisplayTest:
             draw.text((10, 110), f"Progress: {progress}%", fill=(255, 255, 255), font=ImageFont.load_default())
             draw.text((10, 130), "Press to return", fill=(128, 128, 128), font=ImageFont.load_default())
             
-            self.display.image(image)
+            self.display.display(image)
             self.display.display()
             
         except Exception as e:
@@ -289,7 +289,7 @@ class EncoderDisplayTest:
             draw.text((10, 120), "Real-time data", fill=(0, 255, 0), font=ImageFont.load_default())
             draw.text((10, 140), "Press to return", fill=(128, 128, 128), font=ImageFont.load_default())
             
-            self.display.image(image)
+            self.display.display(image)
             self.display.display()
             
         except Exception as e:
@@ -311,7 +311,7 @@ class EncoderDisplayTest:
             draw.text((10, 110), f"A0:  GPIO {self.a0_pin}", fill=(255, 255, 255), font=ImageFont.load_default())
             draw.text((10, 130), f"CS:  GPIO {self.cs_pin}", fill=(255, 255, 255), font=ImageFont.load_default())
             
-            self.display.image(image)
+            self.display.display(image)
             self.display.display()
             
         except Exception as e:
@@ -341,7 +341,7 @@ class EncoderDisplayTest:
             draw.text((10, 120), "All systems OK", fill=(0, 255, 0), font=ImageFont.load_default())
             draw.text((10, 140), "Press to return", fill=(128, 128, 128), font=ImageFont.load_default())
             
-            self.display.image(image)
+            self.display.display(image)
             self.display.display()
             
         except Exception as e:
@@ -368,7 +368,7 @@ class EncoderDisplayTest:
             
             draw.text((10, 140), "Press to return", fill=(128, 128, 128), font=ImageFont.load_default())
             
-            self.display.image(image)
+            self.display.display(image)
             self.display.display()
             
         except Exception as e:
@@ -391,7 +391,7 @@ class EncoderDisplayTest:
             
             draw.text((10, 140), "Press to return", fill=(128, 128, 128), font=ImageFont.load_default())
             
-            self.display.image(image)
+            self.display.display(image)
             self.display.display()
             
         except Exception as e:
