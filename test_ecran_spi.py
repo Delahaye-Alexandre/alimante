@@ -119,6 +119,20 @@ class EcranSPITest:
             print("❌ Écran non initialisé")
             return False
         
+        # Test de diagnostic des couleurs
+        print("🔍 Test de diagnostic des couleurs...")
+        test_colors = [
+            ("Rouge pur", (255, 0, 0)),
+            ("Vert pur", (0, 255, 0)),
+            ("Bleu pur", (0, 0, 255))
+        ]
+        
+        for nom, couleur in test_colors:
+            print(f"   Test {nom}: RGB{couleur}")
+            image = Image.new('RGB', (self.display.width, self.display.height), color=couleur)
+            self.display.display(image)
+            time.sleep(1)
+        
         couleurs = [
             ("Noir", (0, 0, 0)),
             ("Blanc", (255, 255, 255)),
@@ -127,7 +141,11 @@ class EcranSPITest:
             ("Bleu", (0, 0, 255)),
             ("Jaune", (255, 255, 0)),
             ("Cyan", (0, 255, 255)),
-            ("Magenta", (255, 0, 255))
+            ("Magenta", (255, 0, 255)),
+            ("Orange", (255, 165, 0)),
+            ("Violet", (128, 0, 128)),
+            ("Rose", (255, 192, 203)),
+            ("Vert Lime", (50, 205, 50))
         ]
         
         try:
