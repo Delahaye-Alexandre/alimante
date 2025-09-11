@@ -5,7 +5,7 @@ Driver pour le capteur de température et d'humidité DHT22
 import time
 import logging
 from typing import Dict, Any, Optional
-from .base_driver import BaseDriver, DriverConfig, DriverState
+from .base_driver import BaseDriver, DriverConfig, DriverState, DriverError
 
 try:
     import RPi.GPIO as GPIO
