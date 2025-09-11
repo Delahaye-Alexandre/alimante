@@ -64,9 +64,10 @@ class EcranSPITest:
             print(f"   Port SPI: 0, CS: {self.cs_pin}, DC: {self.a0_pin}, RST: {self.reset_pin}")
             
             # Initialisation de l'écran ST7735
+            # Note: cs doit être 0 ou 1 (périphérique SPI), pas un pin GPIO
             self.display = st7735.ST7735(
                 port=0,
-                cs=self.cs_pin,
+                cs=0,  # Utilise spidev0.0
                 dc=self.a0_pin,
                 rst=self.reset_pin,
                 spi_speed_hz=4000000  # 4MHz pour stabilité
