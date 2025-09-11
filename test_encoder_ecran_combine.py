@@ -75,12 +75,10 @@ class EncoderDisplayTest:
             # Initialisation de l'écran
             self.display = st7735.ST7735(
                 port=0,
-                cs=self.cs_pin,
+                cs=0,
                 dc=self.a0_pin,
-                backlight=self.reset_pin,
-                width=self.width,
-                height=self.height,
-                rotation=0
+                rst=self.reset_pin,
+                rotation=270
             )
             self.display.begin()
             

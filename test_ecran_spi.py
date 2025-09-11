@@ -52,12 +52,10 @@ class SPIDisplayTest:
             # Initialisation de l'écran
             self.display = st7735.ST7735(
                 port=0,
-                cs=self.cs_pin,
+                cs=0,
                 dc=self.a0_pin,
-                backlight=self.reset_pin,
-                width=self.width,
-                height=self.height,
-                rotation=0
+                rst=self.reset_pin,
+                rotation=270
             )
             
             self.display.begin()
@@ -83,7 +81,8 @@ class SPIDisplayTest:
             return False
         
         try:
-            self.display.clear(color)
+            image = Image.new("RGB", (self.display.width, self.display.height), color)
+            self.display.display(image)
             return True
         except Exception as e:
             print(f"❌ Erreur lors de l'effacement: {e}")
@@ -117,12 +116,13 @@ class SPIDisplayTest:
         
         # Dégradé horizontal rouge
         print("   → Dégradé horizontal rouge")
-        for x in range(self.width):
-            intensity = int((x / self.width) * 255)
+        image = Image.new("RGB", (self.display.width, self.display.height), (0, 0, 0))
+        draw = ImageDraw.Draw(image)
+        for x in range(self.display.width):
+            intensity = int((x / self.display.width) * 255)
             color = (intensity, 0, 0)
-            for y in range(self.height):
-                self.display.set_pixel(x, y, color)
-        self.display.display()
+            draw.line([(x, 0), (x, self.display.height-1)], fill=color)
+        self.display.display(image)
         time.sleep(2)
         
         # Dégradé vertical vert
