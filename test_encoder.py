@@ -1,24 +1,28 @@
-#!/usr/bin/env python3
-"""
-Test d'un encodeur rotatif avec gpiozero
-Affiche le compteur quand tu tournes dans un sens ou dans l'autre
-"""
+from RPi import GPIO
+from time import sleep
 
-from gpiozero import RotaryEncoder
-from signal import pause
+clk = 17
+dt = 27
 
-# ⚠️ À adapter selon ton câblage !
-CLK_PIN = 17  # Pin A de l'encodeur
-DT_PIN = 18   # Pin B de l'encodeur
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(clk, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+GPIO.setup(dt, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
-print("🔧 Initialisation de l'encodeur rotatif...")
-encoder = RotaryEncoder(a=CLK_PIN, b=DT_PIN, max_steps=0)
+counter = 0
+clkLastState = GPIO.input(clk)
 
-def rotation():
-    print(f"🔄 Position actuelle : {encoder.steps}")
+try:
 
-# Appeler la fonction à chaque mouvement
-encoder.when_rotated = rotation
-
-print("✅ Prêt ! Tourne l'encodeur (Ctrl+C pour quitter)")
-pause()
+        while True:
+                clkState = GPIO.input(clk)
+                dtState = GPIO.input(dt)
+                if clkState != clkLastState:
+                        if dtState != clkState:
+                                counter += 1
+                        else:
+                                counter -= 1
+                        print counter
+                clkLastState = clkState
+                sleep(0.01)
+finally:
+        GPIO.cleanup()
