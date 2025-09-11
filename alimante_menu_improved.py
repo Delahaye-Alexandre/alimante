@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Menu Principal Alimante
-Système de contrôle avec encodeur rotatif et écran ST7735
+Menu Principal Alimante - Version Améliorée
+Gestion améliorée de l'affichage des caractères sur ST7735
 """
 
 import time
@@ -27,7 +27,7 @@ except Exception as e:
     GPIOZERO_AVAILABLE = False
     print(f"⚠️  Erreur gpiozero: {e}")
 
-class AlimanteMenu:
+class AlimanteMenuImproved:
     def __init__(self):
         self.config = get_gpio_config()
         self.ui_config = get_ui_config()
@@ -47,7 +47,15 @@ class AlimanteMenu:
         self.sw_pin = self.config['ENCODER']['SW_PIN']
         
         # État du menu
-        self.menu_items = self.ui_config['MENU']['ITEMS']
+        self.menu_items = [
+            "Accueil Alimante",
+            "Test LED Bandeaux", 
+            "Monitoring Systeme",
+            "Configuration",
+            "Tests Hardware",
+            "Statistiques",
+            "A propos"
+        ]
         self.current_selection = 0
         self.counter = 0
         self.is_running = False
@@ -167,19 +175,9 @@ class AlimanteMenu:
             # Ligne de séparation
             draw.line([(5, 20), (self.display.width - 5, 20)], fill=(128, 128, 128))
             
-            # Items du menu (sans emojis pour compatibilité)
-            menu_items_clean = [
-                "Accueil Alimante",
-                "Test LED Bandeaux", 
-                "Monitoring Systeme",
-                "Configuration",
-                "Tests Hardware",
-                "Statistiques",
-                "A propos"
-            ]
-            
+            # Items du menu
             y_pos = 25
-            for i, item in enumerate(menu_items_clean):
+            for i, item in enumerate(self.menu_items):
                 if i == self.current_selection:
                     # Item sélectionné
                     draw.rectangle([2, y_pos - 2, self.display.width - 2, y_pos + 12], 
@@ -218,12 +216,12 @@ class AlimanteMenu:
     def action_accueil(self):
         """Action: Accueil Alimante"""
         print("🏠 Accueil Alimante")
-        self.show_message("Accueil Alimante", "Système prêt", (0, 255, 0))
+        self.show_message("Accueil Alimante", "Systeme pret", (0, 255, 0))
 
     def action_test_led(self):
         """Action: Test LED Bandeaux"""
         print("💡 Test LED Bandeaux")
-        self.show_message("Test LED", "Fonctionnalité en développement", (255, 165, 0))
+        self.show_message("Test LED", "Fonctionnalite en developpement", (255, 165, 0))
 
     def action_monitoring(self):
         """Action: Monitoring Système"""
@@ -233,22 +231,22 @@ class AlimanteMenu:
     def action_configuration(self):
         """Action: Configuration"""
         print("⚙️ Configuration")
-        self.show_message("Configuration", "Paramètres système", (128, 0, 128))
+        self.show_message("Configuration", "Parametres systeme", (128, 0, 128))
 
     def action_tests_hardware(self):
         """Action: Tests Hardware"""
         print("🔧 Tests Hardware")
-        self.show_message("Tests HW", "Diagnostic matériel", (255, 0, 0))
+        self.show_message("Tests HW", "Diagnostic materiel", (255, 0, 0))
 
     def action_statistiques(self):
         """Action: Statistiques"""
         print("📈 Statistiques")
-        self.show_message("Statistiques", "Données d'utilisation", (255, 0, 255))
+        self.show_message("Statistiques", "Donnees d utilisation", (255, 0, 255))
 
     def action_a_propos(self):
         """Action: À propos"""
         print("ℹ️ À propos")
-        self.show_message("À propos", "Alimante v1.0.0", (255, 255, 0))
+        self.show_message("A propos", "Alimante v1.0.0", (255, 255, 0))
 
     def show_message(self, title, message, color=(255, 255, 255)):
         """Affiche un message sur l'écran"""
@@ -346,9 +344,9 @@ class AlimanteMenu:
 def main():
     """Fonction principale"""
     print("=" * 60)
-    print("🎛️  ALIMANTE - MENU PRINCIPAL")
+    print("🎛️  ALIMANTE - MENU AMÉLIORÉ")
     print("📍 Encodeur rotatif + Écran ST7735")
-    print("📍 Configuration optimisée et testée")
+    print("📍 Gestion améliorée des caractères")
     print("=" * 60)
     
     # Vérification des dépendances
@@ -363,7 +361,7 @@ def main():
         return
     
     # Création et lancement du menu
-    menu = AlimanteMenu()
+    menu = AlimanteMenuImproved()
     menu.run_menu()
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Menu Principal Alimante
-Système de contrôle avec encodeur rotatif et écran ST7735
+Menu Principal Alimante - Version avec Police Personnalisée
+Gestion optimale de l'affichage des caractères sur ST7735
 """
 
 import time
@@ -27,7 +27,7 @@ except Exception as e:
     GPIOZERO_AVAILABLE = False
     print(f"⚠️  Erreur gpiozero: {e}")
 
-class AlimanteMenu:
+class AlimanteMenuFont:
     def __init__(self):
         self.config = get_gpio_config()
         self.ui_config = get_ui_config()
@@ -47,14 +47,49 @@ class AlimanteMenu:
         self.sw_pin = self.config['ENCODER']['SW_PIN']
         
         # État du menu
-        self.menu_items = self.ui_config['MENU']['ITEMS']
+        self.menu_items = [
+            "Accueil Alimante",
+            "Test LED Bandeaux", 
+            "Monitoring Systeme",
+            "Configuration",
+            "Tests Hardware",
+            "Statistiques",
+            "A propos"
+        ]
         self.current_selection = 0
         self.counter = 0
         self.is_running = False
         
+        # Police personnalisée
+        self.font = None
+        self.font_small = None
+        
         # Gestionnaire d'arrêt
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
+
+    def initialize_fonts(self):
+        """Initialise les polices personnalisées"""
+        try:
+            # Police par défaut
+            self.font = ImageFont.load_default()
+            
+            # Tentative de chargement d'une police plus grande
+            try:
+                # Police système si disponible
+                self.font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 12)
+                self.font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 10)
+                print("✅ Police personnalisée chargée")
+            except:
+                # Fallback sur la police par défaut
+                self.font = ImageFont.load_default()
+                self.font_small = ImageFont.load_default()
+                print("⚠️  Utilisation de la police par défaut")
+            
+            return True
+        except Exception as e:
+            print(f"❌ Erreur initialisation polices: {e}")
+            return False
 
     def initialize_display(self):
         """Initialise l'écran ST7735 avec la configuration optimisée"""
@@ -146,6 +181,13 @@ class AlimanteMenu:
         print(f"🔘 Sélection: {self.menu_items[self.current_selection]}")
         self.execute_menu_action(self.current_selection)
 
+    def draw_text_centered(self, draw, text, y, font, color=(255, 255, 255)):
+        """Dessine un texte centré"""
+        bbox = draw.textbbox((0, 0), text, font=font)
+        text_width = bbox[2] - bbox[0]
+        x = (self.display.width - text_width) // 2
+        draw.text((x, y), text, fill=color, font=font)
+
     def update_display(self):
         """Met à jour l'affichage du menu"""
         if not self.is_display_initialized:
@@ -155,44 +197,29 @@ class AlimanteMenu:
             # Création de l'image
             image = Image.new("RGB", (self.display.width, self.display.height), (0, 0, 0))
             draw = ImageDraw.Draw(image)
-            font = ImageFont.load_default()
             
             # Titre
-            title = "ALIMANTE MENU"
-            bbox = draw.textbbox((0, 0), title, font=font)
-            title_width = bbox[2] - bbox[0]
-            x_title = (self.display.width - title_width) // 2
-            draw.text((x_title, 5), title, fill=(255, 255, 0), font=font)
+            self.draw_text_centered(draw, "ALIMANTE MENU", 5, self.font, (255, 255, 0))
             
             # Ligne de séparation
             draw.line([(5, 20), (self.display.width - 5, 20)], fill=(128, 128, 128))
             
-            # Items du menu (sans emojis pour compatibilité)
-            menu_items_clean = [
-                "Accueil Alimante",
-                "Test LED Bandeaux", 
-                "Monitoring Systeme",
-                "Configuration",
-                "Tests Hardware",
-                "Statistiques",
-                "A propos"
-            ]
-            
+            # Items du menu
             y_pos = 25
-            for i, item in enumerate(menu_items_clean):
+            for i, item in enumerate(self.menu_items):
                 if i == self.current_selection:
                     # Item sélectionné
                     draw.rectangle([2, y_pos - 2, self.display.width - 2, y_pos + 12], 
                                  fill=(0, 100, 255))
-                    draw.text((5, y_pos), item, fill=(255, 255, 255), font=font)
+                    draw.text((5, y_pos), item, fill=(255, 255, 255), font=self.font)
                 else:
                     # Item normal
-                    draw.text((5, y_pos), item, fill=(200, 200, 200), font=font)
+                    draw.text((5, y_pos), item, fill=(200, 200, 200), font=self.font)
                 y_pos += 15
             
             # Informations en bas
             info_text = f"Sel: {self.current_selection + 1}/{len(self.menu_items)}"
-            draw.text((5, self.display.height - 15), info_text, fill=(128, 128, 128), font=font)
+            draw.text((5, self.display.height - 15), info_text, fill=(128, 128, 128), font=self.font_small)
             
             # Affichage
             self.display.display(image)
@@ -218,12 +245,12 @@ class AlimanteMenu:
     def action_accueil(self):
         """Action: Accueil Alimante"""
         print("🏠 Accueil Alimante")
-        self.show_message("Accueil Alimante", "Système prêt", (0, 255, 0))
+        self.show_message("Accueil Alimante", "Systeme pret", (0, 255, 0))
 
     def action_test_led(self):
         """Action: Test LED Bandeaux"""
         print("💡 Test LED Bandeaux")
-        self.show_message("Test LED", "Fonctionnalité en développement", (255, 165, 0))
+        self.show_message("Test LED", "Fonctionnalite en developpement", (255, 165, 0))
 
     def action_monitoring(self):
         """Action: Monitoring Système"""
@@ -233,22 +260,22 @@ class AlimanteMenu:
     def action_configuration(self):
         """Action: Configuration"""
         print("⚙️ Configuration")
-        self.show_message("Configuration", "Paramètres système", (128, 0, 128))
+        self.show_message("Configuration", "Parametres systeme", (128, 0, 128))
 
     def action_tests_hardware(self):
         """Action: Tests Hardware"""
         print("🔧 Tests Hardware")
-        self.show_message("Tests HW", "Diagnostic matériel", (255, 0, 0))
+        self.show_message("Tests HW", "Diagnostic materiel", (255, 0, 0))
 
     def action_statistiques(self):
         """Action: Statistiques"""
         print("📈 Statistiques")
-        self.show_message("Statistiques", "Données d'utilisation", (255, 0, 255))
+        self.show_message("Statistiques", "Donnees d utilisation", (255, 0, 255))
 
     def action_a_propos(self):
         """Action: À propos"""
         print("ℹ️ À propos")
-        self.show_message("À propos", "Alimante v1.0.0", (255, 255, 0))
+        self.show_message("A propos", "Alimante v1.0.0", (255, 255, 0))
 
     def show_message(self, title, message, color=(255, 255, 255)):
         """Affiche un message sur l'écran"""
@@ -258,23 +285,16 @@ class AlimanteMenu:
         try:
             image = Image.new("RGB", (self.display.width, self.display.height), (0, 0, 0))
             draw = ImageDraw.Draw(image)
-            font = ImageFont.load_default()
             
-            # Titre
-            bbox = draw.textbbox((0, 0), title, font=font)
-            title_width = bbox[2] - bbox[0]
-            x_title = (self.display.width - title_width) // 2
-            draw.text((x_title, 20), title, fill=color, font=font)
+            # Titre centré
+            self.draw_text_centered(draw, title, 20, self.font, color)
             
-            # Message
-            bbox = draw.textbbox((0, 0), message, font=font)
-            msg_width = bbox[2] - bbox[0]
-            x_msg = (self.display.width - msg_width) // 2
-            draw.text((x_msg, 50), message, fill=(255, 255, 255), font=font)
+            # Message centré
+            self.draw_text_centered(draw, message, 50, self.font, (255, 255, 255))
             
             # Retour
             draw.text((5, self.display.height - 15), "Appuyez pour retourner", 
-                     fill=(128, 128, 128), font=font)
+                     fill=(128, 128, 128), font=self.font_small)
             
             self.display.display(image)
             
@@ -289,6 +309,11 @@ class AlimanteMenu:
     def run_menu(self):
         """Lance le menu principal"""
         print("🚀 Lancement du menu Alimante...")
+        
+        # Initialisation des polices
+        if not self.initialize_fonts():
+            print("❌ Impossible d'initialiser les polices")
+            return
         
         # Initialisation des composants
         if not self.initialize_display():
@@ -346,9 +371,9 @@ class AlimanteMenu:
 def main():
     """Fonction principale"""
     print("=" * 60)
-    print("🎛️  ALIMANTE - MENU PRINCIPAL")
+    print("🎛️  ALIMANTE - MENU AVEC POLICE")
     print("📍 Encodeur rotatif + Écran ST7735")
-    print("📍 Configuration optimisée et testée")
+    print("📍 Gestion optimale des caractères")
     print("=" * 60)
     
     # Vérification des dépendances
@@ -363,7 +388,7 @@ def main():
         return
     
     # Création et lancement du menu
-    menu = AlimanteMenu()
+    menu = AlimanteMenuFont()
     menu.run_menu()
 
 if __name__ == "__main__":
