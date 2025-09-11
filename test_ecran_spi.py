@@ -16,8 +16,10 @@ try:
     import st7735
     from PIL import Image, ImageDraw, ImageFont
     ST7735_AVAILABLE = True
-except ImportError:
+    print("✅ Librairies ST7735 et PIL importées avec succès")
+except Exception as e:
     ST7735_AVAILABLE = False
+    print(f"⚠️  Erreur lors de l'import: {e}")
     print("⚠️  Librairie ST7735 non disponible. Installation requise:")
     print("   pip install st7735 Pillow")
 
