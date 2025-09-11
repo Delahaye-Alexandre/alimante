@@ -1,0 +1,309 @@
+alimante/
+├── config/
+│ ├── config.json
+│ ├── gpio_config.json
+│ ├── network.json
+│ ├── logging.yaml
+│ ├── safety_limits.json
+│ ├── policies/
+│ │ ├── lighting_policy.json
+│ │ ├── humidity_policy.json
+│ │ ├── ventilation_policy.json
+│ │ └── feeding_policy.json
+│ ├── species/
+│ │ ├── insects/
+│ │ │ ├── mantis_religiosa.json
+│ │ │ └── \_template_insect.json
+│ │ └── reptiles/
+│ │ └── \_template_reptile.json
+│ └── terrariums/
+│ ├── terrarium_default.json
+│ └── terrarium_02.json
+│
+├── src/
+│ ├── api/
+│ │ ├── **init**.py
+│ │ ├── server.py
+│ │ ├── routes/
+│ │ │ ├── metrics.py
+│ │ │ ├── control.py
+│ │ │ ├── profiles.py
+│ │ │ ├── camera.py
+│ │ │ └── auth.py
+│ │ └── schemas.py
+│ ├── controllers/
+│ │ ├── **init**.py
+│ │ ├── base_controller.py
+│ │ ├── drivers/
+│ │ │ ├── mosfet_driver.py
+│ │ │ ├── pwm_driver.py
+│ │ │ ├── servo_driver.py
+│ │ │ ├── i2c_lcd_driver.py
+│ │ │ ├── rotary_encoder_driver.py
+│ │ │ └── camera_driver.py
+│ │ ├── sensors/
+│ │ │ ├── dht22_sensor.py
+│ │ │ ├── tenflyer_water_sensor.py
+│ │ │ └── optional/
+│ │ │ ├── ultrasonic_level.py
+│ │ │ └── capacitive_level.py
+│ │ ├── actuators/
+│ │ │ ├── lighting_controller.py
+│ │ │ ├── heater_controller.py
+│ │ │ ├── humidifier_controller.py
+│ │ │ ├── fan_controller.py
+│ │ │ ├── feeder_sas_controller.py
+│ │ │ ├── lcd_controller.py
+│ │ │ └── encoder_controller.py
+│ │ └── misc/
+│ │ ├── relay_controller.py
+│ │ └── power_cutoff_hw.py
+│ ├── services/
+│ │ ├── **init**.py
+│ │ ├── sensor_service.py
+│ │ ├── monitoring_service.py
+│ │ ├── control_service.py
+│ │ ├── ventilation_service.py
+│ │ ├── humidification_service.py
+│ │ ├── heating_service.py
+│ │ ├── lighting_service.py
+│ │ ├── feeding_service.py
+│ │ ├── ui_service.py
+│ │ ├── camera_service.py
+│ │ ├── species_service.py
+│ │ ├── scheduler_service.py
+│ │ ├── persistence_service.py
+│ │ ├── sync_service.py
+│ │ └── safety_service.py
+│ ├── ui/
+│ │ ├── pwa/
+│ │ │ ├── src/
+│ │ │ └── manifest.json
+│ │ └── lcd_screens/
+│ │ ├── dashboard_screen.py
+│ │ └── menu_controller.py
+│ ├── loops/
+│ │ ├── main_loop.py
+│ │ └── watchdog.py
+│ └── utils/
+│ ├── event_bus.py
+│ ├── pid.py
+│ ├── calibration.py
+│ └── time_utils.py
+│
+├── data/
+│ ├── db.sqlite
+│ └── snapshots/
+│
+├── docs/
+│ ├── architecture.md
+│ ├── wiring/
+│ ├── tenflyer_integration.md
+│ └── species_profile_format.md
+│
+├── scripts/
+│ ├── install_raspberry.sh
+│ ├── start_all.sh
+│
+├── tests/
+│ ├── unit/
+│ └── integration/
+│
+├── main.py
+└── README.md
+
+Plan de développement supervisé pour Cursor (Windows → Raspberry Pi)
+Description du projet
+
+Alimante est une application Python pour gérer automatiquement des terrariums pour insectes et reptiles.
+Elle doit superviser et contrôler :
+
+Température (jour/nuit, selon profil espèce)
+
+Humidité et niveau d’eau
+
+Lumière (photopériode, transitions douces)
+
+Ventilation (vitesse des ventilateurs selon qualité de l'air)
+
+Alimentation automatique (via SAS et servo)
+
+Caméras et interface utilisateur (LCD + PWA)
+
+Le système s’adapte en fonction de l’espèce : chaque espèce a un profil défini dans config/species/, qui fixe ses besoins en température, humidité, lumière et fréquence de nourrissage.
+
+L’architecture est modulaire :
+
+Drivers : interaction directe avec le matériel (GPIO, I2C, PWM…).
+
+Controllers : traduisent les décisions des services en commandes matérielles.
+
+Services : logique métier et supervision, adapte les consignes selon les profils espèces.
+
+UI / Loops / Utils : interface utilisateur et boucle principale de supervision.
+
+Développement sur Windows : tout le code et la structure sont créés sur Windows, puis transférés sur le Raspberry Pi.
+
+Ordre de développement prioritaire
+
+Cursor doit suivre cet ordre séquentiel, en te laissant superviser chaque étape :
+
+1️⃣ Préparer la structure du projet
+
+But : créer tous les dossiers et fichiers de base selon l’arbre alimante/.
+
+Actions :
+
+Vérifier que tous les dossiers (config/, src/, data/, docs/, scripts/, tests/) existent
+
+Vérifier les fichiers principaux (main.py, README.md)
+
+Supervision : tu valides la structure et l’organisation globale.
+
+2️⃣ Configurations initiales
+
+But : préparer tous les fichiers de configuration.
+
+Actions :
+
+config/config.json → paramètres globaux
+
+gpio_config.json → mapping des pins (pour le futur sur Raspberry)
+
+network.json → accès distant (optionnel)
+
+safety_limits.json → limites de sécurité (T°, HR, air_quality, water_level)
+
+policies/ → règles d’automatisation (lumière, humidité, ventilation, nourrissage)
+
+species/ → profils espèces (insectes et reptiles), fichiers template
+
+terrariums/ → instances de terrarium, association à l’espèce
+
+Supervision : tu vérifies les fichiers JSON, formats et valeurs par défaut.
+
+3️⃣ Développement des drivers
+
+But : assurer que chaque composant matériel pourra être utilisé.
+
+Priorité :
+
+Capteurs : dht22_sensor.py, air_quality_sensor.py, tenflyer_water_sensor.py
+
+Actionneurs : mosfet_driver.py, servo_driver.py, pwm_driver.py
+
+Périphériques : i2c_lcd_driver.py, rotary_encoder_driver.py, camera_driver.py
+
+Supervision : valider les tests hardware simulés ou réels sur Raspberry Pi après transfert.
+
+4️⃣ Développement des controllers
+
+But : transformer les commandes des services en actions concrètes via les drivers.
+
+Priorité :
+
+lighting_controller.py
+
+heater_controller.py
+
+humidifier_controller.py
+
+fan_controller.py
+
+feeder_sas_controller.py
+
+lcd_controller.py et encoder_controller.py
+
+Supervision : tu valides que chaque controller applique correctement les ordres au driver.
+
+5️⃣ Développement des services
+
+But : créer la logique métier et l’adaptation aux espèces.
+
+Priorité :
+
+sensor_service.py → lecture harmonisée des capteurs
+
+control_service.py → décisions globales (PID, On/Off)
+
+Services spécifiques : heating_service.py, ventilation_service.py, humidification_service.py, lighting_service.py → ajustés selon profil espèce
+
+feeding_service.py → planification et déclenchement du nourrissage selon espèce
+
+ui_service.py → LCD + encodeur
+
+camera_service.py → snapshots / streaming
+
+scheduler_service.py → tâches planifiées
+
+persistence_service.py → stockage SQLite
+
+sync_service.py → cloud/tunnel (optionnel)
+
+safety_service.py → failsafes matériels et logiciels
+
+Supervision : tu valides chaque décision du service selon les profils espèces avant de passer à la suite.
+
+6️⃣ Développement de l’interface utilisateur
+
+But : interaction avec l’utilisateur.
+
+Actions :
+
+LCD local (dashboard_screen.py, menu_controller.py)
+
+PWA / web dashboard (pwa/src/)
+
+Supervision : tester chaque écran et menu.
+
+7️⃣ Boucles principales et utilitaires
+
+But : orchestrer le fonctionnement continu.
+
+Actions :
+
+main_loop.py → boucle principale sensors → services → actuators
+
+watchdog.py → redémarrage services bloqués
+
+utils/ → PID, calibration, event bus, fonctions temps
+
+Supervision : valider le comportement continu sur Raspberry Pi.
+
+8️⃣ Tests et validation
+
+But : s’assurer que tout fonctionne correctement.
+
+Actions :
+
+Tests unitaires (tests/unit)
+
+Tests d’intégration (tests/integration)
+
+Validation finale sur Raspberry Pi avec matériel réel
+
+Supervision : tu valides que le système respecte les limites et profils espèces.
+
+9️⃣ Documentation
+
+But : rendre le projet maintenable et compréhensible.
+
+Actions :
+
+docs/architecture.md
+
+docs/wiring/
+
+docs/species_profile_format.md
+
+Supervision : tu valides la clarté et la complétude de la documentation.
+
+💡 Règles pour Cursor
+
+Suivre cet ordre de développement strict.
+
+Te laisser superviser chaque étape.
+
+Vérifier chaque décision, code et test avant de passer à la suivante.
+
+Adapter automatiquement la logique des services aux profils des espèces.

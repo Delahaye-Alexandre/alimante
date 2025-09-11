@@ -1,104 +1,136 @@
-# 🎛️ Alimante - Système de Contrôle LED
+# 🦎 Alimante - Système de gestion automatique de terrariums
 
-Système de contrôle intelligent pour bandeaux LED avec interface utilisateur basée sur encodeur rotatif et écran ST7735.
+Alimante est une application Python pour gérer automatiquement des terrariums pour insectes et reptiles. Le système supervise et contrôle automatiquement la température, l'humidité, la lumière, la ventilation et l'alimentation selon des profils d'espèces personnalisables.
 
-## 📁 Structure du Projet
+## 🌟 Fonctionnalités
+
+- **🌡️ Contrôle de température** (jour/nuit selon profil espèce)
+- **💧 Gestion de l'humidité** et du niveau d'eau
+- **💡 Éclairage intelligent** (photopériode avec transitions douces)
+- **🌪️ Ventilation adaptative** (selon qualité de l'air)
+- **🍽️ Alimentation automatique** (via SAS et servo)
+- **📷 Caméras et monitoring** (snapshots et streaming)
+- **🖥️ Interface utilisateur** (LCD local + PWA web)
+- **🔒 Sécurité intégrée** (limites et failsafes)
+
+## 🏗️ Architecture
+
+Le système suit une architecture modulaire :
+
+- **Drivers** : Interaction directe avec le matériel (GPIO, I2C, PWM...)
+- **Controllers** : Traduction des décisions des services en commandes matérielles
+- **Services** : Logique métier et supervision, adaptation aux profils espèces
+- **UI** : Interface utilisateur (LCD + PWA web)
+
+## 📁 Structure du projet
 
 ```
 alimante/
-├── alimante_menu.py          # Menu principal (à utiliser)
-├── test_rotation_menu.py     # Test de rotation (debug)
-├── config_alimante.py        # Configuration système
-├── requirements.txt          # Dépendances Python
-└── README.md                # Documentation
+├── config/                 # Configurations
+│   ├── policies/          # Règles d'automatisation
+│   ├── species/           # Profils d'espèces
+│   └── terrariums/        # Instances de terrariums
+├── src/                   # Code source
+│   ├── api/              # API REST
+│   ├── controllers/      # Contrôleurs matériel
+│   ├── services/         # Services métier
+│   ├── ui/               # Interface utilisateur
+│   ├── loops/            # Boucles principales
+│   └── utils/            # Utilitaires
+├── data/                  # Base de données et snapshots
+├── docs/                  # Documentation
+├── tests/                 # Tests unitaires et intégration
+└── scripts/              # Scripts d'installation
 ```
 
-## 🚀 Utilisation
+## 🚀 Installation
 
-### Lancement du menu principal
+### Prérequis
+
+- Python 3.8+
+- Raspberry Pi (recommandé)
+- Matériel de terrarium (capteurs, actionneurs, etc.)
+
+### Installation sur Windows (développement)
 
 ```bash
-python alimante_menu.py
-```
+# Cloner le projet
+git clone <repository-url>
+cd alimante
 
-### Test de rotation (debug)
-
-```bash
-python test_rotation_menu.py
-```
-
-## 🔧 Configuration
-
-### Branchements ST7735
-
-```
-ST7735    →    Raspberry Pi
-VCC       →    3.3V (Pin 1 ou 17)
-GND       →    GND (Pin 6, 9, 14, 20, 25, 30, 34, 39)
-CS        →    GPIO 8 (Pin 24)
-RST       →    GPIO 24 (Pin 18)
-A0/DC     →    GPIO 25 (Pin 22)
-SDA/MOSI  →    GPIO 10 (Pin 19)
-SCL/SCLK  →    GPIO 11 (Pin 23)
-```
-
-### Branchements Encodeur
-
-```
-Encodeur  →    Raspberry Pi
-CLK       →    GPIO 17 (Pin 11)
-DT        →    GPIO 27 (Pin 13)
-SW        →    GPIO 22 (Pin 15)
-VCC       →    3.3V
-GND       →    GND
-```
-
-## 📋 Contrôles
-
-- **Rotation horaire** : Menu vers le bas
-- **Rotation anti-horaire** : Menu vers le haut
-- **Bouton** : Sélectionner l'option
-- **Ctrl+C** : Quitter
-
-## 🎨 Menu Disponible
-
-1. 🏠 **Accueil Alimante**
-2. 💡 **Test LED Bandeaux**
-3. 📊 **Monitoring Système**
-4. ⚙️ **Configuration**
-5. 🔧 **Tests Hardware**
-6. 📈 **Statistiques**
-7. ℹ️ **À propos**
-
-## 📦 Installation
-
-```bash
-# Installation des dépendances
+# Installer les dépendances
 pip install -r requirements.txt
 
-# Lancement
-python alimante_menu.py
+# Lancer l'application
+python main.py
 ```
 
-## 🔧 Configuration Technique
+### Installation sur Raspberry Pi
 
-- **Écran** : ST7735 160x128 pixels
-- **Format couleur** : RGB standard
-- **Rotation** : 270° (ajustable)
-- **Encodeur** : Logique inversée pour votre montage
-- **Anti-rebond** : Intégré dans gpiozero
+```bash
+# Exécuter le script d'installation
+chmod +x scripts/install_raspberry.sh
+./scripts/install_raspberry.sh
+```
 
-## 🛠️ Développement
+## ⚙️ Configuration
 
-Pour ajouter de nouvelles fonctionnalités :
+1. **Profils d'espèces** : Configurez vos espèces dans `config/species/`
+2. **Terrariums** : Créez vos instances dans `config/terrariums/`
+3. **Politiques** : Ajustez les règles dans `config/policies/`
+4. **Sécurité** : Définissez les limites dans `config/safety_limits.json`
 
-1. Modifiez `config_alimante.py` pour les nouveaux items de menu
-2. Ajoutez les actions correspondantes dans `alimante_menu.py`
-3. Testez avec `test_rotation_menu.py` si nécessaire
+## 🎯 Utilisation
 
-## 📝 Notes
+### Interface LCD
 
-- Configuration testée et validée
-- Couleurs RGB standard (pas de conversion nécessaire)
-- Encodeur monté à l'envers (logique inversée)
-- Interface temps réel avec mise à jour automatique
+- Navigation avec encodeur rotatif
+- Affichage des métriques en temps réel
+- Contrôle manuel des actionneurs
+
+### Interface Web (PWA)
+
+- Dashboard complet
+- Configuration à distance
+- Monitoring en temps réel
+- Historique des données
+
+## 🔧 Développement
+
+Le projet suit un plan de développement séquentiel :
+
+1. ✅ Structure du projet
+2. ⏳ Configurations initiales
+3. ⏳ Développement des drivers
+4. ⏳ Développement des controllers
+5. ⏳ Développement des services
+6. ⏳ Interface utilisateur
+7. ⏳ Boucles principales
+8. ⏳ Tests et validation
+9. ⏳ Documentation
+
+## 📊 Espèces supportées
+
+- **Insectes** : Mantes religieuses, phasmes, etc.
+- **Reptiles** : Lézards, serpents, geckos, etc.
+
+Chaque espèce a son profil personnalisé définissant ses besoins spécifiques.
+
+## 🛡️ Sécurité
+
+- Limites de sécurité configurables
+- Failsafes matériels et logiciels
+- Monitoring continu des paramètres critiques
+- Arrêt d'urgence automatique
+
+## 📝 Licence
+
+[À définir]
+
+## 🤝 Contribution
+
+[À définir]
+
+## 📞 Support
+
+[À définir]
