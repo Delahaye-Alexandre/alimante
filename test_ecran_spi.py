@@ -119,16 +119,16 @@ class EcranSPITest:
             print("❌ Écran non initialisé")
             return False
         
-        # Test de diagnostic des couleurs
-        print("🔍 Test de diagnostic des couleurs...")
+        # Test de diagnostic des couleurs (ordre BGR)
+        print("🔍 Test de diagnostic des couleurs (ordre BGR)...")
         test_colors = [
-            ("Rouge pur", (255, 0, 0)),
-            ("Vert pur", (0, 255, 0)),
-            ("Bleu pur", (0, 0, 255))
+            ("Rouge pur", (0, 0, 255)),  # BGR: Bleu=0, Vert=0, Rouge=255
+            ("Vert pur", (0, 255, 0)),   # BGR: Bleu=0, Vert=255, Rouge=0
+            ("Bleu pur", (255, 0, 0))    # BGR: Bleu=255, Vert=0, Rouge=0
         ]
         
         for nom, couleur in test_colors:
-            print(f"   Test {nom}: RGB{couleur}")
+            print(f"   Test {nom}: BGR{couleur}")
             image = Image.new('RGB', (self.display.width, self.display.height), color=couleur)
             self.display.display(image)
             time.sleep(1)
@@ -136,16 +136,16 @@ class EcranSPITest:
         couleurs = [
             ("Noir", (0, 0, 0)),
             ("Blanc", (255, 255, 255)),
-            ("Rouge", (255, 0, 0)),
-            ("Vert", (0, 255, 0)),
-            ("Bleu", (0, 0, 255)),
-            ("Jaune", (255, 255, 0)),
-            ("Cyan", (0, 255, 255)),
-            ("Magenta", (255, 0, 255)),
-            ("Orange", (255, 165, 0)),
-            ("Violet", (128, 0, 128)),
-            ("Rose", (255, 192, 203)),
-            ("Vert Lime", (50, 205, 50))
+            ("Rouge", (0, 0, 255)),      # BGR: Bleu=0, Vert=0, Rouge=255
+            ("Vert", (0, 255, 0)),       # BGR: Bleu=0, Vert=255, Rouge=0
+            ("Bleu", (255, 0, 0)),       # BGR: Bleu=255, Vert=0, Rouge=0
+            ("Jaune", (0, 255, 255)),    # BGR: Bleu=0, Vert=255, Rouge=255
+            ("Cyan", (255, 255, 0)),     # BGR: Bleu=255, Vert=255, Rouge=0
+            ("Magenta", (255, 0, 255)),  # BGR: Bleu=255, Vert=0, Rouge=255
+            ("Orange", (0, 165, 255)),   # BGR: Bleu=0, Vert=165, Rouge=255
+            ("Violet", (128, 0, 128)),   # BGR: Bleu=128, Vert=0, Rouge=128
+            ("Rose", (203, 192, 255)),   # BGR: Bleu=203, Vert=192, Rouge=255
+            ("Vert Lime", (50, 205, 50)) # BGR: Bleu=50, Vert=205, Rouge=50
         ]
         
         try:
