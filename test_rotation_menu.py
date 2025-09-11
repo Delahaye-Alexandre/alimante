@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Menu Alimante Final - Configuration optimisée
-Utilise la configuration qui fonctionne parfaitement
+Test de la rotation dans le menu
+Vérifie que la détection de rotation fonctionne correctement
 """
 
 import time
@@ -27,7 +27,7 @@ except Exception as e:
     GPIOZERO_AVAILABLE = False
     print(f"⚠️  Erreur gpiozero: {e}")
 
-class AlimanteMenuFinal:
+class TestRotationMenu:
     def __init__(self):
         self.config = get_gpio_config()
         self.ui_config = get_ui_config()
@@ -57,7 +57,7 @@ class AlimanteMenuFinal:
         signal.signal(signal.SIGTERM, self._signal_handler)
 
     def initialize_display(self):
-        """Initialise l'écran ST7735 avec la configuration optimisée"""
+        """Initialise l'écran ST7735"""
         if not ST7735_AVAILABLE:
             print("❌ ST7735 non disponible")
             return False
@@ -70,15 +70,12 @@ class AlimanteMenuFinal:
                 dc=self.a0_pin,
                 rst=self.reset_pin,
                 rotation=270,
-                invert=False,  # Pas d'inversion
-                bgr=False      # Format RGB standard
+                invert=False,
+                bgr=False
             )
             self.display.begin()
             self.is_display_initialized = True
             print(f"✅ Écran initialisé: {self.display.width}x{self.display.height}")
-            print("   • Format: RGB standard")
-            print("   • Inversion: Désactivée")
-            print("   • Rotation: 270°")
             return True
             
         except Exception as e:
@@ -131,11 +128,13 @@ class AlimanteMenuFinal:
         if self.encoder.steps > old_counter:
             # Rotation horaire = menu vers le bas (inversé)
             self.current_selection = (self.current_selection - 1) % len(self.menu_items)
-            print(f"🔄 Rotation horaire → Menu: {self.current_selection + 1}")
+            direction = "HORAIRE"
         else:
             # Rotation anti-horaire = menu vers le haut (inversé)
             self.current_selection = (self.current_selection + 1) % len(self.menu_items)
-            print(f"🔄 Rotation anti-horaire → Menu: {self.current_selection + 1}")
+            direction = "ANTI-HORAIRE"
+        
+        print(f"🔄 Rotation {direction} | Compteur: {self.counter} | Menu: {self.current_selection + 1}")
         
         # Mise à jour de l'affichage
         self.update_display()
@@ -146,7 +145,7 @@ class AlimanteMenuFinal:
             return
             
         print(f"🔘 Sélection: {self.menu_items[self.current_selection]}")
-        self.execute_menu_action(self.current_selection)
+        self.show_selection_message()
 
     def update_display(self):
         """Met à jour l'affichage du menu"""
@@ -160,7 +159,7 @@ class AlimanteMenuFinal:
             font = ImageFont.load_default()
             
             # Titre
-            title = "ALIMANTE MENU"
+            title = "TEST ROTATION"
             bbox = draw.textbbox((0, 0), title, font=font)
             title_width = bbox[2] - bbox[0]
             x_title = (self.display.width - title_width) // 2
@@ -184,7 +183,11 @@ class AlimanteMenuFinal:
             
             # Informations en bas
             info_text = f"Sel: {self.current_selection + 1}/{len(self.menu_items)}"
-            draw.text((5, self.display.height - 15), info_text, fill=(128, 128, 128), font=font)
+            draw.text((5, self.display.height - 25), info_text, fill=(128, 128, 128), font=font)
+            
+            # Compteur
+            counter_text = f"Compteur: {self.counter}"
+            draw.text((5, self.display.height - 15), counter_text, fill=(128, 128, 128), font=font)
             
             # Affichage
             self.display.display(image)
@@ -192,58 +195,8 @@ class AlimanteMenuFinal:
         except Exception as e:
             print(f"❌ Erreur mise à jour affichage: {e}")
 
-    def execute_menu_action(self, selection):
-        """Exécute l'action du menu sélectionné"""
-        actions = {
-            0: self.action_accueil,
-            1: self.action_test_led,
-            2: self.action_monitoring,
-            3: self.action_configuration,
-            4: self.action_tests_hardware,
-            5: self.action_statistiques,
-            6: self.action_a_propos
-        }
-        
-        if selection in actions:
-            actions[selection]()
-
-    def action_accueil(self):
-        """Action: Accueil Alimante"""
-        print("🏠 Accueil Alimante")
-        self.show_message("Accueil Alimante", "Système prêt", (0, 255, 0))
-
-    def action_test_led(self):
-        """Action: Test LED Bandeaux"""
-        print("💡 Test LED Bandeaux")
-        self.show_message("Test LED", "Fonctionnalité en développement", (255, 165, 0))
-
-    def action_monitoring(self):
-        """Action: Monitoring Système"""
-        print("📊 Monitoring Système")
-        self.show_message("Monitoring", "Surveillance active", (0, 255, 255))
-
-    def action_configuration(self):
-        """Action: Configuration"""
-        print("⚙️ Configuration")
-        self.show_message("Configuration", "Paramètres système", (128, 0, 128))
-
-    def action_tests_hardware(self):
-        """Action: Tests Hardware"""
-        print("🔧 Tests Hardware")
-        self.show_message("Tests HW", "Diagnostic matériel", (255, 0, 0))
-
-    def action_statistiques(self):
-        """Action: Statistiques"""
-        print("📈 Statistiques")
-        self.show_message("Statistiques", "Données d'utilisation", (255, 0, 255))
-
-    def action_a_propos(self):
-        """Action: À propos"""
-        print("ℹ️ À propos")
-        self.show_message("À propos", "Alimante v1.0.0", (255, 255, 0))
-
-    def show_message(self, title, message, color=(255, 255, 255)):
-        """Affiche un message sur l'écran"""
+    def show_selection_message(self):
+        """Affiche un message de sélection"""
         if not self.is_display_initialized:
             return
             
@@ -252,20 +205,13 @@ class AlimanteMenuFinal:
             draw = ImageDraw.Draw(image)
             font = ImageFont.load_default()
             
-            # Titre
-            bbox = draw.textbbox((0, 0), title, font=font)
-            title_width = bbox[2] - bbox[0]
-            x_title = (self.display.width - title_width) // 2
-            draw.text((x_title, 20), title, fill=color, font=font)
-            
-            # Message
-            bbox = draw.textbbox((0, 0), message, font=font)
-            msg_width = bbox[2] - bbox[0]
-            x_msg = (self.display.width - msg_width) // 2
-            draw.text((x_msg, 50), message, fill=(255, 255, 255), font=font)
+            # Message de sélection
+            selected_item = self.menu_items[self.current_selection]
+            draw.text((10, 20), "SELECTION:", fill=(255, 255, 0), font=font)
+            draw.text((10, 40), selected_item, fill=(255, 255, 255), font=font)
             
             # Retour
-            draw.text((5, self.display.height - 15), "Appuyez pour retourner", 
+            draw.text((5, self.display.height - 15), "Appuyez pour continuer", 
                      fill=(128, 128, 128), font=font)
             
             self.display.display(image)
@@ -278,9 +224,9 @@ class AlimanteMenuFinal:
         except Exception as e:
             print(f"❌ Erreur affichage message: {e}")
 
-    def run_menu(self):
-        """Lance le menu principal"""
-        print("🚀 Lancement du menu Alimante (configuration optimisée)...")
+    def run_test(self):
+        """Lance le test de rotation"""
+        print("🚀 Test de rotation dans le menu...")
         
         # Initialisation des composants
         if not self.initialize_display():
@@ -291,12 +237,12 @@ class AlimanteMenuFinal:
             print("❌ Impossible d'initialiser l'encodeur")
             return
         
-        # Démarrage du menu
+        # Démarrage du test
         self.is_running = True
         self.update_display()
         
         print("\n" + "=" * 50)
-        print("🎛️  MENU ALIMANTE ACTIF")
+        print("🔄 TEST DE ROTATION")
         print("=" * 50)
         print("• Tournez l'encodeur pour naviguer")
         print("• Appuyez sur le bouton pour sélectionner")
@@ -307,7 +253,7 @@ class AlimanteMenuFinal:
             while self.is_running:
                 time.sleep(0.1)
         except KeyboardInterrupt:
-            print("\n🛑 Arrêt du menu")
+            print("\n🛑 Arrêt du test")
         finally:
             self.cleanup()
 
@@ -338,25 +284,22 @@ class AlimanteMenuFinal:
 def main():
     """Fonction principale"""
     print("=" * 60)
-    print("🎛️  ALIMANTE - MENU FINAL")
-    print("📍 Encodeur rotatif + Écran ST7735")
-    print("📍 Configuration optimisée et testée")
+    print("🔄 TEST ROTATION MENU")
+    print("📍 Test de la détection de rotation")
     print("=" * 60)
     
     # Vérification des dépendances
     if not ST7735_AVAILABLE:
         print("❌ ST7735 non disponible")
-        print("   Installez avec: pip install st7735 Pillow")
         return
         
     if not GPIOZERO_AVAILABLE:
         print("❌ gpiozero non disponible")
-        print("   Installez avec: pip install gpiozero")
         return
     
-    # Création et lancement du menu
-    menu = AlimanteMenuFinal()
-    menu.run_menu()
+    # Création et lancement du test
+    test = TestRotationMenu()
+    test.run_test()
 
 if __name__ == "__main__":
     main()

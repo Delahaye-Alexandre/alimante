@@ -171,17 +171,21 @@ class AlimanteMenuComplet:
         if not self.is_running:
             return
             
-        # Mise à jour du compteur
+        # Sauvegarde de l'ancien compteur
         old_counter = self.counter
+        
+        # Mise à jour du compteur
         self.counter = self.encoder.steps
         
         # Mise à jour de la sélection du menu (INVERSÉ)
         if self.encoder.steps > old_counter:
             # Rotation horaire = menu vers le bas (inversé)
             self.current_selection = (self.current_selection - 1) % len(self.menu_items)
+            print(f"🔄 Rotation horaire → Menu: {self.current_selection + 1}")
         else:
             # Rotation anti-horaire = menu vers le haut (inversé)
             self.current_selection = (self.current_selection + 1) % len(self.menu_items)
+            print(f"🔄 Rotation anti-horaire → Menu: {self.current_selection + 1}")
         
         # Mise à jour de l'affichage
         self.update_display()
