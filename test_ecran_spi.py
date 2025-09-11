@@ -166,7 +166,10 @@ class EcranSPITest:
                 dc=self.a0_pin,
                 rst=self.reset_pin,
                 spi_speed_hz=4000000,  # 4MHz pour stabilité
-                rotation=270  # Rotation de 270° (90° + 180° = 270°)
+                rotation=270,  # Rotation de 270° (90° + 180° = 270°)
+                width=160,  # Largeur complète
+                height=128,  # Hauteur complète
+                bgr=False  # Ordre RGB (True pour BGR)
             )
             
             print(f"🔧 Démarrage de l'écran...")

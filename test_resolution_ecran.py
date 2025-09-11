@@ -35,7 +35,8 @@ def test_configuration(config_name, **kwargs):
             'dc': a0_pin,
             'rst': reset_pin,
             'spi_speed_hz': 2000000,
-            'rotation': 270
+            'rotation': 270,
+            'bgr': False  # Ordre RGB
         }
         
         # Fusionner avec les paramètres de test

@@ -53,14 +53,17 @@ def test_ecran_simple():
         print("🔧 Initialisation de l'écran ST7735...")
         print(f"   RST={reset_pin}, A0={a0_pin}")
         
-        # Initialisation de l'écran
+        # Initialisation de l'écran avec résolution optimisée
         display = st7735.ST7735(
             port=0,
             cs=0,
             dc=a0_pin,
             rst=reset_pin,
             spi_speed_hz=4000000,
-            rotation=270
+            rotation=270,
+            width=160,  # Largeur complète
+            height=128,  # Hauteur complète
+            bgr=False  # Ordre RGB (True pour BGR)
         )
         
         print("🔧 Démarrage de l'écran...")

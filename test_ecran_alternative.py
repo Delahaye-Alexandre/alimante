@@ -49,7 +49,7 @@ class EcranTestAlternative:
             # Attendre un peu pour éviter les conflits
             time.sleep(1)
             
-            # Initialisation de l'écran ST7735 avec paramètres optimisés
+            # Initialisation de l'écran ST7735 avec résolution optimisée
             self.display = st7735.ST7735(
                 port=0,
                 cs=0,  # Utilise spidev0.0
@@ -59,8 +59,7 @@ class EcranTestAlternative:
                 rotation=270,  # Rotation de 270°
                 width=160,  # Largeur complète
                 height=128,  # Hauteur complète
-                x_offset=0,  # Pas de décalage X
-                y_offset=0   # Pas de décalage Y
+                bgr=False  # Ordre RGB (True pour BGR)
             )
             
             print("🔧 Démarrage de l'écran...")
