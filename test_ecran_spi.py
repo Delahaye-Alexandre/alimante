@@ -70,11 +70,9 @@ class EcranSPITest:
                 cs=0,  # Utilise spidev0.0
                 dc=self.a0_pin,
                 rst=self.reset_pin,
-                spi_speed_hz=4000000  # 4MHz pour stabilité
+                spi_speed_hz=4000000,  # 4MHz pour stabilité
+                rotation=180  # Rotation de 180° pour inverser l'écran
             )
-            
-            # Configuration de la rotation après initialisation
-            self.display.rotation = 180
             
             print(f"🔧 Démarrage de l'écran...")
             # Démarrage de l'écran
@@ -135,9 +133,30 @@ class EcranSPITest:
         try:
             for nom, couleur in couleurs:
                 print(f"   Affichage {nom}...")
+                # Créer une image qui remplit tout l'écran
                 image = Image.new('RGB', (self.display.width, self.display.height), color=couleur)
+                
+                # Ajouter un cadre blanc pour bien voir les bords
+                draw = ImageDraw.Draw(image)
+                draw.rectangle([0, 0, self.display.width-1, self.display.height-1], outline=(255, 255, 255), width=2)
+                
+                # Ajouter le nom de la couleur au centre
+                try:
+                    font = ImageFont.load_default()
+                    text_bbox = draw.textbbox((0, 0), nom, font=font)
+                    text_width = text_bbox[2] - text_bbox[0]
+                    text_height = text_bbox[3] - text_bbox[1]
+                    x = (self.display.width - text_width) // 2
+                    y = (self.display.height - text_height) // 2
+                    draw.text((x, y), nom, fill=(255, 255, 255), font=font)
+                except:
+                    # Si pas de police, centrer le texte manuellement
+                    x = (self.display.width - len(nom) * 6) // 2
+                    y = self.display.height // 2
+                    draw.text((x, y), nom, fill=(255, 255, 255))
+                
                 self.display.display(image)
-                time.sleep(1)
+                time.sleep(2)  # Plus de temps pour voir chaque couleur
             
             print("✅ Test des couleurs de base réussi")
             return True
