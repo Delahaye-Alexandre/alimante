@@ -1,757 +1,387 @@
 #!/usr/bin/env python3
 """
 Test pour l'écran SPI ST7735
-Vérification du fonctionnement de l'écran avec tests complets
+Configuration basée sur config_alimante.py
+Pins: RESET=24, A0/DC=25, CS=8, SDA/MOSI=10, SCL/SCLK=11
 """
 
 import RPi.GPIO as GPIO
 import time
 import sys
 import signal
-import random
 import threading
-from config_alimante import get_gpio_config
+from config_alimante import get_gpio_config, get_ui_config
+from PIL import Image, ImageDraw, ImageFont
+import st7735
 
-# Import pour l'écran ST7735 (nécessite l'installation de la librairie)
-try:
-    import st7735
-    from PIL import Image, ImageDraw, ImageFont
-    ST7735_AVAILABLE = True
-    print("✅ Librairies ST7735 et PIL importées avec succès")
-except Exception as e:
-    ST7735_AVAILABLE = False
-    print(f"⚠️  Erreur lors de l'import: {e}")
-    print("⚠️  Librairie ST7735 non disponible. Installation requise:")
-    print("   pip install st7735 Pillow")
-
-class EncodeurRotatif:
-    def __init__(self, clk_pin, dt_pin, sw_pin):
-        """Initialise l'encodeur rotatif"""
-        self.clk_pin = clk_pin
-        self.dt_pin = dt_pin
-        self.sw_pin = sw_pin
-        self.position = 0
-        self.last_clk_state = 0
-        self.button_pressed = False
-        self.running = False
-        self.callback_rotation = None
-        self.callback_button = None
+class SPIDisplayTest:
+    def __init__(self):
+        """Initialise le test de l'écran SPI ST7735"""
+        self.config = get_gpio_config()
+        self.ui_config = get_ui_config()
         
         # Configuration des pins
-        GPIO.setup(self.clk_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.setup(self.dt_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.setup(self.sw_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        
-        # Configuration des interruptions
-        GPIO.add_event_detect(self.clk_pin, GPIO.BOTH, callback=self._clk_callback, bouncetime=2)
-        GPIO.add_event_detect(self.dt_pin, GPIO.BOTH, callback=self._dt_callback, bouncetime=2)
-        GPIO.add_event_detect(self.sw_pin, GPIO.FALLING, callback=self._button_callback, bouncetime=200)
-        
-        self.last_clk_state = GPIO.input(self.clk_pin)
-        self.running = True
-        
-    def _clk_callback(self, channel):
-        """Callback pour le pin CLK"""
-        if not self.running:
-            return
-            
-        clk_state = GPIO.input(self.clk_pin)
-        dt_state = GPIO.input(self.dt_pin)
-        
-        if clk_state != self.last_clk_state:
-            if dt_state != clk_state:
-                self.position += 1
-                if self.callback_rotation:
-                    self.callback_rotation(1)  # Rotation horaire
-            else:
-                self.position -= 1
-                if self.callback_rotation:
-                    self.callback_rotation(-1)  # Rotation anti-horaire
-                    
-        self.last_clk_state = clk_state
-    
-    def _dt_callback(self, channel):
-        """Callback pour le pin DT"""
-        pass  # Géré dans _clk_callback
-    
-    def _button_callback(self, channel):
-        """Callback pour le bouton"""
-        if not self.running:
-            return
-            
-        self.button_pressed = True
-        if self.callback_button:
-            self.callback_button()
-    
-    def set_rotation_callback(self, callback):
-        """Définit le callback pour la rotation"""
-        self.callback_rotation = callback
-    
-    def set_button_callback(self, callback):
-        """Définit le callback pour le bouton"""
-        self.callback_button = callback
-    
-    def get_position(self):
-        """Retourne la position actuelle"""
-        return self.position
-    
-    def reset_position(self):
-        """Remet la position à zéro"""
-        self.position = 0
-    
-    def is_button_pressed(self):
-        """Vérifie si le bouton a été pressé"""
-        if self.button_pressed:
-            self.button_pressed = False
-            return True
-        return False
-    
-    def cleanup(self):
-        """Nettoie les ressources"""
-        self.running = False
-        GPIO.remove_event_detect(self.clk_pin)
-        GPIO.remove_event_detect(self.dt_pin)
-        GPIO.remove_event_detect(self.sw_pin)
-
-class EcranSPITest:
-    def __init__(self):
-        """Initialise le testeur d'écran SPI"""
-        self.config = get_gpio_config()
-        self.display = None
-        self.is_initialized = False
-        self.encoder = None
-        
-        # Configuration des pins depuis config_alimante.py
         self.reset_pin = self.config['DISPLAY']['RESET_PIN']
         self.a0_pin = self.config['DISPLAY']['A0_PIN']
         self.cs_pin = self.config['DISPLAY']['CS_PIN']
         self.sda_pin = self.config['DISPLAY']['SDA_PIN']
         self.scl_pin = self.config['DISPLAY']['SCL_PIN']
         
-        # Configuration GPIO
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setwarnings(False)
+        # Configuration de l'écran
+        self.width = 128
+        self.height = 160
+        self.display = None
+        self.is_initialized = False
         
         # Gestionnaire de signal pour arrêt propre
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
     
-    def force_cleanup_gpio(self):
-        """Force le nettoyage des pins GPIO"""
-        try:
-            print("🧹 Nettoyage forcé des pins GPIO...")
-            GPIO.cleanup()
-            time.sleep(0.5)  # Attendre un peu
-        except:
-            pass
-    
     def initialize(self):
-        """Initialise l'écran SPI"""
-        if not ST7735_AVAILABLE:
-            print("❌ Impossible d'initialiser l'écran: librairie ST7735 manquante")
-            return False
-        
-        # Nettoyage préventif
-        self.force_cleanup_gpio()
-        
+        """Initialise l'écran SPI ST7735"""
         try:
-            print(f"🔧 Initialisation de l'écran ST7735...")
-            print(f"   Port SPI: 0, CS: 0, DC: {self.a0_pin}, RST: {self.reset_pin}")
+            # Configuration GPIO
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setwarnings(False)
             
-            # Initialisation de l'écran ST7735 SANS configurer les pins GPIO d'abord
-            # La librairie st7735 gère elle-même les pins
+            # Configuration des pins de contrôle
+            GPIO.setup(self.reset_pin, GPIO.OUT)
+            GPIO.setup(self.a0_pin, GPIO.OUT)
+            GPIO.setup(self.cs_pin, GPIO.OUT)
+            
+            # Initialisation de l'écran
             self.display = st7735.ST7735(
-                port=0,
-                cs=0,  # Utilise spidev0.0
-                dc=self.a0_pin,
                 rst=self.reset_pin,
-                spi_speed_hz=4000000,  # 4MHz pour stabilité
-                rotation=270,  # Rotation de 270° (90° + 180° = 270°)
-                width=160,  # Largeur complète
-                height=128,  # Hauteur complète
-                bgr=False  # Ordre RGB (True pour BGR)
+                dc=self.a0_pin,
+                spi=0,
+                cs=self.cs_pin,
+                width=self.width,
+                height=self.height,
+                rotation=0
             )
             
-            print(f"🔧 Démarrage de l'écran...")
-            # Démarrage de l'écran
             self.display.begin()
             self.is_initialized = True
-            print("✅ Écran SPI ST7735 initialisé avec succès")
-            print(f"   📌 Pins: RST={self.reset_pin}, A0={self.a0_pin}, CS={self.cs_pin}")
-            print(f"   📌 SPI: SDA={self.sda_pin}, SCL={self.scl_pin}")
-            print(f"   📐 Résolution: {self.display.width}x{self.display.height} (rotation 180°)")
             
-            # Initialisation de l'encodeur rotatif
-            self.initialize_encoder()
-            
+            print("✅ Écran SPI ST7735 initialisé")
+            print(f"   📌 RESET: GPIO {self.reset_pin}")
+            print(f"   📌 A0/DC: GPIO {self.a0_pin}")
+            print(f"   📌 CS:    GPIO {self.cs_pin}")
+            print(f"   📌 SDA:   GPIO {self.sda_pin}")
+            print(f"   📌 SCL:   GPIO {self.scl_pin}")
+            print(f"   📐 Résolution: {self.width}x{self.height}")
             return True
             
         except Exception as e:
-            print(f"❌ Erreur lors de l'initialisation de l'écran: {e}")
-            print(f"   Type d'erreur: {type(e).__name__}")
-            import traceback
-            traceback.print_exc()
+            print(f"❌ Erreur lors de l'initialisation: {e}")
             return False
     
-    def initialize_encoder(self):
-        """Initialise l'encodeur rotatif"""
-        try:
-            # Attendre un peu pour que l'écran soit complètement initialisé
-            time.sleep(1)
-            
-            encoder_config = self.config['ENCODER']
-            self.encoder = EncodeurRotatif(
-                clk_pin=encoder_config['CLK_PIN'],
-                dt_pin=encoder_config['DT_PIN'],
-                sw_pin=encoder_config['SW_PIN']
-            )
-            print("✅ Encodeur rotatif initialisé")
-            print(f"   📌 Pins: CLK={encoder_config['CLK_PIN']}, DT={encoder_config['DT_PIN']}, SW={encoder_config['SW_PIN']}")
-        except Exception as e:
-            print(f"❌ Erreur lors de l'initialisation de l'encodeur: {e}")
-            print("   L'écran fonctionnera sans l'encodeur")
-            self.encoder = None
-    
-    def test_encoder_interactif(self):
-        """Test 7: Test interactif avec l'encodeur rotatif"""
-        print("\n🎛️ TEST 7: Contrôle avec encodeur rotatif")
-        print("-" * 40)
-        
-        if not self.is_initialized:
-            print("❌ Écran non initialisé")
-            return False
-        
-        if not self.encoder:
-            print("❌ Encodeur non initialisé")
-            return False
-        
-        try:
-            print("🎮 Contrôles:")
-            print("   • Tourner l'encodeur: Change la couleur")
-            print("   • Appuyer sur le bouton: Change le mode")
-            print("   • Ctrl+C: Quitter le test")
-            
-            # Variables de contrôle
-            current_color = 0
-            current_mode = 0
-            modes = ["Couleurs", "Formes", "Texte"]
-            colors = [
-                ("Rouge", (0, 0, 255)),
-                ("Vert", (0, 255, 0)),
-                ("Bleu", (255, 0, 0)),
-                ("Jaune", (0, 255, 255)),
-                ("Cyan", (255, 255, 0)),
-                ("Magenta", (255, 0, 255)),
-                ("Blanc", (255, 255, 255)),
-                ("Noir", (0, 0, 0))
-            ]
-            
-            # Callbacks pour l'encodeur
-            def on_rotation(direction):
-                nonlocal current_color
-                current_color = (current_color + direction) % len(colors)
-                self.update_encoder_display(modes[current_mode], colors[current_color])
-            
-            def on_button():
-                nonlocal current_mode
-                current_mode = (current_mode + 1) % len(modes)
-                self.update_encoder_display(modes[current_mode], colors[current_color])
-            
-            # Configuration des callbacks
-            self.encoder.set_rotation_callback(on_rotation)
-            self.encoder.set_button_callback(on_button)
-            
-            # Affichage initial
-            self.update_encoder_display(modes[current_mode], colors[current_color])
-            
-            # Boucle principale
-            print("🔄 Test en cours... (Ctrl+C pour quitter)")
-            while True:
-                time.sleep(0.1)
-                
-        except KeyboardInterrupt:
-            print("\n✅ Test de l'encodeur terminé")
-            return True
-        except Exception as e:
-            print(f"❌ Erreur lors du test de l'encodeur: {e}")
-            return False
-    
-    def update_encoder_display(self, mode, color_info):
-        """Met à jour l'affichage selon l'encodeur"""
-        try:
-            color_name, color_rgb = color_info
-            
-            # Créer l'image
-            image = Image.new('RGB', (self.display.width, self.display.height), color=color_rgb)
-            draw = ImageDraw.Draw(image)
-            
-            # Cadre blanc
-            draw.rectangle([0, 0, self.display.width-1, self.display.height-1], outline=(255, 255, 255), width=2)
-            
-            # Texte central
-            try:
-                font = ImageFont.load_default()
-            except:
-                font = None
-            
-            # Mode
-            mode_text = f"Mode: {mode}"
-            if font:
-                text_bbox = draw.textbbox((0, 0), mode_text, font=font)
-                text_width = text_bbox[2] - text_bbox[0]
-                x = (self.display.width - text_width) // 2
-                draw.text((x, 10), mode_text, fill=(255, 255, 255), font=font)
-            else:
-                x = (self.display.width - len(mode_text) * 6) // 2
-                draw.text((x, 10), mode_text, fill=(255, 255, 255))
-            
-            # Couleur
-            color_text = f"Couleur: {color_name}"
-            if font:
-                text_bbox = draw.textbbox((0, 0), color_text, font=font)
-                text_width = text_bbox[2] - text_bbox[0]
-                x = (self.display.width - text_width) // 2
-                draw.text((x, 30), color_text, fill=(255, 255, 255), font=font)
-            else:
-                x = (self.display.width - len(color_text) * 6) // 2
-                draw.text((x, 30), color_text, fill=(255, 255, 255))
-            
-            # Instructions
-            instructions = "Tourner: couleur | Bouton: mode"
-            if font:
-                text_bbox = draw.textbbox((0, 0), instructions, font=font)
-                text_width = text_bbox[2] - text_bbox[0]
-                x = (self.display.width - text_width) // 2
-                draw.text((x, self.display.height - 20), instructions, fill=(255, 255, 255), font=font)
-            else:
-                x = (self.display.width - len(instructions) * 6) // 2
-                draw.text((x, self.display.height - 20), instructions, fill=(255, 255, 255))
-            
-            # Position de l'encodeur
-            pos_text = f"Pos: {self.encoder.get_position()}"
-            if font:
-                text_bbox = draw.textbbox((0, 0), pos_text, font=font)
-                text_width = text_bbox[2] - text_bbox[0]
-                x = (self.display.width - text_width) // 2
-                draw.text((x, 50), pos_text, fill=(255, 255, 255), font=font)
-            else:
-                x = (self.display.width - len(pos_text) * 6) // 2
-                draw.text((x, 50), pos_text, fill=(255, 255, 255))
-            
-            self.display.display(image)
-            
-        except Exception as e:
-            print(f"❌ Erreur lors de la mise à jour de l'affichage: {e}")
-    
-    def test_initialisation(self):
-        """Test 1: Vérification de l'initialisation"""
-        print("\n🔧 TEST 1: Initialisation de l'écran")
-        print("-" * 40)
-        
+    def clear_screen(self, color=(0, 0, 0)):
+        """Efface l'écran avec une couleur"""
         if not self.is_initialized:
             print("❌ Écran non initialisé")
             return False
         
         try:
-            # Test de création d'image
-            image = Image.new('RGB', (self.display.width, self.display.height), color=(0, 0, 0))
-            self.display.display(image)
-            print("✅ Écran initialisé et prêt")
+            self.display.clear(color)
             return True
         except Exception as e:
-            print(f"❌ Erreur lors du test d'initialisation: {e}")
+            print(f"❌ Erreur lors de l'effacement: {e}")
             return False
     
-    def test_couleurs_base(self):
-        """Test 2: Affichage des couleurs de base"""
-        print("\n🎨 TEST 2: Couleurs de base")
-        print("-" * 40)
+    def test_colors(self):
+        """Test des couleurs de base"""
+        print("🎨 Test des couleurs de base...")
         
-        if not self.is_initialized:
-            print("❌ Écran non initialisé")
-            return False
-        
-        # Test de diagnostic des couleurs - test de tous les ordres possibles
-        print("🔍 Test de diagnostic des couleurs...")
-        
-        # Test 1: RGB standard
-        print("   Test RGB standard:")
-        test_rgb = [
-            ("Rouge RGB", (255, 0, 0)),
-            ("Vert RGB", (0, 255, 0)),
-            ("Bleu RGB", (0, 0, 255))
-        ]
-        
-        for nom, couleur in test_rgb:
-            print(f"     {nom}: RGB{couleur}")
-            image = Image.new('RGB', (self.display.width, self.display.height), color=couleur)
-            self.display.display(image)
-            time.sleep(1)
-        
-        # Test 2: BGR
-        print("   Test BGR:")
-        test_bgr = [
-            ("Rouge BGR", (0, 0, 255)),
-            ("Vert BGR", (0, 255, 0)),
-            ("Bleu BGR", (255, 0, 0))
-        ]
-        
-        for nom, couleur in test_bgr:
-            print(f"     {nom}: BGR{couleur}")
-            image = Image.new('RGB', (self.display.width, self.display.height), color=couleur)
-            self.display.display(image)
-            time.sleep(1)
-        
-        # Test 3: Autres ordres possibles
-        print("   Test autres ordres:")
-        test_other = [
-            ("Rouge RBG", (255, 0, 0)),  # RBG
-            ("Vert GRB", (0, 255, 0)),   # GRB
-            ("Bleu GBR", (0, 0, 255))    # GBR
-        ]
-        
-        for nom, couleur in test_other:
-            print(f"     {nom}: {couleur}")
-            image = Image.new('RGB', (self.display.width, self.display.height), color=couleur)
-            self.display.display(image)
-            time.sleep(1)
-        
-        couleurs = [
-            ("Noir", (0, 0, 0)),
+        colors = [
+            ("Rouge", (255, 0, 0)),
+            ("Vert", (0, 255, 0)),
+            ("Bleu", (0, 0, 255)),
             ("Blanc", (255, 255, 255)),
-            ("Rouge", (0, 0, 255)),      # BGR: Bleu=0, Vert=0, Rouge=255
-            ("Vert", (0, 255, 0)),       # BGR: Bleu=0, Vert=255, Rouge=0
-            ("Bleu", (255, 0, 0)),       # BGR: Bleu=255, Vert=0, Rouge=0
-            ("Jaune", (0, 255, 255)),    # BGR: Bleu=0, Vert=255, Rouge=255
-            ("Cyan", (255, 255, 0)),     # BGR: Bleu=255, Vert=255, Rouge=0
-            ("Magenta", (255, 0, 255)),  # BGR: Bleu=255, Vert=0, Rouge=255
-            ("Orange", (0, 165, 255)),   # BGR: Bleu=0, Vert=165, Rouge=255
-            ("Violet", (128, 0, 128)),   # BGR: Bleu=128, Vert=0, Rouge=128
-            ("Rose", (203, 192, 255)),   # BGR: Bleu=203, Vert=192, Rouge=255
-            ("Vert Lime", (50, 205, 50)) # BGR: Bleu=50, Vert=205, Rouge=50
+            ("Noir", (0, 0, 0)),
+            ("Jaune", (255, 255, 0)),
+            ("Cyan", (0, 255, 255)),
+            ("Magenta", (255, 0, 255))
         ]
         
-        try:
-            for nom, couleur in couleurs:
-                print(f"   Affichage {nom}...")
-                # Créer une image qui remplit tout l'écran
-                image = Image.new('RGB', (self.display.width, self.display.height), color=couleur)
-                
-                # Ajouter un cadre blanc pour bien voir les bords
-                draw = ImageDraw.Draw(image)
-                draw.rectangle([0, 0, self.display.width-1, self.display.height-1], outline=(255, 255, 255), width=2)
-                
-                # Ajouter le nom de la couleur au centre
-                try:
-                    font = ImageFont.load_default()
-                    text_bbox = draw.textbbox((0, 0), nom, font=font)
-                    text_width = text_bbox[2] - text_bbox[0]
-                    text_height = text_bbox[3] - text_bbox[1]
-                    x = (self.display.width - text_width) // 2
-                    y = (self.display.height - text_height) // 2
-                    draw.text((x, y), nom, fill=(255, 255, 255), font=font)
-                except:
-                    # Si pas de police, centrer le texte manuellement
-                    x = (self.display.width - len(nom) * 6) // 2
-                    y = self.display.height // 2
-                    draw.text((x, y), nom, fill=(255, 255, 255))
-                
-                self.display.display(image)
-                time.sleep(2)  # Plus de temps pour voir chaque couleur
-            
-            print("✅ Test des couleurs de base réussi")
-            return True
-        except Exception as e:
-            print(f"❌ Erreur lors du test des couleurs: {e}")
-            return False
+        for name, color in colors:
+            print(f"   → {name}")
+            self.clear_screen(color)
+            time.sleep(1)
+        
+        print("✅ Test des couleurs terminé")
     
-    def test_formes_geometriques(self):
-        """Test 3: Affichage de formes géométriques"""
-        print("\n📐 TEST 3: Formes géométriques")
-        print("-" * 40)
+    def test_gradients(self):
+        """Test des dégradés"""
+        print("🌈 Test des dégradés...")
         
-        if not self.is_initialized:
-            print("❌ Écran non initialisé")
-            return False
+        # Dégradé horizontal rouge
+        print("   → Dégradé horizontal rouge")
+        for x in range(self.width):
+            intensity = int((x / self.width) * 255)
+            color = (intensity, 0, 0)
+            for y in range(self.height):
+                self.display.set_pixel(x, y, color)
+        self.display.display()
+        time.sleep(2)
         
-        try:
-            # Création d'une image avec formes utilisant toute la résolution
-            image = Image.new('RGB', (self.display.width, self.display.height), color=(0, 0, 0))
-            draw = ImageDraw.Draw(image)
-            
-            # Rectangle (coin supérieur gauche)
-            draw.rectangle([5, 5, 45, 25], fill=(255, 0, 0), outline=(255, 255, 255))
-            
-            # Cercle (coin supérieur droit)
-            draw.ellipse([self.display.width-45, 5, self.display.width-5, 45], fill=(0, 255, 0), outline=(255, 255, 255))
-            
-            # Ligne horizontale (milieu)
-            draw.line([(10, self.display.height//2), (self.display.width-10, self.display.height//2)], fill=(0, 0, 255), width=3)
-            
-            # Triangle (coin inférieur gauche)
-            draw.polygon([(30, self.display.height-30), (50, self.display.height-10), (10, self.display.height-10)], fill=(255, 255, 0))
-            
-            # Rectangle plein (coin inférieur droit)
-            draw.rectangle([self.display.width-40, self.display.height-30, self.display.width-10, self.display.height-10], fill=(255, 0, 255), outline=(255, 255, 255))
-            
-            # Ligne diagonale
-            draw.line([(0, 0), (self.display.width-1, self.display.height-1)], fill=(0, 255, 255), width=2)
-            
-            self.display.display(image)
-            print("✅ Formes géométriques affichées (pleine résolution)")
-            time.sleep(3)
-            return True
-            
-        except Exception as e:
-            print(f"❌ Erreur lors du test des formes: {e}")
-            return False
+        # Dégradé vertical vert
+        print("   → Dégradé vertical vert")
+        for y in range(self.height):
+            intensity = int((y / self.height) * 255)
+            color = (0, intensity, 0)
+            for x in range(self.width):
+                self.display.set_pixel(x, y, color)
+        self.display.display()
+        time.sleep(2)
+        
+        # Dégradé diagonal bleu
+        print("   → Dégradé diagonal bleu")
+        for x in range(self.width):
+            for y in range(self.height):
+                intensity = int(((x + y) / (self.width + self.height)) * 255)
+                color = (0, 0, intensity)
+                self.display.set_pixel(x, y, color)
+        self.display.display()
+        time.sleep(2)
+        
+        print("✅ Test des dégradés terminé")
     
-    def test_texte(self):
-        """Test 4: Affichage de texte"""
-        print("\n📝 TEST 4: Affichage de texte")
-        print("-" * 40)
+    def test_shapes(self):
+        """Test des formes géométriques"""
+        print("🔷 Test des formes géométriques...")
         
-        if not self.is_initialized:
-            print("❌ Écran non initialisé")
-            return False
+        # Création d'une image PIL
+        image = Image.new('RGB', (self.width, self.height), (0, 0, 0))
+        draw = ImageDraw.Draw(image)
+        
+        # Rectangle
+        print("   → Rectangle")
+        draw.rectangle([10, 10, 60, 40], fill=(255, 0, 0), outline=(255, 255, 255))
+        self.display.image(image)
+        self.display.display()
+        time.sleep(1)
+        
+        # Cercle
+        print("   → Cercle")
+        image = Image.new('RGB', (self.width, self.height), (0, 0, 0))
+        draw = ImageDraw.Draw(image)
+        draw.ellipse([20, 20, 80, 80], fill=(0, 255, 0), outline=(255, 255, 255))
+        self.display.image(image)
+        self.display.display()
+        time.sleep(1)
+        
+        # Lignes
+        print("   → Lignes")
+        image = Image.new('RGB', (self.width, self.height), (0, 0, 0))
+        draw = ImageDraw.Draw(image)
+        for i in range(0, self.width, 10):
+            draw.line([(i, 0), (i, self.height)], fill=(0, 0, 255), width=2)
+        for i in range(0, self.height, 10):
+            draw.line([(0, i), (self.width, i)], fill=(0, 0, 255), width=2)
+        self.display.image(image)
+        self.display.display()
+        time.sleep(1)
+        
+        print("✅ Test des formes terminé")
+    
+    def test_text(self):
+        """Test d'affichage de texte"""
+        print("📝 Test d'affichage de texte...")
         
         try:
             # Création d'une image avec texte
-            image = Image.new('RGB', (self.display.width, self.display.height), color=(0, 0, 0))
+            image = Image.new('RGB', (self.width, self.height), (0, 0, 0))
             draw = ImageDraw.Draw(image)
             
-            # Essayer d'utiliser une police par défaut
+            # Essai d'utiliser une police système
             try:
-                font = ImageFont.load_default()
+                font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 12)
             except:
-                font = None
+                try:
+                    font = ImageFont.truetype("/System/Library/Fonts/Arial.ttf", 12)
+                except:
+                    font = ImageFont.load_default()
             
-            # Texte de test adapté à la résolution
-            text_lines = [
+            # Texte de test
+            texts = [
                 "ALIMANTE",
                 "Test SPI",
-                "ST7735 OK",
-                f"{self.display.width}x{self.display.height}",
-                "Rotation 180°"
+                "ST7735",
+                "128x160",
+                "Raspberry Pi"
             ]
             
-            y_position = 5
-            line_height = (self.display.height - 10) // len(text_lines)
+            y_pos = 10
+            for text in texts:
+                print(f"   → {text}")
+                draw.text((10, y_pos), text, fill=(255, 255, 255), font=font)
+                y_pos += 20
             
-            for line in text_lines:
-                if font:
-                    draw.text((5, y_position), line, fill=(255, 255, 255), font=font)
-                else:
-                    draw.text((5, y_position), line, fill=(255, 255, 255))
-                y_position += line_height
-            
-            self.display.display(image)
-            print("✅ Texte affiché avec succès")
+            self.display.image(image)
+            self.display.display()
             time.sleep(3)
-            return True
+            
+            print("✅ Test de texte terminé")
             
         except Exception as e:
-            print(f"❌ Erreur lors du test du texte: {e}")
-            return False
+            print(f"❌ Erreur lors du test de texte: {e}")
     
     def test_animation(self):
-        """Test 5: Animation simple"""
-        print("\n🎬 TEST 5: Animation")
-        print("-" * 40)
+        """Test d'animation simple"""
+        print("🎬 Test d'animation...")
         
-        if not self.is_initialized:
-            print("❌ Écran non initialisé")
-            return False
+        # Animation de barre de progression
+        print("   → Barre de progression")
+        for progress in range(0, 101, 5):
+            image = Image.new('RGB', (self.width, self.height), (0, 0, 0))
+            draw = ImageDraw.Draw(image)
+            
+            # Barre de progression
+            bar_width = int((self.width - 20) * progress / 100)
+            draw.rectangle([10, 60, 10 + bar_width, 80], fill=(0, 255, 0))
+            draw.rectangle([10, 60, self.width - 10, 80], outline=(255, 255, 255))
+            
+            # Texte de pourcentage
+            try:
+                font = ImageFont.load_default()
+                draw.text((10, 90), f"{progress}%", fill=(255, 255, 255), font=font)
+            except:
+                pass
+            
+            self.display.image(image)
+            self.display.display()
+            time.sleep(0.1)
         
-        try:
-            print("   Animation de barre de progression...")
+        # Animation de pixels clignotants
+        print("   → Pixels clignotants")
+        for frame in range(20):
+            image = Image.new('RGB', (self.width, self.height), (0, 0, 0))
+            draw = ImageDraw.Draw(image)
             
-            for progress in range(0, 101, 5):
-                image = Image.new('RGB', (self.display.width, self.display.height), color=(0, 0, 0))
-                draw = ImageDraw.Draw(image)
-                
-                # Barre de progression
-                bar_width = int((self.display.width - 20) * progress / 100)
-                draw.rectangle([10, 10, 10 + bar_width, 30], fill=(0, 255, 0))
-                draw.rectangle([10, 10, self.display.width - 10, 30], outline=(255, 255, 255))
-                
-                # Texte de pourcentage
-                try:
-                    font = ImageFont.load_default()
-                    draw.text((10, 40), f"{progress}%", fill=(255, 255, 255), font=font)
-                except:
-                    draw.text((10, 40), f"{progress}%", fill=(255, 255, 255))
-                
-                self.display.display(image)
-                time.sleep(0.1)
-            
-            print("✅ Animation terminée")
-            return True
-            
-        except Exception as e:
-            print(f"❌ Erreur lors du test d'animation: {e}")
-            return False
-    
-    def test_performance(self):
-        """Test 6: Test de performance"""
-        print("\n⚡ TEST 6: Performance")
-        print("-" * 40)
-        
-        if not self.is_initialized:
-            print("❌ Écran non initialisé")
-            return False
-        
-        try:
-            print("   Test de rafraîchissement rapide...")
-            
-            start_time = time.time()
-            frames = 0
-            
-            # Test de 50 frames avec couleurs aléatoires
-            for i in range(50):
-                # Couleur aléatoire
+            # Pixels aléatoires
+            import random
+            for _ in range(50):
+                x = random.randint(0, self.width - 1)
+                y = random.randint(0, self.height - 1)
                 color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-                image = Image.new('RGB', (self.display.width, self.display.height), color=color)
-                self.display.display(image)
-                frames += 1
+                draw.point((x, y), fill=color)
             
-            end_time = time.time()
-            duration = end_time - start_time
-            fps = frames / duration
-            
-            print(f"✅ Performance: {fps:.1f} FPS sur {frames} frames")
-            print(f"   Durée: {duration:.2f}s")
-            return True
-            
-        except Exception as e:
-            print(f"❌ Erreur lors du test de performance: {e}")
-            return False
+            self.display.image(image)
+            self.display.display()
+            time.sleep(0.2)
+        
+        print("✅ Test d'animation terminé")
     
-    def test_complet(self):
-        """Exécute tous les tests"""
-        print("=" * 60)
-        print("🔧 TEST COMPLET ÉCRAN SPI ST7735")
-        print("=" * 60)
+    def test_menu_display(self):
+        """Test d'affichage de menu"""
+        print("📋 Test d'affichage de menu...")
         
-        if not self.initialize():
-            print("❌ Impossible de continuer sans initialisation")
-            return False
-        
-        tests = [
-            ("Initialisation", self.test_initialisation),
-            ("Couleurs de base", self.test_couleurs_base),
-            ("Formes géométriques", self.test_formes_geometriques),
-            ("Affichage texte", self.test_texte),
-            ("Animation", self.test_animation),
-            ("Performance", self.test_performance),
-            ("Encodeur rotatif", self.test_encoder_interactif)
+        menu_items = [
+            "🏠 Accueil",
+            "💡 Test LED",
+            "📊 Monitoring",
+            "⚙️ Config",
+            "🔧 Tests",
+            "📈 Stats",
+            "ℹ️ À propos"
         ]
         
-        results = []
-        
-        for nom_test, fonction_test in tests:
-            print(f"\n🔄 Exécution: {nom_test}")
-            try:
-                result = fonction_test()
-                results.append((nom_test, result))
-                if result:
-                    print(f"✅ {nom_test}: RÉUSSI")
-                else:
-                    print(f"❌ {nom_test}: ÉCHEC")
-            except Exception as e:
-                print(f"❌ {nom_test}: ERREUR - {e}")
-                results.append((nom_test, False))
-        
-        # Résumé des résultats
-        print("\n" + "=" * 60)
-        print("📊 RÉSUMÉ DES TESTS")
-        print("=" * 60)
-        
-        reussis = sum(1 for _, result in results if result)
-        total = len(results)
-        
-        for nom_test, result in results:
-            status = "✅ RÉUSSI" if result else "❌ ÉCHEC"
-            print(f"   {nom_test}: {status}")
-        
-        print(f"\n📈 Résultat global: {reussis}/{total} tests réussis")
-        
-        if reussis == total:
-            print("🎉 Tous les tests sont passés avec succès!")
-        else:
-            print("⚠️  Certains tests ont échoué. Vérifiez la configuration.")
-        
-        return reussis == total
+        try:
+            font = ImageFont.load_default()
+            
+            for i, item in enumerate(menu_items):
+                print(f"   → {item}")
+                
+                image = Image.new('RGB', (self.width, self.height), (0, 0, 0))
+                draw = ImageDraw.Draw(image)
+                
+                # Titre
+                draw.text((10, 10), "MENU ALIMANTE", fill=(255, 255, 0), font=font)
+                
+                # Item sélectionné (simulation)
+                y_pos = 30
+                for j, menu_item in enumerate(menu_items):
+                    if j == i:
+                        # Item sélectionné en surbrillance
+                        draw.rectangle([5, y_pos - 2, self.width - 5, y_pos + 12], fill=(0, 100, 255))
+                        draw.text((10, y_pos), menu_item, fill=(255, 255, 255), font=font)
+                    else:
+                        draw.text((10, y_pos), menu_item, fill=(128, 128, 128), font=font)
+                    y_pos += 15
+                
+                self.display.image(image)
+                self.display.display()
+                time.sleep(1)
+            
+            print("✅ Test de menu terminé")
+            
+        except Exception as e:
+            print(f"❌ Erreur lors du test de menu: {e}")
     
-    def menu_interactif(self):
-        """Menu interactif pour tests individuels"""
-        if not self.initialize():
-            print("❌ Impossible d'initialiser l'écran")
-            return
+    def test_performance(self):
+        """Test de performance de l'écran"""
+        print("⚡ Test de performance...")
         
-        while True:
-            print("\n" + "=" * 40)
-            print("MENU DE TEST ÉCRAN SPI")
-            print("=" * 40)
-            print("1. Test d'initialisation")
-            print("2. Test des couleurs de base")
-            print("3. Test des formes géométriques")
-            print("4. Test d'affichage de texte")
-            print("5. Test d'animation")
-            print("6. Test de performance")
-            print("7. Test encodeur rotatif")
-            print("8. Test complet")
-            print("0. Quitter")
-            print("=" * 40)
+        # Test de rafraîchissement rapide
+        print("   → Test de rafraîchissement rapide")
+        start_time = time.time()
+        
+        for i in range(50):
+            color = (i * 5 % 255, (i * 7) % 255, (i * 11) % 255)
+            self.clear_screen(color)
+        
+        end_time = time.time()
+        fps = 50 / (end_time - start_time)
+        print(f"   → FPS moyen: {fps:.1f}")
+        
+        # Test de pixels individuels
+        print("   → Test de pixels individuels")
+        start_time = time.time()
+        
+        for i in range(1000):
+            x = i % self.width
+            y = (i // self.width) % self.height
+            color = (i % 255, (i * 2) % 255, (i * 3) % 255)
+            self.display.set_pixel(x, y, color)
+        
+        self.display.display()
+        end_time = time.time()
+        print(f"   → 1000 pixels en {end_time - start_time:.3f}s")
+        
+        print("✅ Test de performance terminé")
+    
+    def test_sequence(self):
+        """Séquence de test complète"""
+        print("🚀 Début de la séquence de test complète...")
+        
+        tests = [
+            ("Couleurs de base", self.test_colors),
+            ("Dégradés", self.test_gradients),
+            ("Formes géométriques", self.test_shapes),
+            ("Affichage de texte", self.test_text),
+            ("Animation", self.test_animation),
+            ("Menu d'affichage", self.test_menu_display),
+            ("Performance", self.test_performance)
+        ]
+        
+        for test_name, test_func in tests:
+            print(f"\n📋 {test_name}...")
+            try:
+                test_func()
+                print(f"✅ {test_name} réussi")
+            except Exception as e:
+                print(f"❌ {test_name} échoué: {e}")
             
-            choice = input("Votre choix (0-8): ").strip()
-            
-            if choice == "0":
-                break
-            elif choice == "1":
-                self.test_initialisation()
-            elif choice == "2":
-                self.test_couleurs_base()
-            elif choice == "3":
-                self.test_formes_geometriques()
-            elif choice == "4":
-                self.test_texte()
-            elif choice == "5":
-                self.test_animation()
-            elif choice == "6":
-                self.test_performance()
-            elif choice == "7":
-                self.test_encoder_interactif()
-            elif choice == "8":
-                self.test_complet()
-            else:
-                print("❌ Choix invalide")
+            time.sleep(1)
+        
+        print("\n🎉 Séquence de test complète terminée!")
     
     def cleanup(self):
         """Nettoie les ressources"""
         if self.display:
-            # Effacer l'écran
-            try:
-                image = Image.new('RGB', (self.display.width, self.display.height), color=(0, 0, 0))
-                self.display.display(image)
-            except:
-                pass
-            # Libérer l'objet display
-            try:
-                del self.display
-            except:
-                pass
-        
-        if self.encoder:
-            self.encoder.cleanup()
-        
-        # Nettoyage GPIO plus agressif
-        try:
-            GPIO.cleanup()
-        except:
-            pass
-        
-        self.is_initialized = False
+            self.clear_screen()
+        GPIO.cleanup()
         print("🧹 Ressources nettoyées")
     
     def _signal_handler(self, signum, frame):
@@ -761,32 +391,85 @@ class EcranSPITest:
         sys.exit(0)
 
 def main():
-    """Fonction principale"""
-    print("🔧 TESTEUR ÉCRAN SPI ST7735")
-    print("Configuration depuis config_alimante.py")
+    """Fonction principale de test"""
+    print("=" * 60)
+    print("🔧 TEST ÉCRAN SPI ST7735 - Alimante")
+    print("📍 Configuration basée sur config_alimante.py")
+    print("=" * 60)
     
-    if not ST7735_AVAILABLE:
-        print("\n❌ Librairie ST7735 non disponible")
-        print("Installation requise:")
-        print("   pip install st7735 Pillow")
-        return
-    
-    testeur = EcranSPITest()
+    # Création du testeur
+    display_test = SPIDisplayTest()
     
     try:
-        if len(sys.argv) > 1 and sys.argv[1] == "--auto":
-            # Mode automatique
-            testeur.test_complet()
-        else:
-            # Mode interactif
-            testeur.menu_interactif()
+        # Initialisation
+        if not display_test.initialize():
+            print("❌ Impossible d'initialiser l'écran")
+            return
+        
+        # Menu interactif
+        while True:
+            print("\n" + "=" * 40)
+            print("MENU DE TEST ÉCRAN SPI:")
+            print("1. Test couleurs de base")
+            print("2. Test dégradés")
+            print("3. Test formes géométriques")
+            print("4. Test affichage de texte")
+            print("5. Test animation")
+            print("6. Test menu d'affichage")
+            print("7. Test de performance")
+            print("8. Séquence de test complète")
+            print("9. Effacer l'écran")
+            print("0. Quitter")
+            print("=" * 40)
+            
+            choice = input("Votre choix (0-9): ").strip()
+            
+            if choice == "0":
+                break
+            elif choice == "1":
+                display_test.test_colors()
+            elif choice == "2":
+                display_test.test_gradients()
+            elif choice == "3":
+                display_test.test_shapes()
+            elif choice == "4":
+                display_test.test_text()
+            elif choice == "5":
+                display_test.test_animation()
+            elif choice == "6":
+                display_test.test_menu_display()
+            elif choice == "7":
+                display_test.test_performance()
+            elif choice == "8":
+                display_test.test_sequence()
+            elif choice == "9":
+                color_choice = input("Couleur (r/g/b/w/k ou r,g,b): ").strip().lower()
+                if color_choice == "r":
+                    display_test.clear_screen((255, 0, 0))
+                elif color_choice == "g":
+                    display_test.clear_screen((0, 255, 0))
+                elif color_choice == "b":
+                    display_test.clear_screen((0, 0, 255))
+                elif color_choice == "w":
+                    display_test.clear_screen((255, 255, 255))
+                elif color_choice == "k":
+                    display_test.clear_screen((0, 0, 0))
+                else:
+                    try:
+                        r, g, b = map(int, color_choice.split(','))
+                        display_test.clear_screen((r, g, b))
+                    except:
+                        display_test.clear_screen()
+            else:
+                print("❌ Choix invalide")
     
     except KeyboardInterrupt:
         print("\n🛑 Arrêt par l'utilisateur")
     except Exception as e:
         print(f"❌ Erreur: {e}")
     finally:
-        testeur.cleanup()
+        # Nettoyage
+        display_test.cleanup()
         print("👋 Test terminé!")
 
 if __name__ == "__main__":
