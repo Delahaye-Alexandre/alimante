@@ -52,10 +52,16 @@ class EcranSPITest:
             return False
         
         try:
+            print(f"🔧 Configuration des pins GPIO...")
+            print(f"   RST={self.reset_pin}, A0={self.a0_pin}, CS={self.cs_pin}")
+            
             # Configuration des pins de contrôle
             GPIO.setup(self.reset_pin, GPIO.OUT)
             GPIO.setup(self.a0_pin, GPIO.OUT)
             GPIO.setup(self.cs_pin, GPIO.OUT)
+            
+            print(f"🔧 Initialisation de l'écran ST7735...")
+            print(f"   Port SPI: 0, CS: {self.cs_pin}, DC: {self.a0_pin}, RST: {self.reset_pin}")
             
             # Initialisation de l'écran ST7735
             self.display = st7735.ST7735(
@@ -66,6 +72,7 @@ class EcranSPITest:
                 spi_speed_hz=4000000  # 4MHz pour stabilité
             )
             
+            print(f"🔧 Démarrage de l'écran...")
             # Démarrage de l'écran
             self.display.begin()
             self.is_initialized = True
@@ -76,6 +83,9 @@ class EcranSPITest:
             
         except Exception as e:
             print(f"❌ Erreur lors de l'initialisation de l'écran: {e}")
+            print(f"   Type d'erreur: {type(e).__name__}")
+            import traceback
+            traceback.print_exc()
             return False
     
     def test_initialisation(self):
