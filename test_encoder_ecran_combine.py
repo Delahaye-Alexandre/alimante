@@ -158,24 +158,21 @@ class EncoderDisplayTest:
     def display_welcome(self):
         """Affiche l'écran de bienvenue"""
         try:
-            image = Image.new('RGB', (self.width, self.height), (0, 0, 50))
+            # Utiliser les dimensions réelles de l'écran
+            image = Image.new('RGB', (self.display.width, self.display.height), (0, 0, 50))
             draw = ImageDraw.Draw(image)
             
             # Titre
-            try:
-                font_large = ImageFont.load_default()
-                font_small = ImageFont.load_default()
-            except:
-                font_large = font_small = None
+            font = ImageFont.load_default()
             
-            draw.text((10, 20), "ALIMANTE", fill=(255, 255, 0), font=font_large)
-            draw.text((10, 40), "System Ready", fill=(0, 255, 0), font=font_small)
-            draw.text((10, 60), "Rotate to navigate", fill=(255, 255, 255), font=font_small)
-            draw.text((10, 80), "Press to select", fill=(255, 255, 255), font=font_small)
+            draw.text((10, 20), "ALIMANTE", fill=(255, 255, 0), font=font)
+            draw.text((10, 40), "System Ready", fill=(0, 255, 0), font=font)
+            draw.text((10, 60), "Rotate to navigate", fill=(255, 255, 255), font=font)
+            draw.text((10, 80), "Press to select", fill=(255, 255, 255), font=font)
             
             # Indicateur de statut
-            draw.rectangle([10, 100, 118, 110], outline=(0, 255, 0))
-            draw.rectangle([10, 100, 118, 110], fill=(0, 255, 0))
+            draw.rectangle([10, 100, self.display.width-10, 110], outline=(0, 255, 0))
+            draw.rectangle([10, 100, self.display.width-10, 110], fill=(0, 255, 0))
             
             self.display.display(image)
             
@@ -185,11 +182,13 @@ class EncoderDisplayTest:
     def display_menu(self):
         """Affiche le menu principal"""
         try:
-            image = Image.new('RGB', (self.width, self.height), (0, 0, 0))
+            # Utiliser les dimensions réelles de l'écran
+            image = Image.new('RGB', (self.display.width, self.display.height), (0, 0, 0))
             draw = ImageDraw.Draw(image)
             
             # Titre
-            draw.text((10, 10), "MENU PRINCIPAL", fill=(255, 255, 0), font=ImageFont.load_default())
+            font = ImageFont.load_default()
+            draw.text((10, 10), "MENU PRINCIPAL", fill=(255, 255, 0), font=font)
             
             # Items du menu
             start_idx = max(0, self.selected_item - self.items_per_screen // 2)
@@ -200,17 +199,17 @@ class EncoderDisplayTest:
                 item = self.menu_items[i]
                 if i == self.selected_item:
                     # Item sélectionné
-                    draw.rectangle([5, y_pos - 2, self.width - 5, y_pos + 12], fill=(0, 100, 255))
-                    draw.text((10, y_pos), item, fill=(255, 255, 255), font=ImageFont.load_default())
+                    draw.rectangle([5, y_pos - 2, self.display.width - 5, y_pos + 12], fill=(0, 100, 255))
+                    draw.text((10, y_pos), item, fill=(255, 255, 255), font=font)
                 else:
-                    draw.text((10, y_pos), item, fill=(128, 128, 128), font=ImageFont.load_default())
+                    draw.text((10, y_pos), item, fill=(128, 128, 128), font=font)
                 y_pos += 15
             
             # Indicateur de navigation
             if start_idx > 0:
-                draw.text((self.width - 20, 10), "↑", fill=(255, 255, 255), font=ImageFont.load_default())
+                draw.text((self.display.width - 20, 10), "↑", fill=(255, 255, 255), font=font)
             if end_idx < len(self.menu_items):
-                draw.text((self.width - 20, self.height - 20), "↓", fill=(255, 255, 255), font=ImageFont.load_default())
+                draw.text((self.display.width - 20, self.display.height - 20), "↓", fill=(255, 255, 255), font=font)
             
             self.display.display(image)
             
@@ -244,7 +243,7 @@ class EncoderDisplayTest:
     def test_led_display(self):
         """Affiche le test des LED"""
         try:
-            image = Image.new('RGB', (self.width, self.height), (0, 0, 0))
+            image = Image.new('RGB', (self.display.width, self.display.height), (0, 0, 0))
             draw = ImageDraw.Draw(image)
             
             draw.text((10, 20), "TEST LED BANDEAUX", fill=(255, 255, 0), font=ImageFont.load_default())
@@ -268,7 +267,7 @@ class EncoderDisplayTest:
     def monitoring_display(self):
         """Affiche le monitoring système"""
         try:
-            image = Image.new('RGB', (self.width, self.height), (0, 0, 0))
+            image = Image.new('RGB', (self.display.width, self.display.height), (0, 0, 0))
             draw = ImageDraw.Draw(image)
             
             draw.text((10, 10), "MONITORING", fill=(255, 255, 0), font=ImageFont.load_default())
@@ -294,7 +293,7 @@ class EncoderDisplayTest:
     def config_display(self):
         """Affiche la configuration"""
         try:
-            image = Image.new('RGB', (self.width, self.height), (0, 0, 0))
+            image = Image.new('RGB', (self.display.width, self.display.height), (0, 0, 0))
             draw = ImageDraw.Draw(image)
             
             draw.text((10, 10), "CONFIGURATION", fill=(255, 255, 0), font=ImageFont.load_default())
@@ -315,7 +314,7 @@ class EncoderDisplayTest:
     def hardware_test_display(self):
         """Affiche les tests hardware"""
         try:
-            image = Image.new('RGB', (self.width, self.height), (0, 0, 0))
+            image = Image.new('RGB', (self.display.width, self.display.height), (0, 0, 0))
             draw = ImageDraw.Draw(image)
             
             draw.text((10, 10), "TESTS HARDWARE", fill=(255, 255, 0), font=ImageFont.load_default())
@@ -344,7 +343,7 @@ class EncoderDisplayTest:
     def stats_display(self):
         """Affiche les statistiques"""
         try:
-            image = Image.new('RGB', (self.width, self.height), (0, 0, 0))
+            image = Image.new('RGB', (self.display.width, self.display.height), (0, 0, 0))
             draw = ImageDraw.Draw(image)
             
             draw.text((10, 10), "STATISTIQUES", fill=(255, 255, 0), font=ImageFont.load_default())
@@ -370,7 +369,7 @@ class EncoderDisplayTest:
     def about_display(self):
         """Affiche les informations à propos"""
         try:
-            image = Image.new('RGB', (self.width, self.height), (0, 0, 0))
+            image = Image.new('RGB', (self.display.width, self.display.height), (0, 0, 0))
             draw = ImageDraw.Draw(image)
             
             draw.text((10, 10), "À PROPOS", fill=(255, 255, 0), font=ImageFont.load_default())
