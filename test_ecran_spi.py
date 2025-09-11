@@ -136,26 +136,30 @@ class EcranSPITest:
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
     
+    def force_cleanup_gpio(self):
+        """Force le nettoyage des pins GPIO"""
+        try:
+            print("🧹 Nettoyage forcé des pins GPIO...")
+            GPIO.cleanup()
+            time.sleep(0.5)  # Attendre un peu
+        except:
+            pass
+    
     def initialize(self):
         """Initialise l'écran SPI"""
         if not ST7735_AVAILABLE:
             print("❌ Impossible d'initialiser l'écran: librairie ST7735 manquante")
             return False
         
+        # Nettoyage préventif
+        self.force_cleanup_gpio()
+        
         try:
-            print(f"🔧 Configuration des pins GPIO...")
-            print(f"   RST={self.reset_pin}, A0={self.a0_pin}, CS={self.cs_pin}")
-            
-            # Configuration des pins de contrôle
-            GPIO.setup(self.reset_pin, GPIO.OUT)
-            GPIO.setup(self.a0_pin, GPIO.OUT)
-            GPIO.setup(self.cs_pin, GPIO.OUT)
-            
             print(f"🔧 Initialisation de l'écran ST7735...")
-            print(f"   Port SPI: 0, CS: {self.cs_pin}, DC: {self.a0_pin}, RST: {self.reset_pin}")
+            print(f"   Port SPI: 0, CS: 0, DC: {self.a0_pin}, RST: {self.reset_pin}")
             
-            # Initialisation de l'écran ST7735
-            # Note: cs doit être 0 ou 1 (périphérique SPI), pas un pin GPIO
+            # Initialisation de l'écran ST7735 SANS configurer les pins GPIO d'abord
+            # La librairie st7735 gère elle-même les pins
             self.display = st7735.ST7735(
                 port=0,
                 cs=0,  # Utilise spidev0.0
@@ -189,6 +193,9 @@ class EcranSPITest:
     def initialize_encoder(self):
         """Initialise l'encodeur rotatif"""
         try:
+            # Attendre un peu pour que l'écran soit complètement initialisé
+            time.sleep(1)
+            
             encoder_config = self.config['ENCODER']
             self.encoder = EncodeurRotatif(
                 clk_pin=encoder_config['CLK_PIN'],
@@ -199,6 +206,7 @@ class EcranSPITest:
             print(f"   📌 Pins: CLK={encoder_config['CLK_PIN']}, DT={encoder_config['DT_PIN']}, SW={encoder_config['SW_PIN']}")
         except Exception as e:
             print(f"❌ Erreur lors de l'initialisation de l'encodeur: {e}")
+            print("   L'écran fonctionnera sans l'encodeur")
             self.encoder = None
     
     def test_encoder_interactif(self):
@@ -725,11 +733,21 @@ class EcranSPITest:
                 self.display.display(image)
             except:
                 pass
+            # Libérer l'objet display
+            try:
+                del self.display
+            except:
+                pass
         
         if self.encoder:
             self.encoder.cleanup()
         
-        GPIO.cleanup()
+        # Nettoyage GPIO plus agressif
+        try:
+            GPIO.cleanup()
+        except:
+            pass
+        
         self.is_initialized = False
         print("🧹 Ressources nettoyées")
     
