@@ -70,11 +70,11 @@ class EcranSPITest:
                 cs=0,  # Utilise spidev0.0
                 dc=self.a0_pin,
                 rst=self.reset_pin,
-                spi_speed_hz=4000000,  # 4MHz pour stabilité
-                width=160,  # Largeur de l'écran
-                height=128,  # Hauteur de l'écran
-                rotation=180  # Rotation de 180° pour inverser l'écran
+                spi_speed_hz=4000000  # 4MHz pour stabilité
             )
+            
+            # Configuration de la rotation après initialisation
+            self.display.rotation = 180
             
             print(f"🔧 Démarrage de l'écran...")
             # Démarrage de l'écran
