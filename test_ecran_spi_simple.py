@@ -75,7 +75,7 @@ class EcranST7735Test:
 
         try:
             for nom, couleur in couleurs:
-                print(f"   → {nom}")
+                print(f"   → {nom} {couleur}")
                 # Image plein écran
                 image = Image.new("RGB", (self.display.width, self.display.height), couleur)
                 draw = ImageDraw.Draw(image)
@@ -93,6 +93,9 @@ class EcranST7735Test:
                 text_color = (0,0,0) if brightness > 128 else (255,255,255)
 
                 draw.text((x, y), nom, fill=text_color, font=font)
+                
+                # Afficher les valeurs RGB pour diagnostic
+                draw.text((5, 5), f"RGB: {couleur}", fill=text_color, font=font)
 
                 self.display.display(image)
                 time.sleep(2)
