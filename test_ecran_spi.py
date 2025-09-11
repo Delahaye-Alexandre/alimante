@@ -94,7 +94,10 @@ class SPIDisplayTest:
 
             # Texte centré
             font = ImageFont.load_default()
-            text_width, text_height = draw.textsize(name, font=font)
+            # Utilisation de textbbox (API correcte de Pillow)
+            bbox = draw.textbbox((0, 0), name, font=font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
             x = (self.display.width - text_width) // 2
             y = (self.display.height - text_height) // 2
 
