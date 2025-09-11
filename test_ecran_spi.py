@@ -19,7 +19,7 @@ try:
 except ImportError:
     ST7735_AVAILABLE = False
     print("⚠️  Librairie ST7735 non disponible. Installation requise:")
-    print("   pip install ST7735 Pillow")
+    print("   pip install st7735 Pillow")
 
 class EcranSPITest:
     def __init__(self):
@@ -56,7 +56,7 @@ class EcranSPITest:
             GPIO.setup(self.cs_pin, GPIO.OUT)
             
             # Initialisation de l'écran ST7735
-            self.display = ST7735.ST7735(
+            self.display = st7735.ST7735(
                 port=0,
                 cs=self.cs_pin,
                 dc=self.a0_pin,
@@ -405,7 +405,7 @@ def main():
     if not ST7735_AVAILABLE:
         print("\n❌ Librairie ST7735 non disponible")
         print("Installation requise:")
-        print("   pip install ST7735 Pillow")
+        print("   pip install st7735 Pillow")
         return
     
     testeur = EcranSPITest()
