@@ -46,11 +46,15 @@ class EcranST7735Test:
                 cs=0,
                 dc=self.a0_pin,
                 rst=self.reset_pin,
-                rotation=270  # Ajuster selon votre montage
+                rotation=270,
+                invert=False,  # Pas d'inversion
+                bgr=False      # Format RGB standard
             )
             self.display.begin()
             self.is_initialized = True
             print(f"✅ Écran initialisé: {self.display.width}x{self.display.height}")
+            print("   • Format: RGB standard")
+            print("   • Inversion: Désactivée")
             return True
         except Exception as e:
             print(f"❌ Erreur initialisation: {e}")

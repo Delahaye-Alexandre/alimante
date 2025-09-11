@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """
-Test combiné Alimante - Encodeur rotatif + Écran ST7735
-Menu contrôlable avec correction des couleurs BGR
+Menu Alimante Final - Configuration optimisée
+Utilise la configuration qui fonctionne parfaitement
 """
 
 import time
 import sys
 import signal
-import threading
 from config_alimante import get_gpio_config, get_ui_config
 
 # Import des librairies
@@ -28,7 +27,7 @@ except Exception as e:
     GPIOZERO_AVAILABLE = False
     print(f"⚠️  Erreur gpiozero: {e}")
 
-class AlimanteMenuComplet:
+class AlimanteMenuFinal:
     def __init__(self):
         self.config = get_gpio_config()
         self.ui_config = get_ui_config()
@@ -57,10 +56,8 @@ class AlimanteMenuComplet:
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
 
-    # Plus besoin de conversion de couleurs - format RGB standard fonctionne
-
     def initialize_display(self):
-        """Initialise l'écran ST7735 avec correction BGR"""
+        """Initialise l'écran ST7735 avec la configuration optimisée"""
         if not ST7735_AVAILABLE:
             print("❌ ST7735 non disponible")
             return False
@@ -79,60 +76,13 @@ class AlimanteMenuComplet:
             self.display.begin()
             self.is_display_initialized = True
             print(f"✅ Écran initialisé: {self.display.width}x{self.display.height}")
-            
-            # Test des couleurs corrigées
-            self.test_couleurs_corrigees()
+            print("   • Format: RGB standard")
+            print("   • Inversion: Désactivée")
+            print("   • Rotation: 270°")
             return True
             
         except Exception as e:
             print(f"❌ Erreur initialisation écran: {e}")
-            return False
-
-    def test_couleurs_corrigees(self):
-        """Test des couleurs avec correction BGR"""
-        if not self.is_display_initialized:
-            return False
-            
-        print("🎨 Test des couleurs corrigées...")
-        
-        couleurs_test = [
-            ("Rouge", (255, 0, 0)),
-            ("Vert", (0, 255, 0)),
-            ("Bleu", (0, 0, 255)),
-        ]
-        
-        try:
-            for nom, couleur_rgb in couleurs_test:
-                print(f"   → {nom} {couleur_rgb}")
-                
-                # Utilisation directe des couleurs RGB
-                couleur_rgb = couleur_rgb
-                
-                # Image plein écran
-                image = Image.new("RGB", (self.display.width, self.display.height), couleur_rgb)
-                draw = ImageDraw.Draw(image)
-                
-                # Texte centré
-                font = ImageFont.load_default()
-                bbox = draw.textbbox((0, 0), nom, font=font)
-                text_width = bbox[2] - bbox[0]
-                text_height = bbox[3] - bbox[1]
-                x = (self.display.width - text_width) // 2
-                y = (self.display.height - text_height) // 2
-                
-                # Contraste texte
-                brightness = sum(couleur_rgb) / 3
-                text_color = (0,0,0) if brightness > 128 else (255,255,255)
-                
-                draw.text((x, y), nom, fill=text_color, font=font)
-                draw.text((5, 5), f"RGB: {couleur_rgb}", fill=text_color, font=font)
-                
-                self.display.display(image)
-                time.sleep(1)
-                
-            return True
-        except Exception as e:
-            print(f"❌ Erreur test couleurs: {e}")
             return False
 
     def initialize_encoder(self):
@@ -256,39 +206,39 @@ class AlimanteMenuComplet:
     def action_accueil(self):
         """Action: Accueil Alimante"""
         print("🏠 Accueil Alimante")
-        self.show_message("Accueil Alimante", "Système prêt")
+        self.show_message("Accueil Alimante", "Système prêt", (0, 255, 0))
 
     def action_test_led(self):
         """Action: Test LED Bandeaux"""
         print("💡 Test LED Bandeaux")
-        self.show_message("Test LED", "Fonctionnalité en développement")
+        self.show_message("Test LED", "Fonctionnalité en développement", (255, 165, 0))
 
     def action_monitoring(self):
         """Action: Monitoring Système"""
         print("📊 Monitoring Système")
-        self.show_message("Monitoring", "Surveillance active")
+        self.show_message("Monitoring", "Surveillance active", (0, 255, 255))
 
     def action_configuration(self):
         """Action: Configuration"""
         print("⚙️ Configuration")
-        self.show_message("Configuration", "Paramètres système")
+        self.show_message("Configuration", "Paramètres système", (128, 0, 128))
 
     def action_tests_hardware(self):
         """Action: Tests Hardware"""
         print("🔧 Tests Hardware")
-        self.show_message("Tests HW", "Diagnostic matériel")
+        self.show_message("Tests HW", "Diagnostic matériel", (255, 0, 0))
 
     def action_statistiques(self):
         """Action: Statistiques"""
         print("📈 Statistiques")
-        self.show_message("Statistiques", "Données d'utilisation")
+        self.show_message("Statistiques", "Données d'utilisation", (255, 0, 255))
 
     def action_a_propos(self):
         """Action: À propos"""
         print("ℹ️ À propos")
-        self.show_message("À propos", "Alimante v1.0.0")
+        self.show_message("À propos", "Alimante v1.0.0", (255, 255, 0))
 
-    def show_message(self, title, message):
+    def show_message(self, title, message, color=(255, 255, 255)):
         """Affiche un message sur l'écran"""
         if not self.is_display_initialized:
             return
@@ -302,17 +252,17 @@ class AlimanteMenuComplet:
             bbox = draw.textbbox((0, 0), title, font=font)
             title_width = bbox[2] - bbox[0]
             x_title = (self.display.width - title_width) // 2
-            draw.text((x_title, 20), title, fill=self.rgb_to_bgr((255, 255, 0)), font=font)
+            draw.text((x_title, 20), title, fill=color, font=font)
             
             # Message
             bbox = draw.textbbox((0, 0), message, font=font)
             msg_width = bbox[2] - bbox[0]
             x_msg = (self.display.width - msg_width) // 2
-            draw.text((x_msg, 50), message, fill=self.rgb_to_bgr((255, 255, 255)), font=font)
+            draw.text((x_msg, 50), message, fill=(255, 255, 255), font=font)
             
             # Retour
             draw.text((5, self.display.height - 15), "Appuyez pour retourner", 
-                     fill=self.rgb_to_bgr((128, 128, 128)), font=font)
+                     fill=(128, 128, 128), font=font)
             
             self.display.display(image)
             
@@ -326,7 +276,7 @@ class AlimanteMenuComplet:
 
     def run_menu(self):
         """Lance le menu principal"""
-        print("🚀 Lancement du menu Alimante...")
+        print("🚀 Lancement du menu Alimante (configuration optimisée)...")
         
         # Initialisation des composants
         if not self.initialize_display():
@@ -384,9 +334,9 @@ class AlimanteMenuComplet:
 def main():
     """Fonction principale"""
     print("=" * 60)
-    print("🎛️  ALIMANTE - MENU COMBINÉ")
+    print("🎛️  ALIMANTE - MENU FINAL")
     print("📍 Encodeur rotatif + Écran ST7735")
-    print("📍 Correction des couleurs BGR")
+    print("📍 Configuration optimisée et testée")
     print("=" * 60)
     
     # Vérification des dépendances
@@ -401,7 +351,7 @@ def main():
         return
     
     # Création et lancement du menu
-    menu = AlimanteMenuComplet()
+    menu = AlimanteMenuFinal()
     menu.run_menu()
 
 if __name__ == "__main__":
