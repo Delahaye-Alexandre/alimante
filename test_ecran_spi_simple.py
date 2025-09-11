@@ -46,7 +46,7 @@ class EcranST7735Test:
                 cs=0,
                 dc=self.a0_pin,
                 rst=self.reset_pin,
-                rotation=0  # Ajuster selon votre montage
+                rotation=270  # Ajuster selon votre montage
             )
             self.display.begin()
             self.is_initialized = True
