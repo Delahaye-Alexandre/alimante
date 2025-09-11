@@ -178,7 +178,6 @@ class EncoderDisplayTest:
             draw.rectangle([10, 100, 118, 110], fill=(0, 255, 0))
             
             self.display.display(image)
-            self.display.display()
             
         except Exception as e:
             print(f"❌ Erreur affichage bienvenue: {e}")
@@ -214,7 +213,6 @@ class EncoderDisplayTest:
                 draw.text((self.width - 20, self.height - 20), "↓", fill=(255, 255, 255), font=ImageFont.load_default())
             
             self.display.display(image)
-            self.display.display()
             
         except Exception as e:
             print(f"❌ Erreur affichage menu: {e}")
@@ -263,7 +261,6 @@ class EncoderDisplayTest:
             draw.text((10, 130), "Press to return", fill=(128, 128, 128), font=ImageFont.load_default())
             
             self.display.display(image)
-            self.display.display()
             
         except Exception as e:
             print(f"❌ Erreur test LED: {e}")
@@ -290,7 +287,6 @@ class EncoderDisplayTest:
             draw.text((10, 140), "Press to return", fill=(128, 128, 128), font=ImageFont.load_default())
             
             self.display.display(image)
-            self.display.display()
             
         except Exception as e:
             print(f"❌ Erreur monitoring: {e}")
@@ -312,7 +308,6 @@ class EncoderDisplayTest:
             draw.text((10, 130), f"CS:  GPIO {self.cs_pin}", fill=(255, 255, 255), font=ImageFont.load_default())
             
             self.display.display(image)
-            self.display.display()
             
         except Exception as e:
             print(f"❌ Erreur config: {e}")
@@ -342,7 +337,6 @@ class EncoderDisplayTest:
             draw.text((10, 140), "Press to return", fill=(128, 128, 128), font=ImageFont.load_default())
             
             self.display.display(image)
-            self.display.display()
             
         except Exception as e:
             print(f"❌ Erreur tests hardware: {e}")
@@ -369,7 +363,6 @@ class EncoderDisplayTest:
             draw.text((10, 140), "Press to return", fill=(128, 128, 128), font=ImageFont.load_default())
             
             self.display.display(image)
-            self.display.display()
             
         except Exception as e:
             print(f"❌ Erreur stats: {e}")
@@ -392,7 +385,6 @@ class EncoderDisplayTest:
             draw.text((10, 140), "Press to return", fill=(128, 128, 128), font=ImageFont.load_default())
             
             self.display.display(image)
-            self.display.display()
             
         except Exception as e:
             print(f"❌ Erreur about: {e}")
