@@ -48,7 +48,7 @@ def test_configuration(config_name, **kwargs):
         print(f"   ✅ Résolution détectée: {display.width}x{display.height}")
         
         # Test d'affichage - remplir tout l'écran
-        image = Image.new('RGB', (display.width, display.height), color=(0, 0, 255))  # Rouge BGR
+        image = Image.new('RGB', (display.width, display.height), color=(255, 0, 0))  # Rouge RGB
         draw = ImageDraw.Draw(image)
         
         # Cadre blanc pour voir les bords

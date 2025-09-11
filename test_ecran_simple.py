@@ -71,7 +71,7 @@ def test_ecran_simple():
         
         # Test simple - affichage d'une couleur
         print("🎨 Test d'affichage...")
-        image = Image.new('RGB', (display.width, display.height), color=(0, 0, 255))  # Rouge BGR
+        image = Image.new('RGB', (display.width, display.height), color=(255, 0, 0))  # Rouge RGB
         display.display(image)
         
         print("✅ Test réussi! L'écran fonctionne.")
