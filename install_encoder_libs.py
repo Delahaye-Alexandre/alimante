@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Script d'installation des librairies pour encodeur rotatif
+Script d'installation des librairies pour encodeur rotatif + écran
 """
 
 import subprocess
@@ -28,13 +28,15 @@ def check_package(package):
 def main():
     """Fonction principale d'installation"""
     print("=" * 60)
-    print("🔧 INSTALLATION DES LIBRAIRIES ENCODEUR ROTATIF")
+    print("🔧 INSTALLATION DES LIBRAIRIES ENCODEUR + ÉCRAN")
     print("=" * 60)
     
     # Liste des packages à installer
     packages = [
         ("gpiozero", "gpiozero"),
         ("RPi.GPIO", "RPi.GPIO"),
+        ("spidev", "spidev"),
+        ("Pillow", "PIL"),
     ]
     
     print("📦 Vérification des packages...")
@@ -65,16 +67,26 @@ def main():
     print("📋 RÉSUMÉ DES SOLUTIONS DISPONIBLES:")
     print("=" * 60)
     print("1. test_encoder_gpiozero.py")
-    print("   • Utilise gpiozero (anti-rebond intégré)")
-    print("   • Très simple à utiliser")
+    print("   • Encodeur uniquement avec gpiozero")
+    print("   • Anti-rebond automatique")
     print("   • Recommandé pour débuter")
     print()
-    print("2. test_encoder_interrupts.py")
-    print("   • Utilise RPi.GPIO avec interruptions")
-    print("   • Anti-rebond par bouncetime")
-    print("   • Plus de contrôle")
+    print("2. test_encoder_ecran_gpiozero.py")
+    print("   • Encodeur + écran avec gpiozero + SPI")
+    print("   • Version combinée simple")
+    print("   • Mise à jour temps réel")
     print()
-    print("3. test_encoder_simple.py")
+    print("3. test_encoder_ecran_avance.py")
+    print("   • Encodeur + écran avec driver ST7735")
+    print("   • Version avancée avec driver complet")
+    print("   • Pour utilisation professionnelle")
+    print()
+    print("4. test_encoder_interrupts.py")
+    print("   • Encodeur avec interruptions RPi.GPIO")
+    print("   • Anti-rebond par bouncetime")
+    print("   • Alternative à gpiozero")
+    print()
+    print("5. test_encoder_simple.py")
     print("   • Version manuelle avec polling")
     print("   • Anti-rebond personnalisé")
     print("   • Pour cas complexes")
