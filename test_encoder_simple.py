@@ -29,6 +29,10 @@ class EncoderTestSimple:
         self.sw_press_time = 0
         self.is_running = False
         
+        # Paramètres d'anti-rebond améliorés
+        self.encoder_debounce_ms = 5  # 5ms pour l'encodeur
+        self.button_debounce_ms = 10  # 10ms pour le bouton
+        
         # Configuration GPIO
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
@@ -65,7 +69,7 @@ class EncoderTestSimple:
             return False
     
     def check_rotation(self):
-        """Vérifie la rotation de l'encodeur (polling + anti-rebond)"""
+        """Vérifie la rotation de l'encodeur (polling + anti-rebond amélioré)"""
         if not self.is_running:
             return
             
@@ -74,23 +78,33 @@ class EncoderTestSimple:
         
         # Détection du changement d'état sur CLK
         if clk_state != self.last_clk_state:
-            time.sleep(0.002)  # anti-rebond (2 ms)
-            clk_state = GPIO.input(self.clk_pin)  # relire l'état
-            dt_state = GPIO.input(self.dt_pin)
-
-            if clk_state != self.last_clk_state:  # confirmation du changement
-                if dt_state != clk_state:
-                    self.counter += 1
-                    direction = "🔄 HORAIRE"
+            # Anti-rebond : attendre que l'état se stabilise
+            time.sleep(self.encoder_debounce_ms / 1000.0)  # Convertir ms en secondes
+            
+            # Relire les états après l'anti-rebond
+            clk_state_stable = GPIO.input(self.clk_pin)
+            dt_state_stable = GPIO.input(self.dt_pin)
+            
+            # Vérifier que l'état est toujours différent (pas un rebond)
+            if clk_state_stable != self.last_clk_state:
+                # Vérifier que l'état est stable (même valeur qu'avant l'attente)
+                if clk_state_stable == clk_state:
+                    # Détection de la direction
+                    if dt_state_stable != clk_state_stable:
+                        self.counter += 1
+                        direction = "🔄 HORAIRE"
+                    else:
+                        self.counter -= 1
+                        direction = "🔄 ANTI-HORAIRE"
+                    
+                    print(f"{direction} | Compteur: {self.counter}")
+                    self.last_clk_state = clk_state_stable
                 else:
-                    self.counter -= 1
-                    direction = "🔄 ANTI-HORAIRE"
-                
-                print(f"{direction} | Compteur: {self.counter}")
-                self.last_clk_state = clk_state
+                    # État instable, ignorer ce changement
+                    pass
 
     def check_button(self):
-        """Vérifie l'état du bouton (polling)"""
+        """Vérifie l'état du bouton (polling + anti-rebond amélioré)"""
         if not self.is_running:
             return
             
@@ -99,27 +113,48 @@ class EncoderTestSimple:
         
         # Détection de l'appui (transition HIGH -> LOW)
         if sw_state == 0 and self.last_sw_state == 1:
-            self.sw_pressed = True
-            self.sw_press_time = current_time
-            print("🔘 BOUTON APPUYÉ")
+            # Anti-rebond : attendre que l'état se stabilise
+            time.sleep(self.button_debounce_ms / 1000.0)  # Convertir ms en secondes
+            
+            # Relire l'état après l'anti-rebond
+            sw_state_stable = GPIO.input(self.sw_pin)
+            
+            # Vérifier que l'état est toujours LOW (pas un rebond)
+            if sw_state_stable == 0:
+                self.sw_pressed = True
+                self.sw_press_time = current_time
+                print("🔘 BOUTON APPUYÉ")
+                self.last_sw_state = sw_state_stable
+            else:
+                # État instable, ignorer ce changement
+                pass
         
         # Détection du relâchement (transition LOW -> HIGH)
         elif sw_state == 1 and self.last_sw_state == 0:
             if self.sw_pressed:
-                press_duration = current_time - self.sw_press_time
-                print(f"🔘 BOUTON RELÂCHÉ (durée: {press_duration:.2f}s)")
+                # Anti-rebond pour le relâchement
+                time.sleep(self.button_debounce_ms / 1000.0)  # Convertir ms en secondes
+                sw_state_stable = GPIO.input(self.sw_pin)
                 
-                # Classification du type d'appui
-                if press_duration < 0.5:
-                    print("   → Clic court")
-                elif press_duration < 2.0:
-                    print("   → Clic long")
+                if sw_state_stable == 1:
+                    press_duration = current_time - self.sw_press_time
+                    print(f"🔘 BOUTON RELÂCHÉ (durée: {press_duration:.2f}s)")
+                    
+                    # Classification du type d'appui
+                    if press_duration < 0.5:
+                        print("   → Clic court")
+                    elif press_duration < 2.0:
+                        print("   → Clic long")
+                    else:
+                        print("   → Appui très long")
+                    
+                    self.sw_pressed = False
+                    self.last_sw_state = sw_state_stable
                 else:
-                    print("   → Appui très long")
-                
-                self.sw_pressed = False
-        
-        self.last_sw_state = sw_state
+                    # État instable, ignorer ce changement
+                    pass
+        else:
+            self.last_sw_state = sw_state
     
     def test_rotation(self, duration=10):
         """Test de rotation pendant une durée donnée"""
@@ -236,6 +271,42 @@ class EncoderTestSimple:
         except KeyboardInterrupt:
             print("\n🛑 Monitoring arrêté")
     
+    def adjust_debounce(self):
+        """Ajuste les paramètres d'anti-rebond"""
+        print("\n🔧 AJUSTEMENT ANTI-REBOND")
+        print("=" * 40)
+        print(f"Paramètres actuels:")
+        print(f"  • Encodeur: {self.encoder_debounce_ms}ms")
+        print(f"  • Bouton: {self.button_debounce_ms}ms")
+        print()
+        print("Valeurs recommandées:")
+        print("  • Encodeur: 2-10ms (plus bas = plus sensible)")
+        print("  • Bouton: 5-20ms (plus bas = plus sensible)")
+        print()
+        
+        try:
+            # Ajuster l'anti-rebond de l'encodeur
+            new_encoder_ms = input(f"Anti-rebond encodeur en ms (actuel: {self.encoder_debounce_ms}): ").strip()
+            if new_encoder_ms:
+                self.encoder_debounce_ms = max(1, min(50, int(new_encoder_ms)))
+                print(f"✅ Encodeur: {self.encoder_debounce_ms}ms")
+            
+            # Ajuster l'anti-rebond du bouton
+            new_button_ms = input(f"Anti-rebond bouton en ms (actuel: {self.button_debounce_ms}): ").strip()
+            if new_button_ms:
+                self.button_debounce_ms = max(1, min(100, int(new_button_ms)))
+                print(f"✅ Bouton: {self.button_debounce_ms}ms")
+            
+            print(f"\n📊 Nouveaux paramètres:")
+            print(f"  • Encodeur: {self.encoder_debounce_ms}ms")
+            print(f"  • Bouton: {self.button_debounce_ms}ms")
+            print("Les nouveaux paramètres sont actifs immédiatement!")
+            
+        except ValueError:
+            print("❌ Valeur invalide, paramètres inchangés")
+        except Exception as e:
+            print(f"❌ Erreur: {e}")
+
     def cleanup(self):
         """Nettoie les ressources GPIO"""
         self.is_running = False
@@ -275,10 +346,11 @@ def main():
             print("4. Monitoring temps réel")
             print("5. Test personnalisé")
             print("6. Afficher configuration")
+            print("7. Ajuster anti-rebond")
             print("0. Quitter")
             print("=" * 40)
             
-            choice = input("Votre choix (0-6): ").strip()
+            choice = input("Votre choix (0-7): ").strip()
             
             if choice == "0":
                 break
@@ -305,6 +377,8 @@ def main():
             elif choice == "6":
                 from config_alimante import print_config
                 print_config()
+            elif choice == "7":
+                encoder_test.adjust_debounce()
             else:
                 print("❌ Choix invalide")
     
