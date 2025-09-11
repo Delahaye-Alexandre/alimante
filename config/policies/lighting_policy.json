@@ -1,0 +1,182 @@
+{
+  "policy_name": "lighting_policy",
+  "version": "1.0",
+  "description": "Politique de gestion de l'éclairage des terrariums",
+  "enabled": true,
+  "default_settings": {
+    "photoperiod": {
+      "day_start": "10:00",
+      "day_end": "22:00",
+      "duration_hours": 12
+    },
+    "intensity": {
+      "min": 0,
+      "max": 100,
+      "default": 70
+    },
+    "fade": {
+      "enabled": true,
+      "sunrise_duration": 30,
+      "sunset_duration": 30,
+      "steps": 10
+    }
+  },
+  "species_profiles": {
+    "insect": {
+      "photoperiod": {
+        "day_start": "10:00",
+        "day_end": "22:00",
+        "duration_hours": 12
+      },
+      "intensity": {
+        "min": 20,
+        "max": 80,
+        "default": 60
+      },
+      "fade": {
+        "enabled": true,
+        "sunrise_duration": 45,
+        "sunset_duration": 45
+      },
+      "spectrum": {
+        "warm_white": 70,
+        "cool_white": 20,
+        "blue": 5,
+        "red": 5
+      }
+    },
+    "phasme": {
+      "photoperiod": {
+        "day_start": "10:00",
+        "day_end": "22:00",
+        "duration_hours": 12
+      },
+      "intensity": {
+        "min": 10,
+        "max": 60,
+        "default": 40
+      },
+      "fade": {
+        "enabled": true,
+        "sunrise_duration": 60,
+        "sunset_duration": 60
+      },
+      "spectrum": {
+        "warm_white": 50,
+        "cool_white": 40,
+        "blue": 10,
+        "red": 0
+      }
+    },
+    "gecko": {
+      "photoperiod": {
+        "day_start": "10:00",
+        "day_end": "22:00",
+        "duration_hours": 12
+      },
+      "intensity": {
+        "min": 30,
+        "max": 90,
+        "default": 75
+      },
+      "fade": {
+        "enabled": true,
+        "sunrise_duration": 20,
+        "sunset_duration": 20
+      },
+      "spectrum": {
+        "warm_white": 40,
+        "cool_white": 50,
+        "blue": 10,
+        "red": 0
+      }
+    }
+  },
+  "seasonal_adjustments": {
+    "enabled": true,
+    "winter": {
+      "day_start_offset": -30,
+      "day_end_offset": 30,
+      "intensity_multiplier": 0.8
+    },
+    "summer": {
+      "day_start_offset": 30,
+      "day_end_offset": -30,
+      "intensity_multiplier": 1.2
+    },
+    "spring": {
+      "day_start_offset": 0,
+      "day_end_offset": 0,
+      "intensity_multiplier": 1.0
+    },
+    "autumn": {
+      "day_start_offset": 0,
+      "day_end_offset": 0,
+      "intensity_multiplier": 1.0
+    }
+  },
+  "emergency_settings": {
+    "power_failure": {
+      "action": "maintain_minimum",
+      "min_intensity": 5,
+      "duration_hours": 24
+    },
+    "sensor_failure": {
+      "action": "safe_mode",
+      "intensity": 50,
+      "schedule": "default"
+    },
+    "overheating": {
+      "action": "reduce_intensity",
+      "intensity_reduction": 50,
+      "temperature_threshold": 35.0
+    }
+  },
+  "automation_rules": [
+    {
+      "name": "gradual_sunrise",
+      "enabled": true,
+      "condition": "time_between(day_start-30min, day_start)",
+      "action": "fade_in",
+      "parameters": {
+        "duration": 30,
+        "steps": 10
+      }
+    },
+    {
+      "name": "gradual_sunset",
+      "enabled": true,
+      "condition": "time_between(day_end-30min, day_end)",
+      "action": "fade_out",
+      "parameters": {
+        "duration": 30,
+        "steps": 10
+      }
+    },
+    {
+      "name": "night_mode",
+      "enabled": true,
+      "condition": "time_after(day_end)",
+      "action": "set_intensity",
+      "parameters": {
+        "intensity": 0
+      }
+    },
+    {
+      "name": "temperature_adaptation",
+      "enabled": true,
+      "condition": "temperature > 32.0",
+      "action": "reduce_intensity",
+      "parameters": {
+        "reduction_percent": 20
+      }
+    }
+  ],
+  "safety_limits": {
+    "max_intensity": 100,
+    "min_intensity": 0,
+    "max_duration_hours": 16,
+    "min_duration_hours": 4,
+    "cooldown_period": 60
+  }
+}

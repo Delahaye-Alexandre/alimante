@@ -1,0 +1,270 @@
+{
+  "species_id": "template_insect",
+  "common_name": "Template Insect",
+  "scientific_name": "Templateus insectus",
+  "category": "insect",
+  "version": "1.0",
+  "description": "Template de profil pour les espèces d'insectes",
+  "created_date": "2025-11-09",
+  "last_updated": "2025-11-09",
+  "active": false,
+  "environmental_requirements": {
+    "temperature": {
+      "day": {
+        "min": 20.0,
+        "max": 30.0,
+        "optimal": 25.0,
+        "unit": "celsius"
+      },
+      "night": {
+        "min": 15.0,
+        "max": 25.0,
+        "optimal": 20.0,
+        "unit": "celsius"
+      },
+      "gradient": {
+        "enabled": true,
+        "hot_spot": 30.0,
+        "cool_spot": 20.0
+      },
+      "seasonal_variation": {
+        "winter": {
+          "day_offset": -2.0,
+          "night_offset": -3.0
+        },
+        "summer": {
+          "day_offset": 2.0,
+          "night_offset": 1.0
+        }
+      }
+    },
+    "humidity": {
+      "min": 40.0,
+      "max": 80.0,
+      "optimal": 60.0,
+      "unit": "percent",
+      "daily_cycle": {
+        "morning": 70.0,
+        "afternoon": 50.0,
+        "evening": 65.0,
+        "night": 75.0
+      },
+      "seasonal_variation": {
+        "winter": 10.0,
+        "summer": -5.0
+      }
+    },
+    "lighting": {
+      "photoperiod": {
+        "day_start": "10:00",
+        "day_end": "22:00",
+        "duration_hours": 12
+      },
+      "intensity": {
+        "min": 20,
+        "max": 80,
+        "optimal": 60,
+        "unit": "percent"
+      },
+      "fade": {
+        "enabled": true,
+        "sunrise_duration": 30,
+        "sunset_duration": 30
+      }
+    },
+    "ventilation": {
+      "air_circulation": {
+        "enabled": true,
+        "base_speed": 25,
+        "max_speed": 60,
+        "unit": "percent"
+      },
+      "air_quality": {
+        "sensitivity": "medium",
+        "response_speed": "normal"
+      }
+    }
+  },
+  "feeding_requirements": {
+    "schedule": {
+      "frequency": "daily",
+      "times": ["09:00", "18:00"],
+      "portion_size": "medium"
+    },
+    "food_types": [
+      "primary_food",
+      "secondary_food",
+      "supplement"
+    ],
+    "feeding_behavior": {
+      "hunting_active": true,
+      "prey_movement_required": true,
+      "feeding_duration_minutes": 30
+    },
+    "seasonal_adjustments": {
+      "winter": {
+        "frequency": "every_other_day",
+        "portion_reduction": 0.2
+      },
+      "summer": {
+        "frequency": "daily",
+        "portion_increase": 0.1
+      }
+    }
+  },
+  "lifecycle": {
+    "lifespan_months": 12,
+    "stages": [
+      {
+        "name": "egg",
+        "duration_days": 14,
+        "temperature_requirements": {
+          "min": 20.0,
+          "max": 25.0,
+          "optimal": 22.0
+        },
+        "humidity_requirements": {
+          "min": 60.0,
+          "max": 80.0,
+          "optimal": 70.0
+        }
+      },
+      {
+        "name": "nymph",
+        "duration_days": 60,
+        "molts": 5,
+        "temperature_requirements": {
+          "min": 22.0,
+          "max": 28.0,
+          "optimal": 25.0
+        },
+        "humidity_requirements": {
+          "min": 50.0,
+          "max": 75.0,
+          "optimal": 65.0
+        }
+      },
+      {
+        "name": "adult",
+        "duration_days": 90,
+        "temperature_requirements": {
+          "min": 20.0,
+          "max": 30.0,
+          "optimal": 25.0
+        },
+        "humidity_requirements": {
+          "min": 40.0,
+          "max": 70.0,
+          "optimal": 60.0
+        }
+      }
+    ]
+  },
+  "behavioral_patterns": {
+    "activity": {
+      "diurnal": true,
+      "nocturnal": false,
+      "crepuscular": false,
+      "peak_activity_hours": ["09:00-11:00", "16:00-18:00"]
+    },
+    "hiding_behavior": {
+      "prefers_dark_spots": true,
+      "hiding_frequency": "moderate",
+      "stress_indicators": ["excessive_hiding", "refusal_to_eat"]
+    },
+    "social_behavior": {
+      "solitary": true,
+      "cannibalistic": false,
+      "territorial": false,
+      "group_size": 1
+    }
+  },
+  "health_indicators": {
+    "normal_behavior": [
+      "active_movement",
+      "regular_feeding",
+      "normal_coloration",
+      "responsive_to_stimuli"
+    ],
+    "warning_signs": [
+      "lethargy",
+      "refusal_to_eat",
+      "abnormal_coloration",
+      "excessive_hiding"
+    ],
+    "critical_signs": [
+      "immobility",
+      "deformed_limbs",
+      "discoloration",
+      "unresponsive"
+    ]
+  },
+  "terrarium_requirements": {
+    "size": {
+      "minimum_length": 30,
+      "minimum_width": 20,
+      "minimum_height": 30,
+      "unit": "cm"
+    },
+    "substrate": {
+      "type": "coco_fiber",
+      "depth": 5,
+      "unit": "cm",
+      "moisture_retention": "medium"
+    },
+    "decorations": {
+      "hiding_places": 2,
+      "climbing_opportunities": true,
+      "plants": "artificial",
+      "water_dish": true
+    },
+    "maintenance": {
+      "cleaning_frequency": "weekly",
+      "substrate_change": "monthly",
+      "disinfection": "monthly"
+    }
+  },
+  "safety_considerations": {
+    "temperature_limits": {
+      "absolute_min": 10.0,
+      "absolute_max": 40.0,
+      "critical_min": 5.0,
+      "critical_max": 45.0
+    },
+    "humidity_limits": {
+      "absolute_min": 20.0,
+      "absolute_max": 95.0,
+      "critical_min": 10.0,
+      "critical_max": 99.0
+    },
+    "special_requirements": [
+      "no_direct_sunlight",
+      "stable_temperature",
+      "adequate_ventilation"
+    ],
+    "emergency_protocols": [
+      "temperature_override",
+      "humidity_override",
+      "feeding_suspension"
+    ]
+  },
+  "monitoring": {
+    "sensor_requirements": [
+      "temperature",
+      "humidity",
+      "air_quality"
+    ],
+    "camera_requirements": {
+      "enabled": true,
+      "resolution": "720p",
+      "night_vision": false,
+      "recording": "motion_detection"
+    },
+    "data_logging": {
+      "temperature_interval": 60,
+      "humidity_interval": 60,
+      "feeding_log": true,
+      "behavior_log": true
+    }
+  }
+}

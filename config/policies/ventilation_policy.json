@@ -1,0 +1,241 @@
+{
+  "policy_name": "ventilation_policy",
+  "version": "1.0",
+  "description": "Politique de gestion de la ventilation des terrariums",
+  "enabled": true,
+  "default_settings": {
+    "air_circulation": {
+      "enabled": true,
+      "min_speed": 20,
+      "max_speed": 80,
+      "base_speed": 30
+    },
+    "air_quality_control": {
+      "enabled": true,
+      "good_threshold": 50,
+      "moderate_threshold": 100,
+      "unhealthy_threshold": 150,
+      "hazardous_threshold": 300
+    },
+    "temperature_control": {
+      "enabled": true,
+      "cooling_threshold": 30.0,
+      "max_cooling_speed": 100
+    },
+    "humidity_control": {
+      "enabled": true,
+      "reduction_threshold": 85,
+      "reduction_speed": 70
+    }
+  },
+  "species_profiles": {
+    "Mantis": {
+      "air_circulation": {
+        "base_speed": 25,
+        "max_speed": 60
+      },
+      "air_quality": {
+        "sensitivity": "medium",
+        "response_speed": "normal"
+      },
+      "temperature_control": {
+        "cooling_threshold": 28.0,
+        "max_cooling_speed": 80
+      }
+    },
+    "phasme": {
+      "air_circulation": {
+        "base_speed": 20,
+        "max_speed": 50
+      },
+      "air_quality": {
+        "sensitivity": "low",
+        "response_speed": "slow"
+      },
+      "temperature_control": {
+        "cooling_threshold": 30.0,
+        "max_cooling_speed": 70
+      }
+    },
+    "gecko": {
+      "air_circulation": {
+        "base_speed": 35,
+        "max_speed": 90
+      },
+      "air_quality": {
+        "sensitivity": "high",
+        "response_speed": "fast"
+      },
+      "temperature_control": {
+        "cooling_threshold": 32.0,
+        "max_cooling_speed": 100
+      }
+    }
+  },
+  "fan_control": {
+    "fan_1": {
+      "name": "fan",
+      "type": "axial",
+      "max_speed": 100,
+      "min_speed": 10,
+      "pwm_frequency": 1000,
+      "duty_cycle_min": 10,
+      "duty_cycle_max": 100
+    }
+  },
+  "air_quality_levels": {
+    "excellent": {
+      "threshold": 0,
+      "fan_speed": 20,
+      "description": "Qualité d'air excellente"
+    },
+    "good": {
+      "threshold": 50,
+      "fan_speed": 30,
+      "description": "Qualité d'air bonne"
+    },
+    "moderate": {
+      "threshold": 100,
+      "fan_speed": 50,
+      "description": "Qualité d'air modérée"
+    },
+    "unhealthy": {
+      "threshold": 150,
+      "fan_speed": 80,
+      "description": "Qualité d'air malsaine"
+    },
+    "hazardous": {
+      "threshold": 300,
+      "fan_speed": 100,
+      "description": "Qualité d'air dangereuse"
+    }
+  },
+  "automation_rules": [
+    {
+      "name": "continuous_air_circulation",
+      "enabled": true,
+      "condition": "always",
+      "action": "set_fan_speed",
+      "parameters": {
+        "fan": "fan",
+        "speed": "base_speed"
+      }
+    },
+    {
+      "name": "air_quality_response",
+      "enabled": true,
+      "condition": "air_quality > good_threshold",
+      "action": "adjust_fan_speed",
+      "parameters": {
+        "fan": "fan",
+        "speed_calculation": "air_quality_based"
+      }
+    },
+    {
+      "name": "temperature_cooling",
+      "enabled": true,
+      "condition": "temperature > cooling_threshold",
+      "action": "increase_fan_speed",
+      "parameters": {
+        "fan": "fan",
+        "speed_increase": 30,
+        "max_speed": "max_cooling_speed"
+      }
+    },
+    {
+      "name": "humidity_reduction",
+      "enabled": true,
+      "condition": "humidity > reduction_threshold",
+      "action": "increase_fan_speed",
+      "parameters": {
+        "fan": "fan",
+        "speed": "reduction_speed",
+        "duration": 1800
+      }
+    },
+    {
+      "name": "emergency_ventilation",
+      "enabled": true,
+      "condition": "air_quality > hazardous_threshold OR temperature > 40",
+      "action": "emergency_ventilation",
+      "parameters": {
+        "fan": "both",
+        "speed": 100,
+        "duration": 600
+      }
+    },
+    {
+      "name": "night_mode",
+      "enabled": true,
+      "condition": "time_between(22:00, 06:00)",
+      "action": "reduce_fan_speed",
+      "parameters": {
+        "fan": "fan_1",
+        "speed_reduction": 20,
+        "min_speed": 15
+      }
+    }
+  ],
+  "safety_measures": {
+    "overheating_protection": {
+      "enabled": true,
+      "temperature_threshold": 40.0,
+      "action": "max_ventilation",
+      "duration": 1800
+    },
+    "air_quality_emergency": {
+      "enabled": true,
+      "threshold": 400,
+      "action": "emergency_ventilation",
+      "duration": 3600
+    },
+    "fan_failure_detection": {
+      "enabled": true,
+      "check_interval": 300,
+      "response_timeout": 10,
+      "action": "alert_and_switch"
+    },
+    "power_management": {
+      "enabled": true,
+      "max_continuous_power": 80,
+      "cooldown_period": 300
+    }
+  },
+  "monitoring": {
+    "sensor_check_interval": 60,
+    "control_update_interval": 30,
+    "fan_status_check": 300,
+    "air_quality_sampling": 120,
+    "logging": {
+      "enabled": true,
+      "level": "INFO",
+      "include_fan_status": true,
+      "include_air_quality": true
+    }
+  },
+  "maintenance": {
+    "fan_cleaning_reminder": {
+      "enabled": true,
+      "interval_days": 30,
+      "alert_before_days": 7
+    },
+    "filter_replacement": {
+      "enabled": true,
+      "interval_days": 90,
+      "alert_before_days": 14
+    },
+    "performance_monitoring": {
+      "enabled": true,
+      "efficiency_threshold": 0.8,
+      "alert_on_degradation": true
+    }
+  },
+  "safety_limits": {
+    "max_fan_speed": 100,
+    "min_fan_speed": 10,
+    "max_continuous_time": 7200,
+    "min_cooldown_time": 300,
+    "air_quality_critical": 400,
+    "temperature_critical": 45.0
+  }
+}

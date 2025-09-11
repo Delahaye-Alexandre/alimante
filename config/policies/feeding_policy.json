@@ -1,0 +1,289 @@
+{
+  "policy_name": "feeding_policy",
+  "version": "1.0",
+  "description": "Politique de gestion de l'alimentation automatique des terrariums",
+  "enabled": true,
+  "default_settings": {
+    "feeding_schedule": {
+      "enabled": true,
+      "frequency": "daily",
+      "times": ["09:00", "18:00"],
+      "portion_size": "medium"
+    },
+    "safety_checks": {
+      "water_level_min": 20,
+      "temperature_range": [15, 35],
+      "humidity_range": [20, 95],
+      "emergency_stop": true
+    },
+    "portion_control": {
+      "small": 0.5,
+      "medium": 1.0,
+      "large": 1.5,
+      "unit": "grams"
+    }
+  },
+  "species_profiles": {
+    "mantis": {
+      "feeding_schedule": {
+        "frequency": "daily",
+        "times": ["10:00", "19:00"],
+        "portion_size": "small"
+      },
+      "food_types": [
+        "drosophiles",
+        "mouches",
+        "criquets",
+        "vers de farine"
+      ],
+      "feeding_behavior": {
+        "hunting_active": true,
+        "prey_movement_required": true,
+        "feeding_duration": 30
+      },
+      "seasonal_adjustments": {
+        "winter": {
+          "frequency": "every_other_day",
+          "portion_reduction": 0.2
+        },
+        "summer": {
+          "frequency": "daily",
+          "portion_increase": 0.1
+        }
+      }
+    },
+    "phasme": {
+      "feeding_schedule": {
+        "frequency": "daily",
+        "times": ["08:00", "20:00"],
+        "portion_size": "medium"
+      },
+      "food_types": [
+        "feuilles_fraiches",
+        "branches",
+        "vegetation"
+      ],
+      "feeding_behavior": {
+        "hunting_active": false,
+        "prey_movement_required": false,
+        "feeding_duration": 60
+      },
+      "seasonal_adjustments": {
+        "winter": {
+          "frequency": "daily",
+          "portion_reduction": 0.1
+        },
+        "summer": {
+          "frequency": "daily",
+          "portion_increase": 0.2
+        }
+      }
+    },
+    "gecko": {
+      "feeding_schedule": {
+        "frequency": "every_other_day",
+        "times": ["19:00"],
+        "portion_size": "medium"
+      },
+      "food_types": [
+        "criquets",
+        "vers de farine",
+        "drosophiles",
+        "poudre_vitamines"
+      ],
+      "feeding_behavior": {
+        "hunting_active": true,
+        "prey_movement_required": true,
+        "feeding_duration": 45
+      },
+      "seasonal_adjustments": {
+        "winter": {
+          "frequency": "twice_weekly",
+          "portion_reduction": 0.3
+        },
+        "summer": {
+          "frequency": "daily",
+          "portion_increase": 0.2
+        }
+      }
+    }
+  },
+  "feeding_mechanism": {
+    "sas_system": {
+      "enabled": true,
+      "servo_angle": {
+        "closed": 0,
+        "open": 90,
+        "feeding": 45
+      },
+      "servo_speed": 30,
+      "servo_delay": 1000
+    },
+    "portion_dispenser": {
+      "enabled": true,
+      "measurement_method": "time_based",
+      "calibration": {
+        "small_portion_time": 2000,
+        "medium_portion_time": 4000,
+        "large_portion_time": 6000
+      }
+    },
+    "food_storage": {
+      "capacity": 100,
+      "unit": "grams",
+      "low_level_alert": 20,
+      "refill_reminder": 10
+    }
+  },
+  "safety_protocols": {
+    "pre_feeding_checks": [
+      {
+        "check": "water_level",
+        "threshold": 20,
+        "action": "skip_feeding",
+        "message": "Niveau d'eau trop bas pour l'alimentation"
+      },
+      {
+        "check": "temperature",
+        "min": 15,
+        "max": 35,
+        "action": "skip_feeding",
+        "message": "Température hors plage pour l'alimentation"
+      },
+      {
+        "check": "humidity",
+        "min": 20,
+        "max": 95,
+        "action": "skip_feeding",
+        "message": "Humidité hors plage pour l'alimentation"
+      },
+      {
+        "check": "emergency_stop",
+        "condition": "active",
+        "action": "abort_feeding",
+        "message": "Arrêt d'urgence activé"
+      }
+    ],
+    "during_feeding_monitoring": [
+      {
+        "check": "servo_movement",
+        "timeout": 10,
+        "action": "retry",
+        "max_retries": 3
+      },
+      {
+        "check": "food_dispensed",
+        "sensor": "weight_sensor",
+        "action": "verify_dispensing"
+      }
+    ],
+    "post_feeding_verification": [
+      {
+        "check": "feeding_completed",
+        "action": "log_feeding",
+        "required": true
+      },
+      {
+        "check": "cleanup_required",
+        "action": "schedule_cleanup",
+        "delay": 3600
+      }
+    ]
+  },
+  "automation_rules": [
+    {
+      "name": "scheduled_feeding",
+      "enabled": true,
+      "condition": "time_matches(feeding_times)",
+      "action": "execute_feeding",
+      "parameters": {
+        "portion_size": "species_default",
+        "food_type": "primary"
+      }
+    },
+    {
+      "name": "weather_adaptation",
+      "enabled": true,
+      "condition": "temperature < 20 OR temperature > 30",
+      "action": "adjust_feeding",
+      "parameters": {
+        "portion_reduction": 0.2,
+        "skip_if_extreme": true
+      }
+    },
+    {
+      "name": "hunger_detection",
+      "enabled": false,
+      "condition": "activity_sensor_low AND time_since_last_feeding > 24h",
+      "action": "emergency_feeding",
+      "parameters": {
+        "portion_size": "small",
+        "immediate": true
+      }
+    },
+    {
+      "name": "maintenance_feeding",
+      "enabled": true,
+      "condition": "weekly_maintenance",
+      "action": "supplement_feeding",
+      "parameters": {
+        "portion_size": "small",
+        "vitamin_supplement": true
+      }
+    }
+  ],
+  "monitoring": {
+    "feeding_log": {
+      "enabled": true,
+      "retention_days": 90,
+      "include_portion_size": true,
+      "include_timing": true,
+      "include_success_status": true
+    },
+    "food_inventory": {
+      "enabled": true,
+      "check_interval": 3600,
+      "low_level_alert": true,
+      "refill_reminder": true
+    },
+    "mechanism_health": {
+      "enabled": true,
+      "servo_test_interval": 86400,
+      "sas_cleaning_interval": 604800,
+      "calibration_check": 2592000
+    }
+  },
+  "maintenance": {
+    "daily_cleaning": {
+      "enabled": true,
+      "time": "23:00",
+      "duration": 300,
+      "cleaning_cycle": true
+    },
+    "weekly_maintenance": {
+      "enabled": true,
+      "day": "sunday",
+      "time": "08:00",
+      "deep_cleaning": true,
+      "calibration_check": true
+    },
+    "monthly_maintenance": {
+      "enabled": true,
+      "servo_lubrication": true,
+      "sas_replacement": false,
+      "sensor_calibration": true
+    }
+  },
+  "safety_limits": {
+    "max_daily_feedings": 3,
+    "max_portion_size": 2.0,
+    "min_water_level": 20,
+    "max_feeding_duration": 300,
+    "emergency_stop_override": true,
+    "manual_override_required": [
+      "emergency_stop_active",
+      "safety_checks_failed",
+      "mechanism_malfunction"
+    ]
+  }
+}

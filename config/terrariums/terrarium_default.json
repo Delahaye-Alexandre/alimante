@@ -1,0 +1,215 @@
+{
+  "terrarium_id": "terrarium_default",
+  "name": "Station de contrôle centrale",
+  "description": "Raspberry Pi Zero 2W - Station de supervision et contrôle de tous les terrariums ESP32",
+  "version": "1.0",
+  "created_date": "2025-11-09",
+  "last_updated": "2025-11-09",
+  "active": true,
+  "controller_type": "raspberry_pi_zero_2w",
+  "role": "central_supervisor",
+  "managed_terrariums": [
+    "terrarium_01",
+    "terrarium_02", 
+    "terrarium_03",
+    "terrarium_04"
+  ],
+  "hardware_configuration": {
+    "sensors": {
+      "temperature_humidity": {
+        "enabled": true,
+        "sensor_type": "dht22",
+        "gpio_pin": 4,
+        "calibration": {
+          "temperature_offset": 0.0,
+          "humidity_offset": 0.0
+        }
+      },
+      "air_quality": {
+        "enabled": true,
+        "sensor_type": "generic",
+        "gpio_pin": 5,
+        "calibration": {
+          "baseline": 50,
+          "sensitivity": 1.0
+        }
+      },
+      "water_level": {
+        "enabled": true,
+        "sensor_type": "tenflyer",
+        "gpio_pin": 21,
+        "calibration": {
+          "empty_level": 0,
+          "full_level": 100
+        }
+      }
+    },
+    "actuators": {
+      "lighting": {
+        "enabled": true,
+        "pwm_pin": 12,
+        "pwm_frequency": 1000,
+        "max_brightness": 100,
+        "fade_enabled": true
+      },
+      "heater": {
+        "enabled": true,
+        "relay_pin": 19,
+        "safety_temperature": 35.0,
+        "hysteresis": 1.0
+      },
+      "humidifier": {
+        "enabled": true,
+        "relay_pin": 5,
+        "min_cycle_time": 300,
+        "max_cycle_time": 1800
+      },
+      "fan": {
+        "enabled": true,
+        "pwm_pin": 13,
+        "pwm_frequency": 1000,
+        "min_speed": 20,
+        "max_speed": 100
+      },
+      "feeder_servo": {
+        "enabled": true,
+        "servo_pin": 18,
+        "servo_frequency": 50,
+        "servo_angle_closed": 0,
+        "servo_angle_open": 90
+      }
+    },
+    "ui": {
+      "st7735": {
+        "enabled": true,
+        "mosi_pin": 10,
+        "sclk_pin": 11,
+        "dc_pin": 25,
+        "cs_pin": 8,
+        "rst_pin": 24,
+        "width": 128,
+        "height": 160,
+        "rotation": 0
+      },
+      "encoder": {
+        "enabled": true,
+        "clk_pin": 17,
+        "dt_pin": 27,
+        "sw_pin": 22
+      }
+    },
+    "safety": {
+      "status_led": {
+        "enabled": true,
+        "gpio_pin": 25
+      }
+    }
+  },
+  "environmental_settings": {
+    "temperature": {
+      "day_target": 25.0,
+      "night_target": 20.0,
+      "tolerance": 2.0,
+      "hysteresis": 1.0,
+      "unit": "celsius"
+    },
+    "humidity": {
+      "target": 60.0,
+      "tolerance": 5.0,
+      "hysteresis": 3.0,
+      "unit": "percent"
+    },
+    "lighting": {
+      "photoperiod": {
+        "day_start": "08:00",
+        "day_end": "20:00"
+      },
+      "intensity": {
+        "min": 20,
+        "max": 80,
+        "default": 60
+      },
+      "fade": {
+        "enabled": true,
+        "sunrise_duration": 30,
+        "sunset_duration": 30
+      }
+    },
+    "ventilation": {
+      "base_speed": 30,
+      "max_speed": 80,
+      "air_quality_threshold": 100
+    }
+  },
+  "feeding_schedule": {
+    "enabled": true,
+    "frequency": "daily",
+    "times": ["09:00", "18:00"],
+    "portion_size": "medium",
+    "safety_checks": {
+      "water_level_min": 20,
+      "temperature_range": [15, 35],
+      "humidity_range": [20, 95]
+    }
+  },
+  "monitoring": {
+    "data_logging": {
+      "enabled": true,
+      "temperature_interval": 60,
+      "humidity_interval": 60,
+      "air_quality_interval": 120,
+      "retention_days": 30
+    },
+    "alerts": {
+      "enabled": true,
+      "temperature_alerts": true,
+      "humidity_alerts": true,
+      "air_quality_alerts": true,
+      "feeding_alerts": true
+    },
+    "camera": {
+      "enabled": false,
+      "resolution": "1280x720",
+      "fps": 15,
+      "recording": "motion_detection"
+    }
+  },
+  "maintenance": {
+    "cleaning_schedule": {
+      "daily": ["water_dish", "feeding_area"],
+      "weekly": ["substrate_spot_clean", "sensor_calibration"],
+      "monthly": ["full_cleaning", "substrate_change", "disinfection"]
+    },
+    "calibration": {
+      "sensors": {
+        "temperature": "monthly",
+        "humidity": "monthly",
+        "air_quality": "quarterly"
+      },
+      "actuators": {
+        "servo": "monthly",
+        "pwm": "quarterly"
+      }
+    }
+  },
+  "safety_limits": {
+    "temperature": {
+      "min": 10.0,
+      "max": 40.0,
+      "critical_min": 5.0,
+      "critical_max": 45.0
+    },
+    "humidity": {
+      "min": 20.0,
+      "max": 90.0,
+      "critical_min": 10.0,
+      "critical_max": 95.0
+    },
+    "air_quality": {
+      "critical_threshold": 300
+    },
+    "water_level": {
+      "critical_min": 15.0
+    }
+  }
+}

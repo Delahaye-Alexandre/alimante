@@ -1,0 +1,291 @@
+{
+  "species_id": "template_reptile",
+  "common_name": "Template Reptile",
+  "scientific_name": "Templateus reptilus",
+  "category": "reptile",
+  "version": "1.0",
+  "description": "Template de profil pour les espèces de reptiles",
+  "created_date": "2025-11-09",
+  "last_updated": "2025-11-09",
+  "active": false,
+  "environmental_requirements": {
+    "temperature": {
+      "day": {
+        "min": 25.0,
+        "max": 35.0,
+        "optimal": 30.0,
+        "unit": "celsius"
+      },
+      "night": {
+        "min": 20.0,
+        "max": 25.0,
+        "optimal": 22.0,
+        "unit": "celsius"
+      },
+      "basking": {
+        "enabled": true,
+        "temperature": 35.0,
+        "duration_hours": 8
+      },
+      "gradient": {
+        "enabled": true,
+        "hot_spot": 35.0,
+        "cool_spot": 25.0
+      },
+      "seasonal_variation": {
+        "winter": {
+          "day_offset": -3.0,
+          "night_offset": -5.0
+        },
+        "summer": {
+          "day_offset": 2.0,
+          "night_offset": 1.0
+        }
+      }
+    },
+    "humidity": {
+      "min": 30.0,
+      "max": 70.0,
+      "optimal": 50.0,
+      "unit": "percent",
+      "daily_cycle": {
+        "morning": 60.0,
+        "afternoon": 40.0,
+        "evening": 50.0,
+        "night": 55.0
+      },
+      "seasonal_variation": {
+        "winter": 5.0,
+        "summer": -5.0
+      }
+    },
+    "lighting": {
+      "photoperiod": {
+        "day_start": "10:00",
+        "day_end": "22:00",
+        "duration_hours": 12
+      },
+      "intensity": {
+        "min": 30,
+        "max": 90,
+        "optimal": 75,
+        "unit": "percent"
+      },
+      "uvb": {
+        "enabled": true,
+        "intensity": "medium",
+        "duration_hours": 10
+      },
+      "fade": {
+        "enabled": true,
+        "sunrise_duration": 20,
+        "sunset_duration": 20
+      }
+    },
+    "ventilation": {
+      "air_circulation": {
+        "enabled": true,
+        "base_speed": 35,
+        "max_speed": 90,
+        "unit": "percent"
+      },
+      "air_quality": {
+        "sensitivity": "high",
+        "response_speed": "fast"
+      }
+    }
+  },
+  "feeding_requirements": {
+    "schedule": {
+      "frequency": "every_other_day",
+      "times": ["19:00"],
+      "portion_size": "medium"
+    },
+    "food_types": [
+      "criquets",
+      "vers_de_farine",
+      "drosophiles",
+      "poudre_vitamines"
+    ],
+    "feeding_behavior": {
+      "hunting_active": true,
+      "prey_movement_required": true,
+      "feeding_duration_minutes": 45
+    },
+    "seasonal_adjustments": {
+      "winter": {
+        "frequency": "twice_weekly",
+        "portion_reduction": 0.3
+      },
+      "summer": {
+        "frequency": "daily",
+        "portion_increase": 0.2
+      }
+    }
+  },
+  "lifecycle": {
+    "lifespan_years": 5,
+    "stages": [
+      {
+        "name": "juvénile",
+        "duration_months": 12,
+        "temperature_requirements": {
+          "min": 25.0,
+          "max": 32.0,
+          "optimal": 28.0
+        },
+        "humidity_requirements": {
+          "min": 40.0,
+          "max": 60.0,
+          "optimal": 50.0
+        }
+      },
+      {
+        "name": "subadulte",
+        "duration_months": 24,
+        "temperature_requirements": {
+          "min": 26.0,
+          "max": 33.0,
+          "optimal": 29.0
+        },
+        "humidity_requirements": {
+          "min": 35.0,
+          "max": 55.0,
+          "optimal": 45.0
+        }
+      },
+      {
+        "name": "adulte",
+        "duration_months": 36,
+        "temperature_requirements": {
+          "min": 27.0,
+          "max": 35.0,
+          "optimal": 30.0
+        },
+        "humidity_requirements": {
+          "min": 30.0,
+          "max": 50.0,
+          "optimal": 40.0
+        }
+      }
+    ]
+  },
+  "behavioral_patterns": {
+    "activity": {
+      "diurnal": true,
+      "nocturnal": false,
+      "crepuscular": false,
+      "peak_activity_hours": ["09:00-11:00", "17:00-19:00"]
+    },
+    "basking_behavior": {
+      "enabled": true,
+      "preferred_temperature": 35.0,
+      "duration_hours": 8,
+      "frequency": "daily"
+    },
+    "hiding_behavior": {
+      "prefers_dark_spots": true,
+      "hiding_frequency": "moderate",
+      "stress_indicators": ["excessive_hiding", "refusal_to_eat"]
+    },
+    "social_behavior": {
+      "solitary": true,
+      "territorial": true,
+      "group_size": 1
+    }
+  },
+  "health_indicators": {
+    "normal_behavior": [
+      "active_movement",
+      "regular_feeding",
+      "normal_coloration",
+      "responsive_to_stimuli",
+      "basking_behavior"
+    ],
+    "warning_signs": [
+      "lethargy",
+      "refusal_to_eat",
+      "abnormal_coloration",
+      "excessive_hiding",
+      "reduced_basking"
+    ],
+    "critical_signs": [
+      "immobility",
+      "deformed_limbs",
+      "discoloration",
+      "unresponsive",
+      "inability_to_hunt"
+    ]
+  },
+  "terrarium_requirements": {
+    "size": {
+      "minimum_length": 60,
+      "minimum_width": 40,
+      "minimum_height": 50,
+      "unit": "cm"
+    },
+    "substrate": {
+      "type": "coco_fiber",
+      "depth": 5,
+      "unit": "cm",
+      "moisture_retention": "low"
+    },
+    "decorations": {
+      "hiding_places": 2,
+      "climbing_opportunities": true,
+      "plants": "artificial",
+      "water_dish": true,
+      "basking_spot": true
+    },
+    "maintenance": {
+      "cleaning_frequency": "weekly",
+      "substrate_change": "monthly",
+      "disinfection": "monthly"
+    }
+  },
+  "safety_considerations": {
+    "temperature_limits": {
+      "absolute_min": 15.0,
+      "absolute_max": 40.0,
+      "critical_min": 10.0,
+      "critical_max": 45.0
+    },
+    "humidity_limits": {
+      "absolute_min": 20.0,
+      "absolute_max": 80.0,
+      "critical_min": 10.0,
+      "critical_max": 90.0
+    },
+    "special_requirements": [
+      "uvb_lighting",
+      "basking_spot",
+      "temperature_gradient",
+      "adequate_ventilation"
+    ],
+    "emergency_protocols": [
+      "temperature_override",
+      "humidity_override",
+      "feeding_suspension"
+    ]
+  },
+  "monitoring": {
+    "sensor_requirements": [
+      "temperature",
+      "humidity",
+      "air_quality"
+    ],
+    "camera_requirements": {
+      "enabled": true,
+      "resolution": "720p",
+      "night_vision": false,
+      "recording": "motion_detection"
+    },
+    "data_logging": {
+      "temperature_interval": 60,
+      "humidity_interval": 60,
+      "feeding_log": true,
+      "behavior_log": true,
+      "basking_log": true
+    }
+  }
+}

@@ -1,0 +1,129 @@
+{
+  "gpio_pins": {
+    "sensors": {
+      "dht22_temperature_humidity": {
+        "pin": 4,
+        "type": "digital",
+        "description": "Capteur DHT22 température/humidité"
+      },
+      "air_quality": {
+        "pin": 5,
+        "type": "analog",
+        "description": "Capteur qualité d'air (ADC)"
+      },
+      "water_level": {
+        "pin": 21,
+        "type": "digital",
+        "description": "Capteur niveau d'eau Tenflyer"
+      }
+    },
+    "actuators": {
+      "lighting": {
+        "pwm_pin": 12,
+        "type": "pwm",
+        "frequency": 1000,
+        "description": "Contrôle LED éclairage (PWM)"
+      },
+      "heater": {
+        "relay_pin": 19,
+        "type": "digital",
+        "description": "Relais chauffage"
+      },
+      "humidifier": {
+        "relay_pin": 5,
+        "type": "digital",
+        "description": "Relais humidificateur"
+      },
+      "fan_4": {
+        "pwm_pin": 13,
+        "type": "pwm",
+        "frequency": 1000,
+        "description": "Ventilateurs (PWM)"
+      },
+      "feeder_servo": {
+        "pwm_pin": 18,
+        "type": "pwm",
+        "frequency": 50,
+        "description": "Servo-moteur distributeur de nourriture"
+      }
+    },
+    "ui": {
+      "st7735_mosi": {
+        "pin": 10,
+        "type": "spi",
+        "description": "ST7735 MOSI (SPI Data)"
+      },
+      "st7735_sclk": {
+        "pin": 11,
+        "type": "spi",
+        "description": "ST7735 SCLK (SPI Clock)"
+      },
+      "st7735_dc": {
+        "pin": 25,
+        "type": "digital",
+        "description": "ST7735 DC (Data/Command)"
+      },
+      "st7735_cs": {
+        "pin": 8,
+        "type": "digital",
+        "description": "ST7735 CS (Chip Select)"
+      },
+      "st7735_rst": {
+        "pin": 24,
+        "type": "digital",
+        "description": "ST7735 RST (Reset)"
+      },
+      "encoder_clk": {
+        "pin": 17,
+        "type": "digital",
+        "description": "Encodeur rotatif CLK"
+      },
+      "encoder_dt": {
+        "pin": 27,
+        "type": "digital",
+        "description": "Encodeur rotatif DT"
+      },
+      "encoder_sw": {
+        "pin": 22,
+        "type": "digital",
+        "description": "Encodeur rotatif bouton"
+      }
+    },
+    "safety": {
+      "status_led": {
+        "pin": 25,
+        "type": "digital",
+        "description": "LED de statut système"
+      }
+    }
+  },
+  "i2c": {
+    "enabled": false,
+    "frequency": 100000,
+    "devices": {}
+  },
+  "spi": {
+    "enabled": true,
+    "frequency": 8000000,
+    "devices": {
+      "st7735": {
+        "type": "st7735",
+        "width": 128,
+        "height": 160,
+        "rotation": 0,
+        "description": "Écran TFT ST7735 128x160"
+      }
+    }
+  },
+  "pwm": {
+    "enabled": true,
+    "frequency_range": {
+      "min": 1,
+      "max": 10000
+    },
+    "duty_cycle_range": {
+      "min": 0,
+      "max": 100
+    }
+  }
+}

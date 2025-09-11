@@ -1,0 +1,131 @@
+{
+  "temperature": {
+    "absolute_min": 0.0,
+    "absolute_max": 50.0,
+    "warning_min": 10.0,
+    "warning_max": 40.0,
+    "critical_min": 5.0,
+    "critical_max": 45.0,
+    "unit": "celsius",
+    "hysteresis": 1.0
+  },
+  "humidity": {
+    "absolute_min": 0.0,
+    "absolute_max": 100.0,
+    "warning_min": 20.0,
+    "warning_max": 90.0,
+    "critical_min": 10.0,
+    "critical_max": 99.0,
+    "unit": "percent",
+    "hysteresis": 5.0
+  },
+  "air_quality": {
+    "good_threshold": 50,
+    "moderate_threshold": 100,
+    "unhealthy_threshold": 150,
+    "hazardous_threshold": 300,
+    "unit": "aqi",
+    "sensor_type": "generic"
+  },
+  "water_level": {
+    "min_level": 10.0,
+    "max_level": 100.0,
+    "warning_level": 20.0,
+    "critical_level": 15.0,
+    "unit": "percent",
+    "sensor_type": "tenflyer"
+  },
+  "power": {
+    "voltage": {
+      "min": 3.0,
+      "max": 5.5,
+      "warning_min": 3.3,
+      "warning_max": 5.0,
+      "unit": "volts"
+    },
+    "current": {
+      "max": 2.0,
+      "warning": 1.5,
+      "unit": "amperes"
+    }
+  },
+  "timeouts": {
+    "sensor_read_timeout": 10,
+    "actuator_response_timeout": 5,
+    "communication_timeout": 30,
+    "watchdog_timeout": 300,
+    "unit": "seconds"
+  },
+  "emergency": {
+    "auto_stop": true,
+    "power_cutoff": true,
+    "notification": true,
+    "log_critical": true,
+    "recovery_attempts": 3,
+    "recovery_delay": 60
+  },
+  "failsafes": {
+    "temperature_failsafe": {
+      "enabled": true,
+      "action": "power_cutoff",
+      "threshold": 45.0,
+      "delay": 0
+    },
+    "water_level_failsafe": {
+      "enabled": true,
+      "action": "stop_humidifier",
+      "threshold": 15.0,
+      "delay": 0
+    },
+    "communication_failsafe": {
+      "enabled": true,
+      "action": "safe_mode",
+      "threshold": 60,
+      "delay": 10
+    },
+    "power_failsafe": {
+      "enabled": true,
+      "action": "graceful_restart",
+      "threshold": 3.0,
+      "delay": 5
+    }
+  },
+  "alerts": {
+    "email": {
+      "enabled": false,
+      "smtp_server": "",
+      "smtp_port": 587,
+      "username": "",
+      "password": "",
+      "recipients": [],
+      "subject_prefix": "[Alimante Alert]"
+    },
+    "webhook": {
+      "enabled": false,
+      "url": "",
+      "timeout": 10,
+      "retry_attempts": 3
+    },
+    "local_notification": {
+      "enabled": true,
+      "log_file": "alimante_alerts.log",
+      "console_output": true
+    },
+    "notification": {
+      "enabled": true,
+      "type": "notification_pushover",
+      "recipients": [],
+      "subject_prefix": "[Alimante Alert]"
+    }
+  },
+  "recovery": {
+    "auto_recovery": true,
+    "max_recovery_attempts": 3,
+    "recovery_delay": 60,
+    "manual_intervention_required": [
+      "power_cutoff",
+      "hardware_failure"
+    ]
+  },
+  "family_limits_file": "config/family_limits.json"
+}

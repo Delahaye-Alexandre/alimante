@@ -1,0 +1,277 @@
+{
+  "species_id": "mantis_religiosa",
+  "common_name": "Mante religieuse",
+  "scientific_name": "Mantis religiosa",
+  "category": "insect",
+  "version": "1.0",
+  "description": "Profil pour la mante religieuse européenne",
+  "created_date": "2025-11-09",
+  "last_updated": "2025-11-09",
+  "active": true,
+  "environmental_requirements": {
+    "temperature": {
+      "day": {
+        "min": 22.0,
+        "max": 28.0,
+        "optimal": 25.0,
+        "unit": "celsius"
+      },
+      "night": {
+        "min": 18.0,
+        "max": 22.0,
+        "optimal": 20.0,
+        "unit": "celsius"
+      },
+      "gradient": {
+        "enabled": true,
+        "hot_spot": 28.0,
+        "cool_spot": 22.0
+      },
+      "seasonal_variation": {
+        "winter": {
+          "day_offset": -3.0,
+          "night_offset": -5.0
+        },
+        "summer": {
+          "day_offset": 2.0,
+          "night_offset": 1.0
+        }
+      }
+    },
+    "humidity": {
+      "min": 50.0,
+      "max": 80.0,
+      "optimal": 65.0,
+      "unit": "percent",
+      "daily_cycle": {
+        "morning": 75.0,
+        "afternoon": 55.0,
+        "evening": 70.0,
+        "night": 80.0
+      },
+      "seasonal_variation": {
+        "winter": 10.0,
+        "summer": -5.0
+      }
+    },
+    "lighting": {
+      "photoperiod": {
+        "day_start": "10:00",
+        "day_end": "22:00",
+        "duration_hours": 12
+      },
+      "intensity": {
+        "min": 20,
+        "max": 80,
+        "optimal": 60,
+        "unit": "percent"
+      },
+      "fade": {
+        "enabled": true,
+        "sunrise_duration": 45,
+        "sunset_duration": 45
+      }
+    },
+    "ventilation": {
+      "air_circulation": {
+        "enabled": true,
+        "base_speed": 25,
+        "max_speed": 60,
+        "unit": "percent"
+      },
+      "air_quality": {
+        "sensitivity": "medium",
+        "response_speed": "normal"
+      }
+    }
+  },
+  "feeding_requirements": {
+    "schedule": {
+      "frequency": "daily",
+      "times": ["10:00", "19:00"],
+      "portion_size": "small"
+    },
+    "food_types": [
+      "drosophiles",
+      "mouches",
+      "criquets",
+      "vers_de_farine"
+    ],
+    "feeding_behavior": {
+      "hunting_active": true,
+      "prey_movement_required": true,
+      "feeding_duration_minutes": 30
+    },
+    "seasonal_adjustments": {
+      "winter": {
+        "frequency": "every_other_day",
+        "portion_reduction": 0.2
+      },
+      "summer": {
+        "frequency": "daily",
+        "portion_increase": 0.1
+      }
+    }
+  },
+  "lifecycle": {
+    "lifespan_months": 12,
+    "stages": [
+      {
+        "name": "oothèque",
+        "duration_days": 30,
+        "temperature_requirements": {
+          "min": 20.0,
+          "max": 25.0,
+          "optimal": 22.0
+        },
+        "humidity_requirements": {
+          "min": 60.0,
+          "max": 80.0,
+          "optimal": 70.0
+        }
+      },
+      {
+        "name": "nymphe",
+        "duration_days": 60,
+        "molts": 6,
+        "temperature_requirements": {
+          "min": 22.0,
+          "max": 28.0,
+          "optimal": 25.0
+        },
+        "humidity_requirements": {
+          "min": 50.0,
+          "max": 75.0,
+          "optimal": 65.0
+        }
+      },
+      {
+        "name": "adulte",
+        "duration_days": 90,
+        "temperature_requirements": {
+          "min": 20.0,
+          "max": 30.0,
+          "optimal": 25.0
+        },
+        "humidity_requirements": {
+          "min": 40.0,
+          "max": 70.0,
+          "optimal": 60.0
+        }
+      }
+    ]
+  },
+  "behavioral_patterns": {
+    "activity": {
+      "diurnal": true,
+      "nocturnal": false,
+      "crepuscular": false,
+      "peak_activity_hours": ["10:00-12:00", "16:00-18:00"]
+    },
+    "hiding_behavior": {
+      "prefers_dark_spots": true,
+      "hiding_frequency": "moderate",
+      "stress_indicators": ["excessive_hiding", "refusal_to_eat"]
+    },
+    "social_behavior": {
+      "solitary": true,
+      "cannibalistic": true,
+      "territorial": true,
+      "group_size": 1
+    }
+  },
+  "health_indicators": {
+    "normal_behavior": [
+      "active_movement",
+      "regular_feeding",
+      "normal_coloration",
+      "responsive_to_stimuli",
+      "hunting_behavior"
+    ],
+    "warning_signs": [
+      "lethargy",
+      "refusal_to_eat",
+      "abnormal_coloration",
+      "excessive_hiding",
+      "reduced_hunting"
+    ],
+    "critical_signs": [
+      "immobility",
+      "deformed_limbs",
+      "discoloration",
+      "unresponsive",
+      "inability_to_hunt"
+    ]
+  },
+  "terrarium_requirements": {
+    "size": {
+      "minimum_length": 30,
+      "minimum_width": 20,
+      "minimum_height": 40,
+      "unit": "cm"
+    },
+    "substrate": {
+      "type": "coco_fiber",
+      "depth": 3,
+      "unit": "cm",
+      "moisture_retention": "low"
+    },
+    "decorations": {
+      "hiding_places": 2,
+      "climbing_opportunities": true,
+      "plants": "artificial, natural",
+      "water_dish": false,
+      "branches": true
+    },
+    "maintenance": {
+      "cleaning_frequency": "weekly",
+      "substrate_change": "monthly",
+      "disinfection": "monthly"
+    }
+  },
+  "safety_considerations": {
+    "temperature_limits": {
+      "absolute_min": 15.0,
+      "absolute_max": 35.0,
+      "critical_min": 10.0,
+      "critical_max": 40.0
+    },
+    "humidity_limits": {
+      "absolute_min": 30.0,
+      "absolute_max": 90.0,
+      "critical_min": 20.0,
+      "critical_max": 95.0
+    },
+    "special_requirements": [
+      "no_direct_sunlight",
+      "stable_temperature",
+      "adequate_ventilation",
+      "vertical_space_for_molting"
+    ],
+    "emergency_protocols": [
+      "temperature_override",
+      "humidity_override",
+      "feeding_suspension"
+    ]
+  },
+  "monitoring": {
+    "sensor_requirements": [
+      "temperature",
+      "humidity",
+      "air_quality"
+    ],
+    "camera_requirements": {
+      "enabled": true,
+      "resolution": "720p",
+      "night_vision": false,
+      "recording": "motion_detection"
+    },
+    "data_logging": {
+      "temperature_interval": 60,
+      "humidity_interval": 60,
+      "feeding_log": true,
+      "behavior_log": true,
+      "molting_log": true
+    }
+  }
+}

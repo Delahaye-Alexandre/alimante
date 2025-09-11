@@ -1,0 +1,131 @@
+{
+  "application": {
+    "name": "Alimante",
+    "version": "0.1.0",
+    "description": "Système de gestion automatique de terrariums",
+    "author": "Alexandre Delahaye",
+    "debug": false,
+    "log_level": "INFO"
+  },
+  "system": {
+    "platform": "raspberry_pi zero 2 w",
+    "timezone": "Europe/Paris",
+    "language": "fr",
+    "units": {
+      "temperature": "celsius",
+      "humidity": "percent",
+      "pressure": "hPa",
+      "distance": "cm"
+    }
+  },
+  "terrariums": {
+    "max_terrariums": 4,
+    "default_terrarium": "terrarium_01",
+    "monitoring_interval": 30,
+    "data_retention_days": 30
+  },
+  "sensors": {
+    "temperature": {
+      "enabled": true,
+      "update_interval": 60,
+      "calibration_offset": 0.0,
+      "sensor_type": "dht22"
+    },
+    "humidity": {
+      "enabled": true,
+      "update_interval": 60,
+      "calibration_offset": 0.0,
+      "sensor_type": "dht22"
+    },
+    "air_quality": {
+      "enabled": true,
+      "update_interval": 120,
+      "sensor_type": "generic"
+    },
+    "water_level": {
+      "enabled": true,
+      "update_interval": 300,
+      "sensor_type": "tenflyer"
+    }
+  },
+  "actuators": {
+    "lighting": {
+      "enabled": true,
+      "fade_duration": 30,
+      "max_brightness": 100
+    },
+    "heating": {
+      "enabled": true,
+      "safety_temperature": 35.0,
+      "hysteresis": 1.0
+    },
+    "humidification": {
+      "enabled": true,
+      "max_humidity": 95.0,
+      "min_cycle_time": 300
+    },
+    "ventilation": {
+      "enabled": true,
+      "min_speed": 20,
+      "max_speed": 100,
+      "auto_speed": true
+    },
+    "feeding": {
+      "enabled": true,
+      "safety_lock": true,
+      "max_daily_feeds": 3
+    }
+  },
+  "ui": {
+    "lcd": {
+      "enabled": true,
+      "backlight_timeout": 30,
+      "contrast": 50
+    },
+    "web": {
+      "enabled": true,
+      "port": 8080,
+      "host": "0.0.0.0",
+      "cors_enabled": true
+    },
+    "camera": {
+      "enabled": true,
+      "resolution": "1280x720",
+      "fps": 30,
+      "snapshot_interval": 300
+    }
+  },
+  "safety": {
+    "emergency_stop": true,
+    "watchdog_timeout": 300,
+    "max_temperature": 40.0,
+    "min_temperature": 5.0,
+    "max_humidity": 99.0,
+    "min_humidity": 10.0,
+    "power_cutoff_enabled": true
+  },
+  "data": {
+    "database": {
+      "type": "sqlite",
+      "path": "data/db.sqlite",
+      "backup_interval": 3600
+    },
+    "snapshots": {
+      "enabled": true,
+      "path": "data/snapshots",
+      "max_files": 1000,
+      "compression": true
+    }
+  },
+  "network": {
+    "wifi": {
+      "enabled": true,
+      "auto_connect": true,
+      "reconnect_attempts": 3
+    },
+    "cloud_sync": {
+      "enabled": false,
+      "sync_interval": 1800
+    }
+  }
+}

@@ -1,0 +1,176 @@
+{
+  "wifi": {
+    "enabled": true,
+    "networks": [
+      {
+        "ssid": "Alimante_Network",
+        "password": "alimante2024",
+        "priority": 1,
+        "hidden": false
+      },
+      {
+        "ssid": "Home_WiFi",
+        "password": "your_password_here",
+        "priority": 2,
+        "hidden": false
+      }
+    ],
+    "fallback": {
+      "create_hotspot": true,
+      "hotspot_ssid": "Alimante_Setup",
+      "hotspot_password": "setup123",
+      "hotspot_channel": 6
+    },
+    "connection": {
+      "timeout": 30,
+      "retry_attempts": 3,
+      "retry_delay": 5,
+      "auto_reconnect": true
+    }
+  },
+  "ethernet": {
+    "enabled": true,
+    "dhcp": true,
+    "static_ip": {
+      "enabled": false,
+      "ip": "192.168.1.100",
+      "netmask": "255.255.255.0",
+      "gateway": "192.168.1.1",
+      "dns": ["8.8.8.8", "8.8.4.4"]
+    }
+  },
+  "web_server": {
+    "enabled": true,
+    "host": "0.0.0.0",
+    "port": 8080,
+    "ssl": {
+      "enabled": false,
+      "cert_file": "certs/server.crt",
+      "key_file": "certs/server.key"
+    },
+    "cors": {
+      "enabled": true,
+      "origins": ["*"],
+      "methods": ["GET", "POST", "PUT", "DELETE"],
+      "headers": ["Content-Type", "Authorization"]
+    },
+    "authentication": {
+      "enabled": true,
+      "username": "admin",
+      "password": "alimante2024",
+      "session_timeout": 3600
+    }
+  },
+  "api": {
+    "version": "v1",
+    "base_url": "/api/v1",
+    "rate_limiting": {
+      "enabled": true,
+      "requests_per_minute": 60,
+      "burst_size": 10
+    },
+    "endpoints": {
+      "metrics": "/metrics",
+      "control": "/control",
+      "profiles": "/profiles",
+      "camera": "/camera",
+      "auth": "/auth"
+    }
+  },
+  "cloud_sync": {
+    "enabled": false,
+    "provider": "custom",
+    "endpoint": "https://api.alimante.cloud",
+    "api_key": "",
+    "sync_interval": 1800,
+    "data_types": [
+      "sensor_data",
+      "terrarium_status",
+      "alerts",
+      "config_changes"
+    ],
+    "encryption": {
+      "enabled": true,
+      "algorithm": "AES-256-GCM"
+    }
+  },
+  "remote_access": {
+    "ssh": {
+      "enabled": true,
+      "port": 22,
+      "username": "alimante",
+      "password_auth": 123,
+      "key_auth": true
+    },
+    "vnc": {
+      "enabled": false,
+      "port": 5900,
+      "password": ""
+    },
+    "tunnel": {
+      "enabled": false,
+      "service": "ngrok",
+      "auth_token": "",
+      "subdomain": "alimante"
+    }
+  },
+  "monitoring": {
+    "ping_interval": 60,
+    "timeout": 10,
+    "alert_threshold": 3,
+    "services": [
+      {
+        "name": "Google DNS",
+        "host": "8.8.8.8",
+        "port": 53,
+        "enabled": true
+      },
+      {
+        "name": "Cloudflare DNS",
+        "host": "1.1.1.1",
+        "port": 53,
+        "enabled": true
+      }
+    ]
+  },
+  "firewall": {
+    "enabled": true,
+    "rules": [
+      {
+        "action": "allow",
+        "protocol": "tcp",
+        "port": 22,
+        "source": "any",
+        "description": "SSH"
+      },
+      {
+        "action": "allow",
+        "protocol": "tcp",
+        "port": 8080,
+        "source": "any",
+        "description": "Web interface"
+      },
+      {
+        "action": "allow",
+        "protocol": "tcp",
+        "port": 80,
+        "source": "any",
+        "description": "HTTP redirect"
+      },
+      {
+        "action": "allow",
+        "protocol": "tcp",
+        "port": 443,
+        "source": "any",
+        "description": "HTTPS"
+      },
+      {
+        "action": "deny",
+        "protocol": "any",
+        "port": "any",
+        "source": "any",
+        "description": "Default deny"
+      }
+    ]
+  }
+}

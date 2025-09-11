@@ -1,0 +1,206 @@
+{
+  "policy_name": "humidity_policy",
+  "version": "1.0",
+  "description": "Politique de gestion de l'humidité des terrariums",
+  "enabled": true,
+  "default_settings": {
+    "target_humidity": 60,
+    "tolerance": 5,
+    "hysteresis": 3,
+    "control_method": "pid",
+    "pid_settings": {
+      "kp": 2.0,
+      "ki": 0.5,
+      "kd": 0.1,
+      "output_min": 0,
+      "output_max": 100
+    },
+    "humidifier": {
+      "enabled": true,
+      "min_cycle_time": 300,
+      "max_cycle_time": 1800,
+      "safety_cooldown": 60
+    },
+    "ventilation": {
+      "enabled": true,
+      "humidity_threshold": 85,
+      "fan_speed": 50
+    }
+  },
+  "species_profiles": {
+    "mantis_religiosa": {
+      "target_humidity": 70,
+      "tolerance": 5,
+      "hysteresis": 3,
+      "daily_cycle": {
+        "morning": 80,
+        "afternoon": 60,
+        "evening": 70,
+        "night": 75
+      },
+      "seasonal_adjustment": {
+        "winter": 5,
+        "summer": -5,
+        "spring": 0,
+        "autumn": 0
+      }
+    },
+    "phasme": {
+      "target_humidity": 80,
+      "tolerance": 8,
+      "hysteresis": 5,
+      "daily_cycle": {
+        "morning": 85,
+        "afternoon": 75,
+        "evening": 80,
+        "night": 82
+      },
+      "seasonal_adjustment": {
+        "winter": 10,
+        "summer": -10,
+        "spring": 0,
+        "autumn": 0
+      }
+    },
+    "gecko": {
+      "target_humidity": 50,
+      "tolerance": 5,
+      "hysteresis": 3,
+      "daily_cycle": {
+        "morning": 60,
+        "afternoon": 40,
+        "evening": 50,
+        "night": 55
+      },
+      "seasonal_adjustment": {
+        "winter": 5,
+        "summer": -5,
+        "spring": 0,
+        "autumn": 0
+      }
+    }
+  },
+  "control_methods": {
+    "pid": {
+      "description": "Contrôle PID classique",
+      "parameters": ["kp", "ki", "kd", "output_min", "output_max"]
+    },
+    "on_off": {
+      "description": "Contrôle tout ou rien",
+      "parameters": ["hysteresis", "min_cycle_time"]
+    },
+    "fuzzy": {
+      "description": "Contrôle flou",
+      "parameters": ["membership_functions", "rules"]
+    }
+  },
+  "humidifier_control": {
+    "types": {
+      "ultrasonic": {
+        "enabled": true,
+        "min_intensity": 20,
+        "max_intensity": 100,
+        "response_time": 30
+      },
+      "evaporative": {
+        "enabled": false,
+        "fan_speed": 50,
+        "water_level_min": 20
+      },
+      "misting": {
+        "enabled": false,
+        "spray_duration": 5,
+        "spray_interval": 300
+      }
+    },
+    "safety": {
+      "max_continuous_time": 3600,
+      "cooldown_after_max": 1800,
+      "water_level_check": true,
+      "overflow_protection": true
+    }
+  },
+  "ventilation_control": {
+    "humidity_reduction": {
+      "enabled": true,
+      "threshold": 85,
+      "fan_speed": 70,
+      "duration": 300
+    },
+    "air_circulation": {
+      "enabled": true,
+      "min_speed": 20,
+      "max_speed": 50,
+      "schedule": "continuous"
+    },
+    "emergency_ventilation": {
+      "enabled": true,
+      "threshold": 95,
+      "fan_speed": 100,
+      "duration": 600
+    }
+  },
+  "automation_rules": [
+    {
+      "name": "morning_humidity_boost",
+      "enabled": true,
+      "condition": "time_between(06:00, 08:00) AND humidity < target - 10",
+      "action": "increase_humidity",
+      "parameters": {
+        "intensity": 80,
+        "duration": 1800
+      }
+    },
+    {
+      "name": "afternoon_humidity_reduction",
+      "enabled": true,
+      "condition": "time_between(12:00, 16:00) AND humidity > target + 10",
+      "action": "increase_ventilation",
+      "parameters": {
+        "fan_speed": 60,
+        "duration": 1800
+      }
+    },
+    {
+      "name": "night_humidity_maintenance",
+      "enabled": true,
+      "condition": "time_between(20:00, 06:00) AND humidity < target - 5",
+      "action": "maintain_humidity",
+      "parameters": {
+        "intensity": 50,
+        "tolerance": 3
+      }
+    },
+    {
+      "name": "emergency_humidity_control",
+      "enabled": true,
+      "condition": "humidity > 95",
+      "action": "emergency_ventilation",
+      "parameters": {
+        "fan_speed": 100,
+        "duration": 600
+      }
+    }
+  ],
+  "monitoring": {
+    "sensor_check_interval": 60,
+    "control_update_interval": 30,
+    "alarm_thresholds": {
+      "low_humidity": 20,
+      "high_humidity": 95,
+      "sensor_failure": 300
+    },
+    "logging": {
+      "enabled": true,
+      "level": "INFO",
+      "include_raw_data": false
+    }
+  },
+  "safety_limits": {
+    "min_humidity": 10,
+    "max_humidity": 99,
+    "max_humidifier_continuous_time": 3600,
+    "min_cooldown_time": 300,
+    "water_level_critical": 15
+  }
+}

@@ -1,0 +1,271 @@
+{
+  "terrarium_id": "terrarium_02",
+  "name": "Terrarium Mante Religieuse #1",
+  "description": "Terrarium dédié à l'élevage de mantes religieuses - Contrôlé par ESP32",
+  "version": "1.0",
+  "created_date": "2024-01-01",
+  "last_updated": "2024-01-01",
+  "active": true,
+  "controller_type": "esp32",
+  "role": "terrarium_controller",
+  "central_supervisor": "terrarium_default",
+  "species_profile": "mantis_religiosa",
+  "communication": {
+    "protocol": "wifi",
+    "mqtt_broker": "raspberry_pi_local",
+    "mqtt_port": 1883,
+    "update_interval": 30,
+    "heartbeat_interval": 60,
+    "reconnect_attempts": 3
+  },
+  "hardware_configuration": {
+    "sensors": {
+      "temperature_humidity": {
+        "enabled": true,
+        "sensor_type": "dht22",
+        "gpio_pin": 4,
+        "calibration": {
+          "temperature_offset": 0.0,
+          "humidity_offset": 0.0
+        }
+      },
+      "air_quality": {
+        "enabled": true,
+        "sensor_type": "generic",
+        "gpio_pin": 5,
+        "calibration": {
+          "baseline": 50,
+          "sensitivity": 1.0
+        }
+      },
+      "water_level": {
+        "enabled": true,
+        "sensor_type": "tenflyer",
+        "gpio_pin": 6,
+        "calibration": {
+          "empty_level": 0,
+          "full_level": 100
+        }
+      }
+    },
+    "actuators": {
+      "lighting": {
+        "enabled": true,
+        "pwm_pin": 12,
+        "pwm_frequency": 1000,
+        "max_brightness": 80,
+        "fade_enabled": true,
+        "spectrum": {
+          "warm_white": 70,
+          "cool_white": 20,
+          "blue": 5,
+          "red": 5
+        }
+      },
+      "heater": {
+        "enabled": true,
+        "relay_pin": 13,
+        "safety_temperature": 32.0,
+        "hysteresis": 1.0
+      },
+      "humidifier": {
+        "enabled": true,
+        "relay_pin": 14,
+        "min_cycle_time": 300,
+        "max_cycle_time": 1800,
+        "type": "ultrasonic"
+      },
+      "fan_1": {
+        "enabled": true,
+        "pwm_pin": 15,
+        "pwm_frequency": 1000,
+        "min_speed": 25,
+        "max_speed": 60
+      },
+      "fan_2": {
+        "enabled": true,
+        "pwm_pin": 16,
+        "pwm_frequency": 1000,
+        "min_speed": 25,
+        "max_speed": 60
+      },
+      "feeder": {
+        "enabled": true,
+        "servo_pin": 18,
+        "sas_relay_pin": 19,
+        "servo_angle_closed": 0,
+        "servo_angle_open": 90,
+        "feeding_duration": 30
+      }
+    },
+    "ui": {
+      "lcd": {
+        "enabled": true,
+        "i2c_address": "0x27",
+        "backlight_timeout": 30,
+        "contrast": 50
+      },
+      "encoder": {
+        "enabled": true,
+        "clk_pin": 20,
+        "dt_pin": 21,
+        "sw_pin": 22
+      }
+    },
+    "safety": {
+      "emergency_stop": {
+        "enabled": true,
+        "gpio_pin": 23,
+        "pull_up": true
+      },
+      "power_cutoff": {
+        "enabled": true,
+        "gpio_pin": 24
+      },
+      "status_led": {
+        "enabled": true,
+        "gpio_pin": 25
+      }
+    }
+  },
+  "environmental_settings": {
+    "temperature": {
+      "day_target": 25.0,
+      "night_target": 20.0,
+      "tolerance": 2.0,
+      "hysteresis": 1.0,
+      "gradient": {
+        "enabled": true,
+        "hot_spot": 28.0,
+        "cool_spot": 22.0
+      },
+      "unit": "celsius"
+    },
+    "humidity": {
+      "target": 65.0,
+      "tolerance": 5.0,
+      "hysteresis": 3.0,
+      "daily_cycle": {
+        "morning": 75.0,
+        "afternoon": 55.0,
+        "evening": 70.0,
+        "night": 80.0
+      },
+      "unit": "percent"
+    },
+    "lighting": {
+      "photoperiod": {
+        "day_start": "07:00",
+        "day_end": "19:00"
+      },
+      "intensity": {
+        "min": 20,
+        "max": 80,
+        "default": 60
+      },
+      "fade": {
+        "enabled": true,
+        "sunrise_duration": 45,
+        "sunset_duration": 45
+      }
+    },
+    "ventilation": {
+      "base_speed": 25,
+      "max_speed": 60,
+      "air_quality_threshold": 100,
+      "humidity_reduction_threshold": 85
+    }
+  },
+  "feeding_schedule": {
+    "enabled": true,
+    "frequency": "daily",
+    "times": ["10:00", "19:00"],
+    "portion_size": "small",
+    "food_types": [
+      "drosophiles",
+      "mouches",
+      "criquets",
+      "vers_de_farine"
+    ],
+    "safety_checks": {
+      "water_level_min": 20,
+      "temperature_range": [18, 32],
+      "humidity_range": [40, 85]
+    }
+  },
+  "monitoring": {
+    "data_logging": {
+      "enabled": true,
+      "temperature_interval": 60,
+      "humidity_interval": 60,
+      "air_quality_interval": 120,
+      "retention_days": 30
+    },
+    "alerts": {
+      "enabled": true,
+      "temperature_alerts": true,
+      "humidity_alerts": true,
+      "air_quality_alerts": true,
+      "feeding_alerts": true,
+      "molting_alerts": true
+    },
+    "camera": {
+      "enabled": true,
+      "resolution": "1280x720",
+      "fps": 15,
+      "recording": "motion_detection",
+      "night_vision": false
+    }
+  },
+  "maintenance": {
+    "cleaning_schedule": {
+      "daily": ["water_dish", "feeding_area"],
+      "weekly": ["substrate_spot_clean", "sensor_calibration", "fan_cleaning"],
+      "monthly": ["full_cleaning", "substrate_change", "disinfection", "servo_maintenance"]
+    },
+    "calibration": {
+      "sensors": {
+        "temperature": "monthly",
+        "humidity": "monthly",
+        "air_quality": "quarterly"
+      },
+      "actuators": {
+        "servo": "monthly",
+        "pwm": "quarterly"
+      }
+    },
+    "special_requirements": [
+      "vertical_space_for_molting",
+      "adequate_ventilation",
+      "stable_temperature",
+      "no_direct_sunlight"
+    ]
+  },
+  "safety_limits": {
+    "temperature": {
+      "min": 15.0,
+      "max": 35.0,
+      "critical_min": 10.0,
+      "critical_max": 40.0
+    },
+    "humidity": {
+      "min": 30.0,
+      "max": 90.0,
+      "critical_min": 20.0,
+      "critical_max": 95.0
+    },
+    "air_quality": {
+      "critical_threshold": 300
+    },
+    "water_level": {
+      "critical_min": 15.0
+    }
+  },
+  "notes": [
+    "Terrarium optimisé pour mantes religieuses",
+    "Espace vertical important pour la mue",
+    "Ventilation modérée pour maintenir l'humidité",
+    "Éclairage doux avec transitions progressives",
+    "Alimentation quotidienne avec proies vivantes"
+  ]
+}

@@ -1,0 +1,207 @@
+{
+  "communication_protocol": "mqtt",
+  "broker": {
+    "host": "raspberry_pi_local",
+    "port": 1883,
+    "keepalive": 60,
+    "clean_session": true,
+    "qos": 1
+  },
+  "topics": {
+    "sensor_data": {
+      "pattern": "terrariums/{terrarium_id}/sensors",
+      "description": "Données des capteurs des terrariums ESP32"
+    },
+    "actuator_status": {
+      "pattern": "terrariums/{terrarium_id}/actuators",
+      "description": "État des actionneurs des terrariums ESP32"
+    },
+    "commands": {
+      "pattern": "terrariums/{terrarium_id}/commands",
+      "description": "Commandes envoyées aux terrariums ESP32"
+    },
+    "heartbeat": {
+      "pattern": "terrariums/{terrarium_id}/heartbeat",
+      "description": "Signal de vie des terrariums ESP32"
+    },
+    "alerts": {
+      "pattern": "terrariums/{terrarium_id}/alerts",
+      "description": "Alertes des terrariums ESP32"
+    },
+    "config_update": {
+      "pattern": "terrariums/{terrarium_id}/config",
+      "description": "Mises à jour de configuration"
+    }
+  },
+  "message_formats": {
+    "sensor_data": {
+      "temperature": {
+        "value": "float",
+        "unit": "celsius",
+        "timestamp": "iso8601",
+        "quality": "good|warning|error"
+      },
+      "humidity": {
+        "value": "float",
+        "unit": "percent",
+        "timestamp": "iso8601",
+        "quality": "good|warning|error"
+      },
+      "air_quality": {
+        "value": "integer",
+        "unit": "aqi",
+        "timestamp": "iso8601",
+        "quality": "good|warning|error"
+      },
+      "water_level": {
+        "value": "float",
+        "unit": "percent",
+        "timestamp": "iso8601",
+        "quality": "good|warning|error"
+      }
+    },
+    "actuator_status": {
+      "lighting": {
+        "enabled": "boolean",
+        "intensity": "integer",
+        "pwm_duty_cycle": "integer",
+        "status": "on|off|error"
+      },
+      "heater": {
+        "enabled": "boolean",
+        "status": "on|off|error",
+        "target_temperature": "float"
+      },
+      "humidifier": {
+        "enabled": "boolean",
+        "status": "on|off|error",
+        "target_humidity": "float"
+      },
+      "fan": {
+        "enabled": "boolean",
+        "speed": "integer",
+        "pwm_duty_cycle": "integer",
+        "status": "on|off|error"
+      },
+      "feeder": {
+        "enabled": "boolean",
+        "last_feeding": "iso8601",
+        "status": "ready|feeding|error"
+      }
+    },
+    "commands": {
+      "set_temperature": {
+        "day_target": "float",
+        "night_target": "float",
+        "tolerance": "float"
+      },
+      "set_humidity": {
+        "target": "float",
+        "tolerance": "float"
+      },
+      "set_lighting": {
+        "intensity": "integer",
+        "photoperiod": {
+          "day_start": "time",
+          "day_end": "time"
+        }
+      },
+      "set_ventilation": {
+        "base_speed": "integer",
+        "max_speed": "integer"
+      },
+      "trigger_feeding": {
+        "portion_size": "string",
+        "immediate": "boolean"
+      },
+      "emergency_stop": {
+        "reason": "string",
+        "timestamp": "iso8601"
+      }
+    },
+    "heartbeat": {
+      "terrarium_id": "string",
+      "timestamp": "iso8601",
+      "uptime_seconds": "integer",
+      "free_heap": "integer",
+      "wifi_rssi": "integer",
+      "last_sensor_read": "iso8601",
+      "status": "online|warning|error"
+    },
+    "alerts": {
+      "level": "info|warning|error|critical",
+      "type": "temperature|humidity|air_quality|water_level|communication|hardware",
+      "message": "string",
+      "timestamp": "iso8601",
+      "terrarium_id": "string",
+      "auto_resolve": "boolean"
+    }
+  },
+  "esp32_config": {
+    "wifi": {
+      "ssid": "Alimante_Network",
+      "password": "alimante2024",
+      "auto_reconnect": true,
+      "reconnect_attempts": 3,
+      "reconnect_delay": 5000
+    },
+    "mqtt": {
+      "client_id_prefix": "terrarium_",
+      "will_topic": "terrariums/{terrarium_id}/status",
+      "will_message": "offline",
+      "will_qos": 1,
+      "will_retain": true
+    },
+    "timing": {
+      "sensor_read_interval": 60000,
+      "actuator_update_interval": 30000,
+      "heartbeat_interval": 60000,
+      "data_sync_interval": 300000,
+      "watchdog_timeout": 300000
+    },
+    "power_management": {
+      "cpu_frequency": 240,
+      "wifi_power_save": true,
+      "deep_sleep_enabled": false
+    }
+  },
+  "raspberry_pi_config": {
+    "mqtt_broker": {
+      "enabled": true,
+      "port": 1883,
+      "persistence": true,
+      "retained_messages": true
+    },
+    "data_processing": {
+      "buffer_size": 1000,
+      "processing_interval": 30,
+      "alert_thresholds": {
+        "temperature_deviation": 5.0,
+        "humidity_deviation": 10.0,
+        "communication_timeout": 120
+      }
+    },
+    "supervision": {
+      "health_check_interval": 60,
+      "auto_recovery": true,
+      "remote_config_update": true,
+      "firmware_update": true
+    }
+  },
+  "security": {
+    "mqtt_auth": {
+      "enabled": true,
+      "username": "alimante",
+      "password": "alimante2024"
+    },
+    "encryption": {
+      "enabled": false,
+      "certificate_path": "certs/mqtt_ca.crt"
+    },
+    "access_control": {
+      "terrarium_isolation": true,
+      "command_validation": true,
+      "rate_limiting": true
+    }
+  }
+}

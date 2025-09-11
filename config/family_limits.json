@@ -1,0 +1,320 @@
+{
+  "insects": {
+    "mantodea": {
+      "family_name": "Mantes",
+      "description": "Mantes religieuses et espèces apparentées",
+      "temperature": {
+        "day_min": 20.0,
+        "day_max": 30.0,
+        "night_min": 15.0,
+        "night_max": 25.0
+      },
+      "humidity": {
+        "min": 40.0,
+        "max": 80.0
+      },
+      "lighting": {
+        "max_intensity": 80,
+        "min_intensity": 0
+      },
+      "special_requirements": [
+        "vertical_space_for_molting",
+        "stable_temperature",
+        "no_direct_sunlight"
+      ]
+    },
+    "phasmatodea": {
+      "family_name": "Phasmes",
+      "description": "Phasmes et espèces apparentées",
+      "temperature": {
+        "day_min": 18.0,
+        "day_max": 28.0,
+        "night_min": 15.0,
+        "night_max": 22.0
+      },
+      "humidity": {
+        "min": 60.0,
+        "max": 85.0
+      },
+      "lighting": {
+        "max_intensity": 60,
+        "min_intensity": 0
+      },
+      "special_requirements": [
+        "high_humidity",
+        "vegetation_required",
+        "gentle_handling"
+      ]
+    },
+    "orthoptera": {
+      "family_name": "Orthoptères",
+      "description": "Criquets, sauterelles et grillons",
+      "temperature": {
+        "day_min": 22.0,
+        "day_max": 32.0,
+        "night_min": 18.0,
+        "night_max": 25.0
+      },
+      "humidity": {
+        "min": 50.0,
+        "max": 75.0
+      },
+      "lighting": {
+        "max_intensity": 90,
+        "min_intensity": 20
+      },
+      "special_requirements": [
+        "good_ventilation",
+        "space_for_jumping",
+        "varied_diet"
+      ]
+    },
+    "coleoptera": {
+      "family_name": "Coléoptères",
+      "description": "Scarabées, coccinelles et espèces apparentées",
+      "temperature": {
+        "day_min": 20.0,
+        "day_max": 28.0,
+        "night_min": 16.0,
+        "night_max": 22.0
+      },
+      "humidity": {
+        "min": 45.0,
+        "max": 70.0
+      },
+      "lighting": {
+        "max_intensity": 70,
+        "min_intensity": 10
+      },
+      "special_requirements": [
+        "substrate_for_burrowing",
+        "moderate_humidity",
+        "varied_food_sources"
+      ]
+    },
+    "lepidoptera": {
+      "family_name": "Lépidoptères",
+      "description": "Papillons et mites",
+      "temperature": {
+        "day_min": 22.0,
+        "day_max": 30.0,
+        "night_min": 18.0,
+        "night_max": 24.0
+      },
+      "humidity": {
+        "min": 55.0,
+        "max": 80.0
+      },
+      "lighting": {
+        "max_intensity": 85,
+        "min_intensity": 30
+      },
+      "special_requirements": [
+        "nectar_sources",
+        "pupation_space",
+        "gentle_air_circulation"
+      ]
+    },
+    "hemiptera": {
+      "family_name": "Hémiptères",
+      "description": "Punaises et espèces apparentées",
+      "temperature": {
+        "day_min": 20.0,
+        "day_max": 28.0,
+        "night_min": 16.0,
+        "night_max": 22.0
+      },
+      "humidity": {
+        "min": 40.0,
+        "max": 70.0
+      },
+      "lighting": {
+        "max_intensity": 75,
+        "min_intensity": 15
+      },
+      "special_requirements": [
+        "plant_hosts",
+        "moderate_conditions",
+        "careful_handling"
+      ]
+    }
+  },
+  "reptiles": {
+    "gekkota": {
+      "family_name": "Gekkonidés",
+      "description": "Geckos et espèces apparentées",
+      "temperature": {
+        "day_min": 25.0,
+        "day_max": 35.0,
+        "night_min": 20.0,
+        "night_max": 25.0
+      },
+      "humidity": {
+        "min": 30.0,
+        "max": 70.0
+      },
+      "lighting": {
+        "max_intensity": 90,
+        "min_intensity": 30,
+        "uvb_required": true
+      },
+      "special_requirements": [
+        "uvb_lighting",
+        "basking_spot",
+        "temperature_gradient",
+        "climbing_opportunities"
+      ]
+    },
+    "lacertidae": {
+      "family_name": "Lacertidés",
+      "description": "Lézards des murailles et espèces apparentées",
+      "temperature": {
+        "day_min": 22.0,
+        "day_max": 32.0,
+        "night_min": 18.0,
+        "night_max": 22.0
+      },
+      "humidity": {
+        "min": 40.0,
+        "max": 60.0
+      },
+      "lighting": {
+        "max_intensity": 95,
+        "min_intensity": 40,
+        "uvb_required": true
+      },
+      "special_requirements": [
+        "uvb_lighting",
+        "basking_spot",
+        "dry_environment",
+        "good_ventilation"
+      ]
+    },
+    "colubridae": {
+      "family_name": "Colubridés",
+      "description": "Couleuvres et espèces apparentées",
+      "temperature": {
+        "day_min": 24.0,
+        "day_max": 30.0,
+        "night_min": 20.0,
+        "night_max": 24.0
+      },
+      "humidity": {
+        "min": 50.0,
+        "max": 80.0
+      },
+      "lighting": {
+        "max_intensity": 70,
+        "min_intensity": 20,
+        "uvb_required": false
+      },
+      "special_requirements": [
+        "hiding_places",
+        "water_dish",
+        "secure_lid",
+        "appropriate_substrate"
+      ]
+    },
+    "pythonidae": {
+      "family_name": "Pythonidés",
+      "description": "Pythons et espèces apparentées",
+      "temperature": {
+        "day_min": 26.0,
+        "day_max": 32.0,
+        "night_min": 22.0,
+        "night_max": 26.0
+      },
+      "humidity": {
+        "min": 60.0,
+        "max": 80.0
+      },
+      "lighting": {
+        "max_intensity": 60,
+        "min_intensity": 10,
+        "uvb_required": false
+      },
+      "special_requirements": [
+        "large_enclosure",
+        "hiding_places",
+        "water_dish",
+        "secure_lid",
+        "appropriate_heating"
+      ]
+    },
+    "testudinidae": {
+      "family_name": "Testudinidés",
+      "description": "Tortues terrestres et espèces apparentées",
+      "temperature": {
+        "day_min": 25.0,
+        "day_max": 35.0,
+        "night_min": 18.0,
+        "night_max": 22.0
+      },
+      "humidity": {
+        "min": 40.0,
+        "max": 70.0
+      },
+      "lighting": {
+        "max_intensity": 100,
+        "min_intensity": 50,
+        "uvb_required": true
+      },
+      "special_requirements": [
+        "uvb_lighting",
+        "basking_spot",
+        "large_enclosure",
+        "varied_diet",
+        "outdoor_access_preferred"
+      ]
+    },
+    "agamidae": {
+      "family_name": "Agamidés",
+      "description": "Dragons barbus et espèces apparentées",
+      "temperature": {
+        "day_min": 28.0,
+        "day_max": 38.0,
+        "night_min": 22.0,
+        "night_max": 26.0
+      },
+      "humidity": {
+        "min": 20.0,
+        "max": 50.0
+      },
+      "lighting": {
+        "max_intensity": 100,
+        "min_intensity": 60,
+        "uvb_required": true
+      },
+      "special_requirements": [
+        "uvb_lighting",
+        "hot_basking_spot",
+        "dry_environment",
+        "good_ventilation",
+        "varied_diet"
+      ]
+    }
+  },
+  "default": {
+    "family_name": "Générique",
+    "description": "Limites par défaut pour espèces non spécifiées",
+    "temperature": {
+      "day_min": 18.0,
+      "day_max": 35.0,
+      "night_min": 12.0,
+      "night_max": 30.0
+    },
+    "humidity": {
+      "min": 30.0,
+      "max": 90.0
+    },
+    "lighting": {
+      "max_intensity": 100,
+      "min_intensity": 0,
+      "uvb_required": false
+    },
+    "special_requirements": [
+      "basic_terrarium_setup",
+      "monitoring_required"
+    ]
+  }
+}
