@@ -72,6 +72,10 @@ class EncoderDisplayTest:
     def initialize(self):
         """Initialise l'encodeur et l'écran"""
         try:
+            # Nettoyage préalable des GPIO
+            GPIO.cleanup()
+            time.sleep(0.1)
+            
             # Initialisation de l'écran
             self.display = st7735.ST7735(
                 port=0,
@@ -87,20 +91,16 @@ class EncoderDisplayTest:
             GPIO.setup(self.dt_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             GPIO.setup(self.sw_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             
-            # Configuration des interruptions
-            GPIO.add_event_detect(self.clk_pin, GPIO.BOTH, callback=self._clk_callback, bouncetime=2)
-            GPIO.add_event_detect(self.sw_pin, GPIO.BOTH, callback=self._sw_callback, bouncetime=2)
-            
             # Lecture de l'état initial
             self.last_clk_state = GPIO.input(self.clk_pin)
             self.last_sw_state = GPIO.input(self.sw_pin)
             
             self.is_running = True
             
-            print("✅ Système combiné initialisé")
+            print("✅ Système combiné initialisé (mode polling)")
             print(f"   📌 Encodeur: CLK={self.clk_pin}, DT={self.dt_pin}, SW={self.sw_pin}")
             print(f"   📌 Écran: RESET={self.reset_pin}, A0={self.a0_pin}, CS={self.cs_pin}")
-            print(f"   📐 Résolution: {self.width}x{self.height}")
+            print(f"   📐 Résolution: {self.display.width}x{self.display.height}")
             
             # Affichage initial
             self.display_welcome()
@@ -110,8 +110,8 @@ class EncoderDisplayTest:
             print(f"❌ Erreur lors de l'initialisation: {e}")
             return False
     
-    def _clk_callback(self, channel):
-        """Callback pour la détection de rotation"""
+    def check_rotation(self):
+        """Vérifie la rotation de l'encodeur (polling)"""
         if not self.is_running:
             return
             
@@ -131,8 +131,8 @@ class EncoderDisplayTest:
             self.update_display()
             self.last_clk_state = clk_state
     
-    def _sw_callback(self, channel):
-        """Callback pour la détection du bouton"""
+    def check_button(self):
+        """Vérifie l'état du bouton (polling)"""
         if not self.is_running:
             return
             
@@ -408,7 +408,9 @@ class EncoderDisplayTest:
         
         try:
             while True:
-                time.sleep(0.1)
+                self.check_rotation()
+                self.check_button()
+                time.sleep(0.01)  # Polling à 100Hz
         except KeyboardInterrupt:
             print("\n🛑 Mode interactif arrêté")
     
@@ -438,7 +440,11 @@ class EncoderDisplayTest:
         """Nettoie les ressources"""
         self.is_running = False
         if self.display:
-            self.display.clear()
+            try:
+                image = Image.new("RGB", (self.display.width, self.display.height), (0,0,0))
+                self.display.display(image)
+            except:
+                pass
         GPIO.cleanup()
         print("🧹 Ressources nettoyées")
     
