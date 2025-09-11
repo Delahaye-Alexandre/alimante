@@ -57,11 +57,24 @@ class AlimanteMenuComplet:
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
 
-    def rgb_to_bgr(self, rgb_color):
-        """Convertit RGB en BGR pour corriger l'affichage des couleurs"""
-        if len(rgb_color) == 3:
-            return (rgb_color[2], rgb_color[1], rgb_color[0])  # BGR
-        return rgb_color
+    def convert_color(self, rgb_color, method="bgr"):
+        """Convertit RGB selon la méthode spécifiée"""
+        if len(rgb_color) != 3:
+            return rgb_color
+            
+        conversions = {
+            "rgb": lambda c: c,                                    # RGB normal
+            "bgr": lambda c: (c[2], c[1], c[0]),                  # BGR
+            "grb": lambda c: (c[1], c[0], c[2]),                  # GRB
+            "rbg": lambda c: (c[0], c[2], c[1]),                  # RBG
+            "gbr": lambda c: (c[1], c[2], c[0]),                  # GBR
+            "brg": lambda c: (c[2], c[0], c[1]),                  # BRG
+        }
+        
+        if method in conversions:
+            return conversions[method](rgb_color)
+        else:
+            return rgb_color
 
     def initialize_display(self):
         """Initialise l'écran ST7735 avec correction BGR"""
@@ -108,7 +121,7 @@ class AlimanteMenuComplet:
                 print(f"   → {nom} {couleur_rgb}")
                 
                 # Conversion BGR
-                couleur_bgr = self.rgb_to_bgr(couleur_rgb)
+                couleur_bgr = self.convert_color(couleur_rgb, "bgr")
                 
                 # Image plein écran
                 image = Image.new("RGB", (self.display.width, self.display.height), couleur_bgr)
@@ -125,7 +138,7 @@ class AlimanteMenuComplet:
                 # Contraste texte
                 brightness = sum(couleur_rgb) / 3
                 text_color = (0,0,0) if brightness > 128 else (255,255,255)
-                text_color_bgr = self.rgb_to_bgr(text_color)
+                text_color_bgr = self.convert_color(text_color, "bgr")
                 
                 draw.text((x, y), nom, fill=text_color_bgr, font=font)
                 draw.text((5, 5), f"RGB: {couleur_rgb}", fill=text_color_bgr, font=font)
@@ -170,18 +183,21 @@ class AlimanteMenuComplet:
             return False
 
     def _on_rotation(self):
-        """Callback de rotation de l'encodeur"""
+        """Callback de rotation de l'encodeur (INVERSÉ)"""
         if not self.is_running:
             return
             
         # Mise à jour du compteur
+        old_counter = self.counter
         self.counter = self.encoder.steps
         
-        # Mise à jour de la sélection du menu
-        if self.encoder.steps > self.counter:
-            self.current_selection = (self.current_selection + 1) % len(self.menu_items)
-        else:
+        # Mise à jour de la sélection du menu (INVERSÉ)
+        if self.encoder.steps > old_counter:
+            # Rotation horaire = menu vers le bas (inversé)
             self.current_selection = (self.current_selection - 1) % len(self.menu_items)
+        else:
+            # Rotation anti-horaire = menu vers le haut (inversé)
+            self.current_selection = (self.current_selection + 1) % len(self.menu_items)
         
         # Mise à jour de l'affichage
         self.update_display()
