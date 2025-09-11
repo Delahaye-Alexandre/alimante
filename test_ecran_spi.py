@@ -40,38 +40,21 @@ class SPIDisplayTest:
     def initialize(self):
         """Initialise l'écran SPI ST7735"""
         try:
-            # Configuration GPIO
-            GPIO.setmode(GPIO.BCM)
-            GPIO.setwarnings(False)
-            
-            # Configuration des pins de contrôle
-            GPIO.setup(self.reset_pin, GPIO.OUT)
-            GPIO.setup(self.a0_pin, GPIO.OUT)
-            GPIO.setup(self.cs_pin, GPIO.OUT)
-            
-            # Initialisation de l'écran
+            print("🔧 Initialisation de l'écran ST7735...")
             self.display = st7735.ST7735(
                 port=0,
                 cs=0,
                 dc=self.a0_pin,
                 rst=self.reset_pin,
-                rotation=270
+                rotation=270  # Ajuster selon votre montage
             )
-            
             self.display.begin()
             self.is_initialized = True
-            
-            print("✅ Écran SPI ST7735 initialisé")
-            print(f"   📌 RESET: GPIO {self.reset_pin}")
-            print(f"   📌 A0/DC: GPIO {self.a0_pin}")
-            print(f"   📌 CS:    GPIO {self.cs_pin}")
-            print(f"   📌 SDA:   GPIO {self.sda_pin}")
-            print(f"   📌 SCL:   GPIO {self.scl_pin}")
-            print(f"   📐 Résolution: {self.width}x{self.height}")
+            print(f"✅ Écran initialisé: {self.display.width}x{self.display.height}")
             return True
             
         except Exception as e:
-            print(f"❌ Erreur lors de l'initialisation: {e}")
+            print(f"❌ Erreur initialisation: {e}")
             return False
     
     def clear_screen(self, color=(0, 0, 0)):
@@ -105,8 +88,23 @@ class SPIDisplayTest:
         
         for name, color in colors:
             print(f"   → {name}")
-            self.clear_screen(color)
-            time.sleep(1)
+            # Image plein écran
+            image = Image.new("RGB", (self.display.width, self.display.height), color)
+            draw = ImageDraw.Draw(image)
+
+            # Texte centré
+            font = ImageFont.load_default()
+            text_width, text_height = draw.textsize(name, font=font)
+            x = (self.display.width - text_width) // 2
+            y = (self.display.height - text_height) // 2
+
+            # Contraste texte selon fond
+            brightness = sum(color) / 3
+            text_color = (0,0,0) if brightness > 128 else (255,255,255)
+
+            draw.text((x, y), name, fill=text_color, font=font)
+            self.display.display(image)
+            time.sleep(2)
         
         print("✅ Test des couleurs terminé")
     
@@ -151,39 +149,31 @@ class SPIDisplayTest:
         """Test des formes géométriques"""
         print("🔷 Test des formes géométriques...")
         
-        # Création d'une image PIL
-        image = Image.new('RGB', (self.width, self.height), (0, 0, 0))
-        draw = ImageDraw.Draw(image)
-        
-        # Rectangle
-        print("   → Rectangle")
-        draw.rectangle([10, 10, 60, 40], fill=(255, 0, 0), outline=(255, 255, 255))
-        self.display.image(image)
-        self.display.display()
-        time.sleep(1)
-        
-        # Cercle
-        print("   → Cercle")
-        image = Image.new('RGB', (self.width, self.height), (0, 0, 0))
-        draw = ImageDraw.Draw(image)
-        draw.ellipse([20, 20, 80, 80], fill=(0, 255, 0), outline=(255, 255, 255))
-        self.display.image(image)
-        self.display.display()
-        time.sleep(1)
-        
-        # Lignes
-        print("   → Lignes")
-        image = Image.new('RGB', (self.width, self.height), (0, 0, 0))
-        draw = ImageDraw.Draw(image)
-        for i in range(0, self.width, 10):
-            draw.line([(i, 0), (i, self.height)], fill=(0, 0, 255), width=2)
-        for i in range(0, self.height, 10):
-            draw.line([(0, i), (self.width, i)], fill=(0, 0, 255), width=2)
-        self.display.image(image)
-        self.display.display()
-        time.sleep(1)
-        
-        print("✅ Test des formes terminé")
+        try:
+            image = Image.new("RGB", (self.display.width, self.display.height), (0,0,0))
+            draw = ImageDraw.Draw(image)
+
+            # Cadre blanc
+            draw.rectangle([0,0,self.display.width-1,self.display.height-1], outline=(255,255,255), width=2)
+
+            # Formes
+            draw.rectangle([5,5,45,25], fill=(255,0,0), outline=(255,255,255))  # Rouge
+            draw.ellipse([self.display.width-45,5,self.display.width-5,45], fill=(0,255,0), outline=(255,255,255))  # Vert
+            draw.polygon([(30,self.display.height-30),(50,self.display.height-10),(10,self.display.height-10)], fill=(255,255,0))  # Jaune
+            draw.line([(0,0),(self.display.width-1,self.display.height-1)], fill=(0,255,255), width=2)  # Cyan
+
+            # Texte
+            font = ImageFont.load_default()
+            draw.text((10, 50), "ALIMANTE", fill=(255, 255, 255), font=font)
+            draw.text((10, 70), "Test ST7735", fill=(0, 255, 255), font=font)
+
+            self.display.display(image)
+            time.sleep(3)
+            print("✅ Test des formes terminé")
+            return True
+        except Exception as e:
+            print(f"❌ Erreur test formes: {e}")
+            return False
     
     def test_text(self):
         """Test d'affichage de texte"""
