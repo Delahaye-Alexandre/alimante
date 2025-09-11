@@ -59,6 +59,8 @@ class EncoderTestGPIOZero:
             
         except Exception as e:
             print(f"❌ Erreur lors de l'initialisation: {e}")
+            print("💡 Vérifiez que les pins GPIO sont correctes dans config_alimante.py")
+            print("💡 Assurez-vous que gpiozero est installé: pip install gpiozero")
             return False
     
     def _on_rotation(self):
@@ -157,7 +159,8 @@ def main():
     # Vérification de l'installation de gpiozero
     try:
         import gpiozero
-        print(f"✅ gpiozero version: {gpiozero.__version__}")
+        # gpiozero n'a pas toujours __version__, on vérifie juste l'import
+        print("✅ gpiozero disponible")
     except ImportError:
         print("❌ gpiozero non installé!")
         print("   Installez avec: pip install gpiozero")
