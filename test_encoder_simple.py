@@ -24,6 +24,7 @@ class EncoderTestSimple:
         # Variables d'état
         self.counter = 0
         self.last_clk_state = 0
+        self.last_dt_state = 0
         self.last_sw_state = 0
         self.sw_pressed = False
         self.sw_press_time = 0
@@ -32,6 +33,12 @@ class EncoderTestSimple:
         # Paramètres d'anti-rebond améliorés
         self.encoder_debounce_ms = 5  # 5ms pour l'encodeur
         self.button_debounce_ms = 10  # 10ms pour le bouton
+        
+        # Variables d'anti-rebond non-bloquant
+        self.clk_debounce_time = 0
+        self.sw_debounce_time = 0
+        self.clk_pending_state = None
+        self.sw_pending_state = None
         
         # Configuration GPIO
         GPIO.setmode(GPIO.BCM)
@@ -69,74 +76,89 @@ class EncoderTestSimple:
             return False
     
     def check_rotation(self):
-        """Vérifie la rotation de l'encodeur (polling + anti-rebond amélioré)"""
+        """Vérifie la rotation de l'encodeur (polling + anti-rebond non-bloquant)"""
         if not self.is_running:
             return
             
+        current_time = time.time()
         clk_state = GPIO.input(self.clk_pin)
         dt_state = GPIO.input(self.dt_pin)
         
         # Détection du changement d'état sur CLK
         if clk_state != self.last_clk_state:
-            # Anti-rebond : attendre que l'état se stabilise
-            time.sleep(self.encoder_debounce_ms / 1000.0)  # Convertir ms en secondes
+            # Si pas de changement en attente, démarrer l'anti-rebond
+            if self.clk_pending_state is None:
+                self.clk_pending_state = clk_state
+                self.clk_debounce_time = current_time
+            # Si changement différent en attente, réinitialiser
+            elif self.clk_pending_state != clk_state:
+                self.clk_pending_state = clk_state
+                self.clk_debounce_time = current_time
+        
+        # Vérifier si l'anti-rebond est terminé
+        if (self.clk_pending_state is not None and 
+            current_time - self.clk_debounce_time >= self.encoder_debounce_ms / 1000.0):
             
-            # Relire les états après l'anti-rebond
-            clk_state_stable = GPIO.input(self.clk_pin)
-            dt_state_stable = GPIO.input(self.dt_pin)
+            # Relire l'état actuel pour vérifier la stabilité
+            clk_state_now = GPIO.input(self.clk_pin)
+            dt_state_now = GPIO.input(self.dt_pin)
             
-            # Vérifier que l'état est toujours différent (pas un rebond)
-            if clk_state_stable != self.last_clk_state:
-                # Vérifier que l'état est stable (même valeur qu'avant l'attente)
-                if clk_state_stable == clk_state:
-                    # Détection de la direction
-                    if dt_state_stable != clk_state_stable:
-                        self.counter += 1
-                        direction = "🔄 HORAIRE"
-                    else:
-                        self.counter -= 1
-                        direction = "🔄 ANTI-HORAIRE"
-                    
-                    print(f"{direction} | Compteur: {self.counter}")
-                    self.last_clk_state = clk_state_stable
+            # Si l'état est stable et différent du dernier état enregistré
+            if (clk_state_now == self.clk_pending_state and 
+                clk_state_now != self.last_clk_state):
+                
+                # Détection de la direction
+                if dt_state_now != clk_state_now:
+                    self.counter += 1
+                    direction = "🔄 HORAIRE"
                 else:
-                    # État instable, ignorer ce changement
-                    pass
+                    self.counter -= 1
+                    direction = "🔄 ANTI-HORAIRE"
+                
+                print(f"{direction} | Compteur: {self.counter}")
+                self.last_clk_state = clk_state_now
+            
+            # Réinitialiser l'anti-rebond
+            self.clk_pending_state = None
 
     def check_button(self):
-        """Vérifie l'état du bouton (polling + anti-rebond amélioré)"""
+        """Vérifie l'état du bouton (polling + anti-rebond non-bloquant)"""
         if not self.is_running:
             return
             
-        sw_state = GPIO.input(self.sw_pin)
         current_time = time.time()
+        sw_state = GPIO.input(self.sw_pin)
         
         # Détection de l'appui (transition HIGH -> LOW)
         if sw_state == 0 and self.last_sw_state == 1:
-            # Anti-rebond : attendre que l'état se stabilise
-            time.sleep(self.button_debounce_ms / 1000.0)  # Convertir ms en secondes
-            
-            # Relire l'état après l'anti-rebond
-            sw_state_stable = GPIO.input(self.sw_pin)
-            
-            # Vérifier que l'état est toujours LOW (pas un rebond)
-            if sw_state_stable == 0:
-                self.sw_pressed = True
-                self.sw_press_time = current_time
-                print("🔘 BOUTON APPUYÉ")
-                self.last_sw_state = sw_state_stable
-            else:
-                # État instable, ignorer ce changement
-                pass
+            # Si pas de changement en attente, démarrer l'anti-rebond
+            if self.sw_pending_state is None:
+                self.sw_pending_state = 0
+                self.sw_debounce_time = current_time
         
         # Détection du relâchement (transition LOW -> HIGH)
         elif sw_state == 1 and self.last_sw_state == 0:
-            if self.sw_pressed:
-                # Anti-rebond pour le relâchement
-                time.sleep(self.button_debounce_ms / 1000.0)  # Convertir ms en secondes
-                sw_state_stable = GPIO.input(self.sw_pin)
+            # Si pas de changement en attente, démarrer l'anti-rebond
+            if self.sw_pending_state is None:
+                self.sw_pending_state = 1
+                self.sw_debounce_time = current_time
+        
+        # Vérifier si l'anti-rebond est terminé
+        if (self.sw_pending_state is not None and 
+            current_time - self.sw_debounce_time >= self.button_debounce_ms / 1000.0):
+            
+            # Relire l'état actuel pour vérifier la stabilité
+            sw_state_now = GPIO.input(self.sw_pin)
+            
+            # Si l'état est stable et différent du dernier état enregistré
+            if (sw_state_now == self.sw_pending_state and 
+                sw_state_now != self.last_sw_state):
                 
-                if sw_state_stable == 1:
+                if sw_state_now == 0:  # Appui confirmé
+                    self.sw_pressed = True
+                    self.sw_press_time = current_time
+                    print("🔘 BOUTON APPUYÉ")
+                elif sw_state_now == 1 and self.sw_pressed:  # Relâchement confirmé
                     press_duration = current_time - self.sw_press_time
                     print(f"🔘 BOUTON RELÂCHÉ (durée: {press_duration:.2f}s)")
                     
@@ -149,12 +171,11 @@ class EncoderTestSimple:
                         print("   → Appui très long")
                     
                     self.sw_pressed = False
-                    self.last_sw_state = sw_state_stable
-                else:
-                    # État instable, ignorer ce changement
-                    pass
-        else:
-            self.last_sw_state = sw_state
+                
+                self.last_sw_state = sw_state_now
+            
+            # Réinitialiser l'anti-rebond
+            self.sw_pending_state = None
     
     def test_rotation(self, duration=10):
         """Test de rotation pendant une durée donnée"""
@@ -271,6 +292,13 @@ class EncoderTestSimple:
         except KeyboardInterrupt:
             print("\n🛑 Monitoring arrêté")
     
+    def reset_debounce_states(self):
+        """Réinitialise les états d'anti-rebond"""
+        self.clk_pending_state = None
+        self.sw_pending_state = None
+        self.clk_debounce_time = 0
+        self.sw_debounce_time = 0
+
     def adjust_debounce(self):
         """Ajuste les paramètres d'anti-rebond"""
         print("\n🔧 AJUSTEMENT ANTI-REBOND")
@@ -280,32 +308,87 @@ class EncoderTestSimple:
         print(f"  • Bouton: {self.button_debounce_ms}ms")
         print()
         print("Valeurs recommandées:")
-        print("  • Encodeur: 2-10ms (plus bas = plus sensible)")
-        print("  • Bouton: 5-20ms (plus bas = plus sensible)")
+        print("  • Encodeur: 5-20ms (plus bas = plus sensible)")
+        print("  • Bouton: 10-30ms (plus bas = plus sensible)")
+        print()
+        print("💡 Si problème de rebond persiste:")
+        print("  • Augmentez les valeurs (plus stable)")
+        print("  • Vérifiez les connexions")
+        print("  • Testez avec option 4 (monitoring)")
         print()
         
         try:
             # Ajuster l'anti-rebond de l'encodeur
             new_encoder_ms = input(f"Anti-rebond encodeur en ms (actuel: {self.encoder_debounce_ms}): ").strip()
             if new_encoder_ms:
-                self.encoder_debounce_ms = max(1, min(50, int(new_encoder_ms)))
+                self.encoder_debounce_ms = max(5, min(100, int(new_encoder_ms)))
                 print(f"✅ Encodeur: {self.encoder_debounce_ms}ms")
             
             # Ajuster l'anti-rebond du bouton
             new_button_ms = input(f"Anti-rebond bouton en ms (actuel: {self.button_debounce_ms}): ").strip()
             if new_button_ms:
-                self.button_debounce_ms = max(1, min(100, int(new_button_ms)))
+                self.button_debounce_ms = max(5, min(200, int(new_button_ms)))
                 print(f"✅ Bouton: {self.button_debounce_ms}ms")
+            
+            # Réinitialiser les états d'anti-rebond
+            self.reset_debounce_states()
             
             print(f"\n📊 Nouveaux paramètres:")
             print(f"  • Encodeur: {self.encoder_debounce_ms}ms")
             print(f"  • Bouton: {self.button_debounce_ms}ms")
+            print("✅ États d'anti-rebond réinitialisés")
             print("Les nouveaux paramètres sont actifs immédiatement!")
             
         except ValueError:
             print("❌ Valeur invalide, paramètres inchangés")
         except Exception as e:
             print(f"❌ Erreur: {e}")
+
+    def diagnostic_debounce(self):
+        """Diagnostic en temps réel de l'anti-rebond"""
+        print("\n🔍 DIAGNOSTIC ANTI-REBOND")
+        print("=" * 50)
+        print("Affichage des états bruts et de l'anti-rebond")
+        print("Appuyez sur Ctrl+C pour arrêter")
+        print()
+        
+        # Réinitialiser les états
+        self.reset_debounce_states()
+        self.last_clk_state = GPIO.input(self.clk_pin)
+        self.last_sw_state = GPIO.input(self.sw_pin)
+        
+        try:
+            while True:
+                current_time = time.time()
+                clk_state = GPIO.input(self.clk_pin)
+                dt_state = GPIO.input(self.dt_pin)
+                sw_state = GPIO.input(self.sw_pin)
+                
+                # Affichage des états bruts
+                clk_change = "🔴" if clk_state != self.last_clk_state else "⚪"
+                dt_change = "🔴" if dt_state != self.last_dt_state else "⚪"
+                sw_change = "🔴" if sw_state != self.last_sw_state else "⚪"
+                
+                # Affichage des états d'anti-rebond
+                clk_pending = "⏳" if self.clk_pending_state is not None else "⚪"
+                sw_pending = "⏳" if self.sw_pending_state is not None else "⚪"
+                
+                print(f"\rCLK:{clk_state}{clk_change} DT:{dt_state}{dt_change} SW:{sw_state}{sw_change} | "
+                      f"CLK_P:{clk_pending} SW_P:{sw_pending} | C:{self.counter}", end="", flush=True)
+                
+                # Vérifier la rotation
+                self.check_rotation()
+                self.check_button()
+                
+                # Mettre à jour les états de référence
+                self.last_dt_state = dt_state
+                
+                time.sleep(0.001)  # 1ms pour diagnostic précis
+                
+        except KeyboardInterrupt:
+            print("\n🛑 Diagnostic arrêté")
+        except Exception as e:
+            print(f"\n❌ Erreur diagnostic: {e}")
 
     def cleanup(self):
         """Nettoie les ressources GPIO"""
@@ -347,10 +430,11 @@ def main():
             print("5. Test personnalisé")
             print("6. Afficher configuration")
             print("7. Ajuster anti-rebond")
+            print("8. Diagnostic anti-rebond")
             print("0. Quitter")
             print("=" * 40)
             
-            choice = input("Votre choix (0-7): ").strip()
+            choice = input("Votre choix (0-8): ").strip()
             
             if choice == "0":
                 break
@@ -379,6 +463,8 @@ def main():
                 print_config()
             elif choice == "7":
                 encoder_test.adjust_debounce()
+            elif choice == "8":
+                encoder_test.diagnostic_debounce()
             else:
                 print("❌ Choix invalide")
     
