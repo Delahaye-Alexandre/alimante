@@ -9,6 +9,7 @@ import time
 import sys
 import signal
 import random
+import threading
 from config_alimante import get_gpio_config
 
 # Import pour l'écran ST7735 (nécessite l'installation de la librairie)
@@ -23,12 +24,102 @@ except Exception as e:
     print("⚠️  Librairie ST7735 non disponible. Installation requise:")
     print("   pip install st7735 Pillow")
 
+class EncodeurRotatif:
+    def __init__(self, clk_pin, dt_pin, sw_pin):
+        """Initialise l'encodeur rotatif"""
+        self.clk_pin = clk_pin
+        self.dt_pin = dt_pin
+        self.sw_pin = sw_pin
+        self.position = 0
+        self.last_clk_state = 0
+        self.button_pressed = False
+        self.running = False
+        self.callback_rotation = None
+        self.callback_button = None
+        
+        # Configuration des pins
+        GPIO.setup(self.clk_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(self.dt_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(self.sw_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        
+        # Configuration des interruptions
+        GPIO.add_event_detect(self.clk_pin, GPIO.BOTH, callback=self._clk_callback, bouncetime=2)
+        GPIO.add_event_detect(self.dt_pin, GPIO.BOTH, callback=self._dt_callback, bouncetime=2)
+        GPIO.add_event_detect(self.sw_pin, GPIO.FALLING, callback=self._button_callback, bouncetime=200)
+        
+        self.last_clk_state = GPIO.input(self.clk_pin)
+        self.running = True
+        
+    def _clk_callback(self, channel):
+        """Callback pour le pin CLK"""
+        if not self.running:
+            return
+            
+        clk_state = GPIO.input(self.clk_pin)
+        dt_state = GPIO.input(self.dt_pin)
+        
+        if clk_state != self.last_clk_state:
+            if dt_state != clk_state:
+                self.position += 1
+                if self.callback_rotation:
+                    self.callback_rotation(1)  # Rotation horaire
+            else:
+                self.position -= 1
+                if self.callback_rotation:
+                    self.callback_rotation(-1)  # Rotation anti-horaire
+                    
+        self.last_clk_state = clk_state
+    
+    def _dt_callback(self, channel):
+        """Callback pour le pin DT"""
+        pass  # Géré dans _clk_callback
+    
+    def _button_callback(self, channel):
+        """Callback pour le bouton"""
+        if not self.running:
+            return
+            
+        self.button_pressed = True
+        if self.callback_button:
+            self.callback_button()
+    
+    def set_rotation_callback(self, callback):
+        """Définit le callback pour la rotation"""
+        self.callback_rotation = callback
+    
+    def set_button_callback(self, callback):
+        """Définit le callback pour le bouton"""
+        self.callback_button = callback
+    
+    def get_position(self):
+        """Retourne la position actuelle"""
+        return self.position
+    
+    def reset_position(self):
+        """Remet la position à zéro"""
+        self.position = 0
+    
+    def is_button_pressed(self):
+        """Vérifie si le bouton a été pressé"""
+        if self.button_pressed:
+            self.button_pressed = False
+            return True
+        return False
+    
+    def cleanup(self):
+        """Nettoie les ressources"""
+        self.running = False
+        GPIO.remove_event_detect(self.clk_pin)
+        GPIO.remove_event_detect(self.dt_pin)
+        GPIO.remove_event_detect(self.sw_pin)
+
 class EcranSPITest:
     def __init__(self):
         """Initialise le testeur d'écran SPI"""
         self.config = get_gpio_config()
         self.display = None
         self.is_initialized = False
+        self.encoder = None
         
         # Configuration des pins depuis config_alimante.py
         self.reset_pin = self.config['DISPLAY']['RESET_PIN']
@@ -82,6 +173,10 @@ class EcranSPITest:
             print(f"   📌 Pins: RST={self.reset_pin}, A0={self.a0_pin}, CS={self.cs_pin}")
             print(f"   📌 SPI: SDA={self.sda_pin}, SCL={self.scl_pin}")
             print(f"   📐 Résolution: {self.display.width}x{self.display.height} (rotation 180°)")
+            
+            # Initialisation de l'encodeur rotatif
+            self.initialize_encoder()
+            
             return True
             
         except Exception as e:
@@ -90,6 +185,152 @@ class EcranSPITest:
             import traceback
             traceback.print_exc()
             return False
+    
+    def initialize_encoder(self):
+        """Initialise l'encodeur rotatif"""
+        try:
+            encoder_config = self.config['ENCODER']
+            self.encoder = EncodeurRotatif(
+                clk_pin=encoder_config['CLK_PIN'],
+                dt_pin=encoder_config['DT_PIN'],
+                sw_pin=encoder_config['SW_PIN']
+            )
+            print("✅ Encodeur rotatif initialisé")
+            print(f"   📌 Pins: CLK={encoder_config['CLK_PIN']}, DT={encoder_config['DT_PIN']}, SW={encoder_config['SW_PIN']}")
+        except Exception as e:
+            print(f"❌ Erreur lors de l'initialisation de l'encodeur: {e}")
+            self.encoder = None
+    
+    def test_encoder_interactif(self):
+        """Test 7: Test interactif avec l'encodeur rotatif"""
+        print("\n🎛️ TEST 7: Contrôle avec encodeur rotatif")
+        print("-" * 40)
+        
+        if not self.is_initialized:
+            print("❌ Écran non initialisé")
+            return False
+        
+        if not self.encoder:
+            print("❌ Encodeur non initialisé")
+            return False
+        
+        try:
+            print("🎮 Contrôles:")
+            print("   • Tourner l'encodeur: Change la couleur")
+            print("   • Appuyer sur le bouton: Change le mode")
+            print("   • Ctrl+C: Quitter le test")
+            
+            # Variables de contrôle
+            current_color = 0
+            current_mode = 0
+            modes = ["Couleurs", "Formes", "Texte"]
+            colors = [
+                ("Rouge", (0, 0, 255)),
+                ("Vert", (0, 255, 0)),
+                ("Bleu", (255, 0, 0)),
+                ("Jaune", (0, 255, 255)),
+                ("Cyan", (255, 255, 0)),
+                ("Magenta", (255, 0, 255)),
+                ("Blanc", (255, 255, 255)),
+                ("Noir", (0, 0, 0))
+            ]
+            
+            # Callbacks pour l'encodeur
+            def on_rotation(direction):
+                nonlocal current_color
+                current_color = (current_color + direction) % len(colors)
+                self.update_encoder_display(modes[current_mode], colors[current_color])
+            
+            def on_button():
+                nonlocal current_mode
+                current_mode = (current_mode + 1) % len(modes)
+                self.update_encoder_display(modes[current_mode], colors[current_color])
+            
+            # Configuration des callbacks
+            self.encoder.set_rotation_callback(on_rotation)
+            self.encoder.set_button_callback(on_button)
+            
+            # Affichage initial
+            self.update_encoder_display(modes[current_mode], colors[current_color])
+            
+            # Boucle principale
+            print("🔄 Test en cours... (Ctrl+C pour quitter)")
+            while True:
+                time.sleep(0.1)
+                
+        except KeyboardInterrupt:
+            print("\n✅ Test de l'encodeur terminé")
+            return True
+        except Exception as e:
+            print(f"❌ Erreur lors du test de l'encodeur: {e}")
+            return False
+    
+    def update_encoder_display(self, mode, color_info):
+        """Met à jour l'affichage selon l'encodeur"""
+        try:
+            color_name, color_rgb = color_info
+            
+            # Créer l'image
+            image = Image.new('RGB', (self.display.width, self.display.height), color=color_rgb)
+            draw = ImageDraw.Draw(image)
+            
+            # Cadre blanc
+            draw.rectangle([0, 0, self.display.width-1, self.display.height-1], outline=(255, 255, 255), width=2)
+            
+            # Texte central
+            try:
+                font = ImageFont.load_default()
+            except:
+                font = None
+            
+            # Mode
+            mode_text = f"Mode: {mode}"
+            if font:
+                text_bbox = draw.textbbox((0, 0), mode_text, font=font)
+                text_width = text_bbox[2] - text_bbox[0]
+                x = (self.display.width - text_width) // 2
+                draw.text((x, 10), mode_text, fill=(255, 255, 255), font=font)
+            else:
+                x = (self.display.width - len(mode_text) * 6) // 2
+                draw.text((x, 10), mode_text, fill=(255, 255, 255))
+            
+            # Couleur
+            color_text = f"Couleur: {color_name}"
+            if font:
+                text_bbox = draw.textbbox((0, 0), color_text, font=font)
+                text_width = text_bbox[2] - text_bbox[0]
+                x = (self.display.width - text_width) // 2
+                draw.text((x, 30), color_text, fill=(255, 255, 255), font=font)
+            else:
+                x = (self.display.width - len(color_text) * 6) // 2
+                draw.text((x, 30), color_text, fill=(255, 255, 255))
+            
+            # Instructions
+            instructions = "Tourner: couleur | Bouton: mode"
+            if font:
+                text_bbox = draw.textbbox((0, 0), instructions, font=font)
+                text_width = text_bbox[2] - text_bbox[0]
+                x = (self.display.width - text_width) // 2
+                draw.text((x, self.display.height - 20), instructions, fill=(255, 255, 255), font=font)
+            else:
+                x = (self.display.width - len(instructions) * 6) // 2
+                draw.text((x, self.display.height - 20), instructions, fill=(255, 255, 255))
+            
+            # Position de l'encodeur
+            pos_text = f"Pos: {self.encoder.get_position()}"
+            if font:
+                text_bbox = draw.textbbox((0, 0), pos_text, font=font)
+                text_width = text_bbox[2] - text_bbox[0]
+                x = (self.display.width - text_width) // 2
+                draw.text((x, 50), pos_text, fill=(255, 255, 255), font=font)
+            else:
+                x = (self.display.width - len(pos_text) * 6) // 2
+                draw.text((x, 50), pos_text, fill=(255, 255, 255))
+            
+            self.display.display(image)
+            
+        except Exception as e:
+            print(f"❌ Erreur lors de la mise à jour de l'affichage: {e}")
     
     def test_initialisation(self):
         """Test 1: Vérification de l'initialisation"""
@@ -119,16 +360,47 @@ class EcranSPITest:
             print("❌ Écran non initialisé")
             return False
         
-        # Test de diagnostic des couleurs (ordre BGR)
-        print("🔍 Test de diagnostic des couleurs (ordre BGR)...")
-        test_colors = [
-            ("Rouge pur", (0, 0, 255)),  # BGR: Bleu=0, Vert=0, Rouge=255
-            ("Vert pur", (0, 255, 0)),   # BGR: Bleu=0, Vert=255, Rouge=0
-            ("Bleu pur", (255, 0, 0))    # BGR: Bleu=255, Vert=0, Rouge=0
+        # Test de diagnostic des couleurs - test de tous les ordres possibles
+        print("🔍 Test de diagnostic des couleurs...")
+        
+        # Test 1: RGB standard
+        print("   Test RGB standard:")
+        test_rgb = [
+            ("Rouge RGB", (255, 0, 0)),
+            ("Vert RGB", (0, 255, 0)),
+            ("Bleu RGB", (0, 0, 255))
         ]
         
-        for nom, couleur in test_colors:
-            print(f"   Test {nom}: BGR{couleur}")
+        for nom, couleur in test_rgb:
+            print(f"     {nom}: RGB{couleur}")
+            image = Image.new('RGB', (self.display.width, self.display.height), color=couleur)
+            self.display.display(image)
+            time.sleep(1)
+        
+        # Test 2: BGR
+        print("   Test BGR:")
+        test_bgr = [
+            ("Rouge BGR", (0, 0, 255)),
+            ("Vert BGR", (0, 255, 0)),
+            ("Bleu BGR", (255, 0, 0))
+        ]
+        
+        for nom, couleur in test_bgr:
+            print(f"     {nom}: BGR{couleur}")
+            image = Image.new('RGB', (self.display.width, self.display.height), color=couleur)
+            self.display.display(image)
+            time.sleep(1)
+        
+        # Test 3: Autres ordres possibles
+        print("   Test autres ordres:")
+        test_other = [
+            ("Rouge RBG", (255, 0, 0)),  # RBG
+            ("Vert GRB", (0, 255, 0)),   # GRB
+            ("Bleu GBR", (0, 0, 255))    # GBR
+        ]
+        
+        for nom, couleur in test_other:
+            print(f"     {nom}: {couleur}")
             image = Image.new('RGB', (self.display.width, self.display.height), color=couleur)
             self.display.display(image)
             time.sleep(1)
@@ -360,7 +632,8 @@ class EcranSPITest:
             ("Formes géométriques", self.test_formes_geometriques),
             ("Affichage texte", self.test_texte),
             ("Animation", self.test_animation),
-            ("Performance", self.test_performance)
+            ("Performance", self.test_performance),
+            ("Encodeur rotatif", self.test_encoder_interactif)
         ]
         
         results = []
@@ -415,11 +688,12 @@ class EcranSPITest:
             print("4. Test d'affichage de texte")
             print("5. Test d'animation")
             print("6. Test de performance")
-            print("7. Test complet")
+            print("7. Test encodeur rotatif")
+            print("8. Test complet")
             print("0. Quitter")
             print("=" * 40)
             
-            choice = input("Votre choix (0-7): ").strip()
+            choice = input("Votre choix (0-8): ").strip()
             
             if choice == "0":
                 break
@@ -436,6 +710,8 @@ class EcranSPITest:
             elif choice == "6":
                 self.test_performance()
             elif choice == "7":
+                self.test_encoder_interactif()
+            elif choice == "8":
                 self.test_complet()
             else:
                 print("❌ Choix invalide")
@@ -449,6 +725,9 @@ class EcranSPITest:
                 self.display.display(image)
             except:
                 pass
+        
+        if self.encoder:
+            self.encoder.cleanup()
         
         GPIO.cleanup()
         self.is_initialized = False
