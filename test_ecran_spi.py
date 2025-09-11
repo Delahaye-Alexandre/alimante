@@ -71,7 +71,7 @@ class EcranSPITest:
                 dc=self.a0_pin,
                 rst=self.reset_pin,
                 spi_speed_hz=4000000,  # 4MHz pour stabilité
-                rotation=180  # Rotation de 180° pour inverser l'écran
+                rotation=270  # Rotation de 270° (90° + 180° = 270°)
             )
             
             print(f"🔧 Démarrage de l'écran...")
