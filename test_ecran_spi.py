@@ -13,7 +13,7 @@ from config_alimante import get_gpio_config
 
 # Import pour l'écran ST7735 (nécessite l'installation de la librairie)
 try:
-    import ST7735
+    import st7735
     from PIL import Image, ImageDraw, ImageFont
     ST7735_AVAILABLE = True
 except ImportError:
