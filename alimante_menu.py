@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Menu Alimante avec couleurs hexadécimales
-Utilise les formats natifs du ST7735
+Menu Principal Alimante
+Système de contrôle avec encodeur rotatif et écran ST7735
 """
 
 import time
@@ -27,7 +27,7 @@ except Exception as e:
     GPIOZERO_AVAILABLE = False
     print(f"⚠️  Erreur gpiozero: {e}")
 
-class AlimanteMenuHex:
+class AlimanteMenu:
     def __init__(self):
         self.config = get_gpio_config()
         self.ui_config = get_ui_config()
@@ -52,52 +52,12 @@ class AlimanteMenuHex:
         self.counter = 0
         self.is_running = False
         
-        # Palette de couleurs hexadécimales
-        self.colors = {
-            'black': 0x0000,
-            'white': 0xFFFF,
-            'red': 0xF800,
-            'green': 0x07E0,
-            'blue': 0x001F,
-            'yellow': 0xFFE0,
-            'cyan': 0x07FF,
-            'magenta': 0xF81F,
-            'orange': 0xFC00,
-            'purple': 0x801F,
-            'dark_red': 0x8000,
-            'dark_green': 0x0400,
-            'dark_blue': 0x0010,
-            'light_gray': 0xC618,
-            'dark_gray': 0x4208,
-        }
-        
         # Gestionnaire d'arrêt
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
 
-    def hex_to_rgb(self, hex_color):
-        """Convertit hex en RGB"""
-        if isinstance(hex_color, str):
-            hex_color = int(hex_color, 16)
-        
-        # RGB565 format
-        r = (hex_color >> 11) & 0x1F
-        g = (hex_color >> 5) & 0x3F
-        b = hex_color & 0x1F
-        
-        # Conversion vers RGB888
-        r = (r * 255) // 31
-        g = (g * 255) // 63
-        b = (b * 255) // 31
-        
-        return (r, g, b)
-
-    def get_color(self, color_name):
-        """Récupère une couleur par nom"""
-        return self.hex_to_rgb(self.colors.get(color_name, self.colors['white']))
-
     def initialize_display(self):
-        """Initialise l'écran ST7735"""
+        """Initialise l'écran ST7735 avec la configuration optimisée"""
         if not ST7735_AVAILABLE:
             print("❌ ST7735 non disponible")
             return False
@@ -109,63 +69,20 @@ class AlimanteMenuHex:
                 cs=0,
                 dc=self.a0_pin,
                 rst=self.reset_pin,
-                rotation=270
+                rotation=270,
+                invert=False,  # Pas d'inversion
+                bgr=False      # Format RGB standard
             )
             self.display.begin()
             self.is_display_initialized = True
             print(f"✅ Écran initialisé: {self.display.width}x{self.display.height}")
-            
-            # Test des couleurs hex
-            self.test_couleurs_hex()
+            print("   • Format: RGB standard")
+            print("   • Inversion: Désactivée")
+            print("   • Rotation: 270°")
             return True
             
         except Exception as e:
             print(f"❌ Erreur initialisation écran: {e}")
-            return False
-
-    def test_couleurs_hex(self):
-        """Test des couleurs hexadécimales"""
-        if not self.is_display_initialized:
-            return False
-            
-        print("🎨 Test des couleurs hexadécimales...")
-        
-        couleurs_test = [
-            ("Rouge", 'red'),
-            ("Vert", 'green'),
-            ("Bleu", 'blue'),
-        ]
-        
-        try:
-            for nom, color_name in couleurs_test:
-                print(f"   → {nom} (0x{self.colors[color_name]:04X})")
-                
-                # Image plein écran
-                rgb_color = self.get_color(color_name)
-                image = Image.new("RGB", (self.display.width, self.display.height), rgb_color)
-                draw = ImageDraw.Draw(image)
-                font = ImageFont.load_default()
-                
-                # Texte centré
-                bbox = draw.textbbox((0, 0), nom, font=font)
-                text_width = bbox[2] - bbox[0]
-                text_height = bbox[3] - bbox[1]
-                x = (self.display.width - text_width) // 2
-                y = (self.display.height - text_height) // 2
-                
-                # Contraste texte
-                brightness = sum(rgb_color) / 3
-                text_color = self.get_color('black') if brightness > 128 else self.get_color('white')
-                
-                draw.text((x, y), nom, fill=text_color, font=font)
-                draw.text((5, 5), f"0x{self.colors[color_name]:04X}", fill=text_color, font=font)
-                
-                self.display.display(image)
-                time.sleep(1)
-                
-            return True
-        except Exception as e:
-            print(f"❌ Erreur test couleurs: {e}")
             return False
 
     def initialize_encoder(self):
@@ -204,8 +121,10 @@ class AlimanteMenuHex:
         if not self.is_running:
             return
             
-        # Mise à jour du compteur
+        # Sauvegarde de l'ancien compteur
         old_counter = self.counter
+        
+        # Mise à jour du compteur
         self.counter = self.encoder.steps
         
         # Mise à jour de la sélection du menu (INVERSÉ)
@@ -234,7 +153,7 @@ class AlimanteMenuHex:
             
         try:
             # Création de l'image
-            image = Image.new("RGB", (self.display.width, self.display.height), self.get_color('black'))
+            image = Image.new("RGB", (self.display.width, self.display.height), (0, 0, 0))
             draw = ImageDraw.Draw(image)
             font = ImageFont.load_default()
             
@@ -243,10 +162,10 @@ class AlimanteMenuHex:
             bbox = draw.textbbox((0, 0), title, font=font)
             title_width = bbox[2] - bbox[0]
             x_title = (self.display.width - title_width) // 2
-            draw.text((x_title, 5), title, fill=self.get_color('yellow'), font=font)
+            draw.text((x_title, 5), title, fill=(255, 255, 0), font=font)
             
             # Ligne de séparation
-            draw.line([(5, 20), (self.display.width - 5, 20)], fill=self.get_color('light_gray'))
+            draw.line([(5, 20), (self.display.width - 5, 20)], fill=(128, 128, 128))
             
             # Items du menu
             y_pos = 25
@@ -254,16 +173,16 @@ class AlimanteMenuHex:
                 if i == self.current_selection:
                     # Item sélectionné
                     draw.rectangle([2, y_pos - 2, self.display.width - 2, y_pos + 12], 
-                                 fill=self.get_color('blue'))
-                    draw.text((5, y_pos), item, fill=self.get_color('white'), font=font)
+                                 fill=(0, 100, 255))
+                    draw.text((5, y_pos), item, fill=(255, 255, 255), font=font)
                 else:
                     # Item normal
-                    draw.text((5, y_pos), item, fill=self.get_color('light_gray'), font=font)
+                    draw.text((5, y_pos), item, fill=(200, 200, 200), font=font)
                 y_pos += 15
             
             # Informations en bas
             info_text = f"Sel: {self.current_selection + 1}/{len(self.menu_items)}"
-            draw.text((5, self.display.height - 15), info_text, fill=self.get_color('dark_gray'), font=font)
+            draw.text((5, self.display.height - 15), info_text, fill=(128, 128, 128), font=font)
             
             # Affichage
             self.display.display(image)
@@ -289,45 +208,45 @@ class AlimanteMenuHex:
     def action_accueil(self):
         """Action: Accueil Alimante"""
         print("🏠 Accueil Alimante")
-        self.show_message("Accueil Alimante", "Système prêt", 'green')
+        self.show_message("Accueil Alimante", "Système prêt", (0, 255, 0))
 
     def action_test_led(self):
         """Action: Test LED Bandeaux"""
         print("💡 Test LED Bandeaux")
-        self.show_message("Test LED", "Fonctionnalité en développement", 'orange')
+        self.show_message("Test LED", "Fonctionnalité en développement", (255, 165, 0))
 
     def action_monitoring(self):
         """Action: Monitoring Système"""
         print("📊 Monitoring Système")
-        self.show_message("Monitoring", "Surveillance active", 'cyan')
+        self.show_message("Monitoring", "Surveillance active", (0, 255, 255))
 
     def action_configuration(self):
         """Action: Configuration"""
         print("⚙️ Configuration")
-        self.show_message("Configuration", "Paramètres système", 'purple')
+        self.show_message("Configuration", "Paramètres système", (128, 0, 128))
 
     def action_tests_hardware(self):
         """Action: Tests Hardware"""
         print("🔧 Tests Hardware")
-        self.show_message("Tests HW", "Diagnostic matériel", 'red')
+        self.show_message("Tests HW", "Diagnostic matériel", (255, 0, 0))
 
     def action_statistiques(self):
         """Action: Statistiques"""
         print("📈 Statistiques")
-        self.show_message("Statistiques", "Données d'utilisation", 'magenta')
+        self.show_message("Statistiques", "Données d'utilisation", (255, 0, 255))
 
     def action_a_propos(self):
         """Action: À propos"""
         print("ℹ️ À propos")
-        self.show_message("À propos", "Alimante v1.0.0", 'yellow')
+        self.show_message("À propos", "Alimante v1.0.0", (255, 255, 0))
 
-    def show_message(self, title, message, color='white'):
+    def show_message(self, title, message, color=(255, 255, 255)):
         """Affiche un message sur l'écran"""
         if not self.is_display_initialized:
             return
             
         try:
-            image = Image.new("RGB", (self.display.width, self.display.height), self.get_color('black'))
+            image = Image.new("RGB", (self.display.width, self.display.height), (0, 0, 0))
             draw = ImageDraw.Draw(image)
             font = ImageFont.load_default()
             
@@ -335,17 +254,17 @@ class AlimanteMenuHex:
             bbox = draw.textbbox((0, 0), title, font=font)
             title_width = bbox[2] - bbox[0]
             x_title = (self.display.width - title_width) // 2
-            draw.text((x_title, 20), title, fill=self.get_color(color), font=font)
+            draw.text((x_title, 20), title, fill=color, font=font)
             
             # Message
             bbox = draw.textbbox((0, 0), message, font=font)
             msg_width = bbox[2] - bbox[0]
             x_msg = (self.display.width - msg_width) // 2
-            draw.text((x_msg, 50), message, fill=self.get_color('white'), font=font)
+            draw.text((x_msg, 50), message, fill=(255, 255, 255), font=font)
             
             # Retour
             draw.text((5, self.display.height - 15), "Appuyez pour retourner", 
-                     fill=self.get_color('dark_gray'), font=font)
+                     fill=(128, 128, 128), font=font)
             
             self.display.display(image)
             
@@ -359,7 +278,7 @@ class AlimanteMenuHex:
 
     def run_menu(self):
         """Lance le menu principal"""
-        print("🚀 Lancement du menu Alimante (couleurs hex)...")
+        print("🚀 Lancement du menu Alimante...")
         
         # Initialisation des composants
         if not self.initialize_display():
@@ -375,7 +294,7 @@ class AlimanteMenuHex:
         self.update_display()
         
         print("\n" + "=" * 50)
-        print("🎛️  MENU ALIMANTE ACTIF (HEX)")
+        print("🎛️  MENU ALIMANTE ACTIF")
         print("=" * 50)
         print("• Tournez l'encodeur pour naviguer")
         print("• Appuyez sur le bouton pour sélectionner")
@@ -396,7 +315,7 @@ class AlimanteMenuHex:
         
         if self.display:
             try:
-                image = Image.new("RGB", (self.display.width, self.display.height), self.get_color('black'))
+                image = Image.new("RGB", (self.display.width, self.display.height), (0, 0, 0))
                 self.display.display(image)
             except:
                 pass
@@ -417,9 +336,9 @@ class AlimanteMenuHex:
 def main():
     """Fonction principale"""
     print("=" * 60)
-    print("🎛️  ALIMANTE - MENU HEX")
+    print("🎛️  ALIMANTE - MENU PRINCIPAL")
     print("📍 Encodeur rotatif + Écran ST7735")
-    print("📍 Couleurs hexadécimales natives")
+    print("📍 Configuration optimisée et testée")
     print("=" * 60)
     
     # Vérification des dépendances
@@ -434,7 +353,7 @@ def main():
         return
     
     # Création et lancement du menu
-    menu = AlimanteMenuHex()
+    menu = AlimanteMenu()
     menu.run_menu()
 
 if __name__ == "__main__":
