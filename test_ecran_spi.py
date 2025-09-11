@@ -70,7 +70,10 @@ class EcranSPITest:
                 cs=0,  # Utilise spidev0.0
                 dc=self.a0_pin,
                 rst=self.reset_pin,
-                spi_speed_hz=4000000  # 4MHz pour stabilité
+                spi_speed_hz=4000000,  # 4MHz pour stabilité
+                width=160,  # Largeur de l'écran
+                height=128,  # Hauteur de l'écran
+                rotation=180  # Rotation de 180° pour inverser l'écran
             )
             
             print(f"🔧 Démarrage de l'écran...")
@@ -80,6 +83,7 @@ class EcranSPITest:
             print("✅ Écran SPI ST7735 initialisé avec succès")
             print(f"   📌 Pins: RST={self.reset_pin}, A0={self.a0_pin}, CS={self.cs_pin}")
             print(f"   📌 SPI: SDA={self.sda_pin}, SCL={self.scl_pin}")
+            print(f"   📐 Résolution: {self.display.width}x{self.display.height} (rotation 180°)")
             return True
             
         except Exception as e:
@@ -151,24 +155,30 @@ class EcranSPITest:
             return False
         
         try:
-            # Création d'une image avec formes
+            # Création d'une image avec formes utilisant toute la résolution
             image = Image.new('RGB', (self.display.width, self.display.height), color=(0, 0, 0))
             draw = ImageDraw.Draw(image)
             
-            # Rectangle
-            draw.rectangle([10, 10, 50, 30], fill=(255, 0, 0), outline=(255, 255, 255))
+            # Rectangle (coin supérieur gauche)
+            draw.rectangle([5, 5, 45, 25], fill=(255, 0, 0), outline=(255, 255, 255))
             
-            # Cercle
-            draw.ellipse([70, 10, 110, 50], fill=(0, 255, 0), outline=(255, 255, 255))
+            # Cercle (coin supérieur droit)
+            draw.ellipse([self.display.width-45, 5, self.display.width-5, 45], fill=(0, 255, 0), outline=(255, 255, 255))
             
-            # Ligne
-            draw.line([(10, 70), (100, 70)], fill=(0, 0, 255), width=3)
+            # Ligne horizontale (milieu)
+            draw.line([(10, self.display.height//2), (self.display.width-10, self.display.height//2)], fill=(0, 0, 255), width=3)
             
-            # Triangle (polygone)
-            draw.polygon([(60, 80), (80, 100), (40, 100)], fill=(255, 255, 0))
+            # Triangle (coin inférieur gauche)
+            draw.polygon([(30, self.display.height-30), (50, self.display.height-10), (10, self.display.height-10)], fill=(255, 255, 0))
+            
+            # Rectangle plein (coin inférieur droit)
+            draw.rectangle([self.display.width-40, self.display.height-30, self.display.width-10, self.display.height-10], fill=(255, 0, 255), outline=(255, 255, 255))
+            
+            # Ligne diagonale
+            draw.line([(0, 0), (self.display.width-1, self.display.height-1)], fill=(0, 255, 255), width=2)
             
             self.display.display(image)
-            print("✅ Formes géométriques affichées")
+            print("✅ Formes géométriques affichées (pleine résolution)")
             time.sleep(3)
             return True
             
@@ -196,21 +206,24 @@ class EcranSPITest:
             except:
                 font = None
             
-            # Texte de test
+            # Texte de test adapté à la résolution
             text_lines = [
                 "ALIMANTE",
                 "Test SPI",
                 "ST7735 OK",
-                "GPIO Test"
+                f"{self.display.width}x{self.display.height}",
+                "Rotation 180°"
             ]
             
-            y_position = 10
+            y_position = 5
+            line_height = (self.display.height - 10) // len(text_lines)
+            
             for line in text_lines:
                 if font:
-                    draw.text((10, y_position), line, fill=(255, 255, 255), font=font)
+                    draw.text((5, y_position), line, fill=(255, 255, 255), font=font)
                 else:
-                    draw.text((10, y_position), line, fill=(255, 255, 255))
-                y_position += 20
+                    draw.text((5, y_position), line, fill=(255, 255, 255))
+                y_position += line_height
             
             self.display.display(image)
             print("✅ Texte affiché avec succès")
