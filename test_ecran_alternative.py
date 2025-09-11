@@ -57,8 +57,6 @@ class EcranTestAlternative:
                 rst=self.reset_pin,
                 spi_speed_hz=2000000,  # Fréquence réduite pour stabilité
                 rotation=270,  # Rotation de 270°
-                width=160,  # Largeur complète
-                height=128,  # Hauteur complète
                 bgr=False  # Ordre RGB (True pour BGR)
             )
             
