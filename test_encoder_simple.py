@@ -64,29 +64,31 @@ class EncoderTestSimple:
             print(f"❌ Erreur lors de l'initialisation: {e}")
             return False
     
-    def check_rotation(self):
-        """Vérifie la rotation de l'encodeur (polling)"""
-        if not self.is_running:
-            return
-            
-        clk_state = GPIO.input(self.clk_pin)
-        dt_state = GPIO.input(self.dt_pin)
+def check_rotation(self):
+    """Vérifie la rotation de l'encodeur (polling + anti-rebond)"""
+    if not self.is_running:
+        return
         
-        # Détection du changement d'état sur CLK
-        if clk_state != self.last_clk_state:
-            # Détection de la direction de rotation
+    clk_state = GPIO.input(self.clk_pin)
+    dt_state = GPIO.input(self.dt_pin)
+    
+    # Détection du changement d'état sur CLK
+    if clk_state != self.last_clk_state:
+        time.sleep(0.002)  # anti-rebond (2 ms)
+        clk_state = GPIO.input(self.clk_pin)  # relire l'état
+        dt_state = GPIO.input(self.dt_pin)
+
+        if clk_state != self.last_clk_state:  # confirmation du changement
             if dt_state != clk_state:
-                # Rotation horaire
                 self.counter += 1
                 direction = "🔄 HORAIRE"
             else:
-                # Rotation anti-horaire
                 self.counter -= 1
                 direction = "🔄 ANTI-HORAIRE"
             
             print(f"{direction} | Compteur: {self.counter}")
             self.last_clk_state = clk_state
-    
+
     def check_button(self):
         """Vérifie l'état du bouton (polling)"""
         if not self.is_running:
