@@ -88,12 +88,12 @@ class EcranTestAlternative:
         print("\n🎨 Test des couleurs...")
         
         couleurs = [
-            ("Rouge", (0, 0, 255)),      # BGR
-            ("Vert", (0, 255, 0)),       # BGR
-            ("Bleu", (255, 0, 0)),       # BGR
-            ("Jaune", (0, 255, 255)),    # BGR
-            ("Cyan", (255, 255, 0)),     # BGR
-            ("Magenta", (255, 0, 255)),  # BGR
+            ("Rouge", (0, 0, 255)),      # BGR: Bleu=0, Vert=0, Rouge=255
+            ("Vert", (0, 255, 0)),       # BGR: Bleu=0, Vert=255, Rouge=0
+            ("Bleu", (255, 0, 0)),       # BGR: Bleu=255, Vert=0, Rouge=0
+            ("Jaune", (0, 255, 255)),    # BGR: Bleu=0, Vert=255, Rouge=255
+            ("Cyan", (255, 255, 0)),     # BGR: Bleu=255, Vert=255, Rouge=0
+            ("Magenta", (255, 0, 255)),  # BGR: Bleu=255, Vert=0, Rouge=255
             ("Blanc", (255, 255, 255)),
             ("Noir", (0, 0, 0))
         ]
@@ -147,19 +147,19 @@ class EcranTestAlternative:
             draw.rectangle([0, 0, self.display.width-1, self.display.height-1], 
                          outline=(255, 255, 255), width=2)
             
-            # Formes dans chaque coin
-            draw.rectangle([5, 5, 45, 25], fill=(0, 0, 255), outline=(255, 255, 255))  # Rouge
+            # Formes dans chaque coin (ordre BGR)
+            draw.rectangle([5, 5, 45, 25], fill=(0, 0, 255), outline=(255, 255, 255))  # Rouge BGR
             draw.ellipse([self.display.width-45, 5, self.display.width-5, 45], 
-                        fill=(0, 255, 0), outline=(255, 255, 255))  # Vert
+                        fill=(0, 255, 0), outline=(255, 255, 255))  # Vert BGR
             draw.polygon([(30, self.display.height-30), (50, self.display.height-10), 
-                         (10, self.display.height-10)], fill=(0, 255, 255))  # Jaune
+                         (10, self.display.height-10)], fill=(0, 255, 255))  # Jaune BGR
             draw.rectangle([self.display.width-40, self.display.height-30, 
                           self.display.width-10, self.display.height-10], 
-                         fill=(255, 0, 255), outline=(255, 255, 255))  # Magenta
+                         fill=(255, 0, 255), outline=(255, 255, 255))  # Magenta BGR
             
             # Ligne diagonale
             draw.line([(0, 0), (self.display.width-1, self.display.height-1)], 
-                     fill=(255, 255, 0), width=2)  # Cyan
+                     fill=(255, 255, 0), width=2)  # Cyan BGR
             
             self.display.display(image)
             print("✅ Formes affichées")
