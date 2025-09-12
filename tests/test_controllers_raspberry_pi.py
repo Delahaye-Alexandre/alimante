@@ -17,7 +17,7 @@ from src.controllers import MainController, ControllerConfig
 
 def load_config_files():
     """Charge tous les fichiers de configuration"""
-    config_dir = Path("config")
+    config_dir = Path(__file__).parent.parent / "config"
     config_files = {}
     
     try:
