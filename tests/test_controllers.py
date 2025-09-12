@@ -10,10 +10,10 @@ import json
 import logging
 from pathlib import Path
 
-# Ajouter le répertoire src au path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+# Ajouter le répertoire parent au path pour accéder à src
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from controllers import MainController, ControllerConfig
+from src.controllers import MainController, ControllerConfig
 
 def load_config_files():
     """Charge tous les fichiers de configuration"""
@@ -180,7 +180,7 @@ def test_individual_controllers():
     # Test du contrôleur de base
     print("\n📋 Test contrôleur de base...")
     try:
-        from controllers import BaseController, ControllerConfig
+        from src.controllers import BaseController, ControllerConfig
         
         class TestController(BaseController):
             def initialize(self):

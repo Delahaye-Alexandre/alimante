@@ -7,6 +7,11 @@ Vérifie la présence des composants par test de résistance/continuité
 import sys
 import time
 import logging
+from pathlib import Path
+
+# Ajouter le répertoire parent au path pour accéder à src
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from src.controllers.drivers import *
 
 def test_physical_components():
