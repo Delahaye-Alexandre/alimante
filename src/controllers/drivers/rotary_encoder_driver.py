@@ -118,8 +118,11 @@ class RotaryEncoderDriver(BaseDriver):
             # Mise à jour du compteur
             self.counter = self.encoder.steps
             
+            # Déterminer la direction
+            direction = 1 if self.encoder.steps > old_counter else -1
+            
             # Mise à jour de la position (INVERSÉ comme dans alimante_menu)
-            if self.encoder.steps > old_counter:
+            if direction > 0:
                 # Rotation horaire = position vers le bas (inversé)
                 self.position = max(self.min_position, self.position - self.step_size)
             else:
@@ -129,7 +132,6 @@ class RotaryEncoderDriver(BaseDriver):
             # Appeler le callback si défini
             if self.rotation_callback:
                 try:
-                    direction = 1 if self.encoder.steps > old_counter else -1
                     self.rotation_callback(direction, self.position, old_counter)
                 except Exception as e:
                     self.logger.error(f"Erreur callback rotation: {e}")

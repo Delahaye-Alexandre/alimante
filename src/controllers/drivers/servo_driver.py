@@ -45,10 +45,13 @@ class ServoDriver(BaseDriver):
         
         # Positions prédéfinies
         self.positions = {
-            "closed": 0,
-            "open": 90,
-            "half": 45,
-            "center": 90
+            "closed": 0,           # Fermé
+            "open": 90,            # Ouvert (déprécié)
+            "half": 45,            # Demi-ouvert
+            "center": 90,          # Centre
+            # Positions double trappe simultanée
+            "trap_entrance_open": 0,    # Entrée ouverte, sortie fermée
+            "trap_entrance_closed": 90  # Entrée fermée, sortie ouverte
         }
         
     def initialize(self) -> bool:

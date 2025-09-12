@@ -111,10 +111,23 @@
   "feeding_mechanism": {
     "sas_system": {
       "enabled": true,
+      "double_trap": {
+        "enabled": true,
+        "simultaneous": true,
+        "fly_count": 5,
+        "trap_delay": 1.0,
+        "calibration": {
+          "fly_per_second": 2.0,
+          "min_duration": 1.0,
+          "max_duration": 5.0
+        }
+      },
       "servo_angle": {
         "closed": 0,
         "open": 90,
-        "feeding": 45
+        "feeding": 45,
+        "trap_entrance_open": 0,
+        "trap_entrance_closed": 90
       },
       "servo_speed": 30,
       "servo_delay": 1000
