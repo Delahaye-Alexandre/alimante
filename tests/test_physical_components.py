@@ -36,6 +36,7 @@ def test_physical_components():
         "Relais chauffage - Pin 19": "Relais avec charge (résistance chauffante)",
         "Relais humidificateur - Pin 5": "Relais avec charge (humidificateur)",
         "Servo distributeur - Pin 18": "Servo-moteur avec bras mécanique",
+        "Brumisateur - Pin 5": "Relais pour brumisateur/humidificateur",
         "Écran ST7735 - Pins 25,24 + SPI": "Écran TFT avec 7 fils",
         "Encodeur rotatif - Pins 17,27,22": "Encodeur avec bouton intégré"
     }
@@ -101,6 +102,8 @@ def test_physical_components():
                 test_relay_functional()
             elif "Servo" in component:
                 test_servo_functional()
+            elif "Brumisateur" in component:
+                test_brumisateur_functional()
             elif "ST7735" in component:
                 test_st7735_functional()
             elif "Encodeur" in component:
@@ -186,18 +189,86 @@ def test_relay_functional():
         print(f"   ❌ Erreur: {e}")
 
 def test_servo_functional():
-    """Test fonctionnel servo"""
-    print("\n🎛️  Test servo...")
+    """Test fonctionnel servo - VERSION SÉCURISÉE"""
+    print("\n🎛️  Test servo (SÉCURISÉ)...")
     try:
         servo = ServoDriver(DriverConfig("test", enabled=True), gpio_pin=18)
         if servo.initialize():
-            print("   ✅ Servo initialisé - bras devrait bouger")
-            servo.move_to_position("open", duration=1)
-            time.sleep(1.5)
-            servo.move_to_position("closed", duration=1)
-            time.sleep(1.5)
-            print("   ✅ Test servo terminé")
+            print("   ⚠️  ATTENTION: Mouvements très limités pour la sécurité")
+            print("   • Plage de mouvement: ±5° autour de 90°")
+            
+            # Définir des limites très restrictives
+            servo.set_limits(85, 95)  # Seulement 10 degrés de mouvement
+            
+            print("   ✅ Servo initialisé avec limites de sécurité")
+            
+            # Test de mouvement sécurisé
+            print("   🔄 Test mouvement sécurisé...")
+            servo.write({"angle": 90, "duration": 0.5})  # Centre
+            time.sleep(0.5)
+            servo.write({"angle": 92, "duration": 0.5})  # +2°
+            time.sleep(0.5)
+            servo.write({"angle": 90, "duration": 0.5})  # Retour centre
+            time.sleep(0.5)
+            servo.write({"angle": 88, "duration": 0.5})  # -2°
+            time.sleep(0.5)
+            servo.write({"angle": 90, "duration": 0.5})  # Retour centre
+            
+            print("   ✅ Test servo sécurisé terminé")
         servo.cleanup()
+    except Exception as e:
+        print(f"   ❌ Erreur: {e}")
+
+def test_brumisateur_functional():
+    """Test fonctionnel brumisateur (humidificateur)"""
+    print("\n💨 Test brumisateur...")
+    try:
+        import RPi.GPIO as GPIO
+        
+        # Configuration du brumisateur (pin 5 selon gpio_config.json)
+        brumisateur_pin = 5
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(brumisateur_pin, GPIO.OUT)
+        
+        print("   ⚠️  ATTENTION: Le brumisateur va s'activer pendant 3 secondes")
+        print("   ⚠️  Assurez-vous qu'il n'y a pas d'eau à proximité")
+        
+        # Confirmation de sécurité
+        response = input("   Continuer le test du brumisateur? (o/n): ").lower().strip()
+        if response not in ['o', 'oui', 'y', 'yes']:
+            print("   ❌ Test brumisateur annulé")
+            GPIO.setup(brumisateur_pin, GPIO.IN)
+            return
+        
+        print("   ✅ Brumisateur activé - relais ON")
+        GPIO.output(brumisateur_pin, GPIO.HIGH)
+        
+        # Test de 3 secondes
+        for i in range(3):
+            print(f"   ⏱️  Temps restant: {3-i} secondes...")
+            time.sleep(1)
+        
+        # Désactivation
+        GPIO.output(brumisateur_pin, GPIO.LOW)
+        print("   ✅ Brumisateur désactivé - relais OFF")
+        
+        # Vérification de l'état
+        current_state = GPIO.input(brumisateur_pin)
+        print(f"   • État relais: {'HIGH' if current_state else 'LOW'}")
+        print(f"   • Statut: {'✅ Relais fonctionnel' if not current_state else '⚠️  Relais encore actif'}")
+        
+        # Nettoyage
+        GPIO.setup(brumisateur_pin, GPIO.IN)
+        print("   ✅ Test brumisateur terminé")
+        
+    except ImportError:
+        print("   ⚠️  RPi.GPIO non disponible - mode simulation")
+        print("   ℹ️  Simulation du contrôle du brumisateur:")
+        print("   • Activation relais pendant 3 secondes")
+        print("   • Vérification de l'état du relais")
+        print("   • Désactivation du relais")
+        time.sleep(2)
+        print("   ✅ Simulation brumisateur terminée")
     except Exception as e:
         print(f"   ❌ Erreur: {e}")
 
