@@ -6,7 +6,9 @@ Utilise la configuration qui fonctionne parfaitement
 
 import time
 import sys
+import os
 import signal
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config_alimante import get_gpio_config, get_ui_config
 
 # Import des librairies
