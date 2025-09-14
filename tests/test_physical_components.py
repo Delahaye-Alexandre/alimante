@@ -194,11 +194,11 @@ def test_servo_functional():
     try:
         servo = ServoDriver(DriverConfig("test", enabled=True), gpio_pin=18)
         if servo.initialize():
-            print("   ⚠️  ATTENTION: Mouvements très limités pour la sécurité")
-            print("   • Plage de mouvement: ±5° autour de 90°")
+            print("   ⚠️  ATTENTION: Mouvements limités pour la sécurité")
+            print("   • Plage de mouvement: ±30° autour de 90°")
             
-            # Définir des limites très restrictives
-            servo.set_limits(85, 95)  # Seulement 10 degrés de mouvement
+            # Définir des limites restrictives mais plus visibles
+            servo.set_limits(60, 120)  # 60 degrés de mouvement total
             
             print("   ✅ Servo initialisé avec limites de sécurité")
             
@@ -206,11 +206,11 @@ def test_servo_functional():
             print("   🔄 Test mouvement sécurisé...")
             servo.write({"angle": 90, "duration": 0.5})  # Centre
             time.sleep(0.5)
-            servo.write({"angle": 92, "duration": 0.5})  # +2°
+            servo.write({"angle": 120, "duration": 0.5})  # +30°
             time.sleep(0.5)
             servo.write({"angle": 90, "duration": 0.5})  # Retour centre
             time.sleep(0.5)
-            servo.write({"angle": 88, "duration": 0.5})  # -2°
+            servo.write({"angle": 60, "duration": 0.5})  # -30°
             time.sleep(0.5)
             servo.write({"angle": 90, "duration": 0.5})  # Retour centre
             

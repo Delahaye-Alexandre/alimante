@@ -43,7 +43,7 @@ class SafeServoBrumisateurTest:
         }
         
         # Configuration de sécurité
-        self.SAFE_ANGLE_RANGE = 5  # Seulement 5 degrés de mouvement
+        self.SAFE_ANGLE_RANGE = 30  # 30 degrés de mouvement (plus visible)
         self.SAFE_CENTER_ANGLE = 90  # Angle central de sécurité
         self.MOVEMENT_DELAY = 0.5  # Délai entre mouvements
         
@@ -130,7 +130,7 @@ class SafeServoBrumisateurTest:
             print("❌ Servomoteur non initialisé")
             return False
             
-        print("⚠️  ATTENTION: Mouvements très limités pour la sécurité")
+        print("⚠️  ATTENTION: Mouvements limités pour la sécurité")
         print(f"   • Plage de mouvement: ±{self.SAFE_ANGLE_RANGE}° autour de {self.SAFE_CENTER_ANGLE}°")
         print("   • Durée totale du test: ~3 secondes")
         
@@ -140,9 +140,9 @@ class SafeServoBrumisateurTest:
             self.servo.write({"angle": self.SAFE_CENTER_ANGLE, "duration": 0.5})
             time.sleep(self.MOVEMENT_DELAY)
             
-            # Petit mouvement vers la droite (sécurisé)
-            print("2️⃣ Petit mouvement +2°...")
-            target_angle = self.SAFE_CENTER_ANGLE + 2
+            # Mouvement vers la droite (sécurisé)
+            print("2️⃣ Mouvement +30°...")
+            target_angle = self.SAFE_CENTER_ANGLE + 30
             self.servo.write({"angle": target_angle, "duration": 0.5})
             time.sleep(self.MOVEMENT_DELAY)
             
@@ -151,9 +151,9 @@ class SafeServoBrumisateurTest:
             self.servo.write({"angle": self.SAFE_CENTER_ANGLE, "duration": 0.5})
             time.sleep(self.MOVEMENT_DELAY)
             
-            # Petit mouvement vers la gauche (sécurisé)
-            print("4️⃣ Petit mouvement -2°...")
-            target_angle = self.SAFE_CENTER_ANGLE - 2
+            # Mouvement vers la gauche (sécurisé)
+            print("4️⃣ Mouvement -30°...")
+            target_angle = self.SAFE_CENTER_ANGLE - 30
             self.servo.write({"angle": target_angle, "duration": 0.5})
             time.sleep(self.MOVEMENT_DELAY)
             
@@ -350,7 +350,7 @@ class SafeServoBrumisateurTest:
         """Lance tous les tests"""
         print("🚀 DÉMARRAGE DES TESTS SÉCURISÉS")
         print("=" * 40)
-        print("⚠️  Tests avec mouvements très limités pour la sécurité")
+        print("⚠️  Tests avec mouvements limités pour la sécurité")
         print("💨 Test du brumisateur avec confirmation de sécurité")
         print("=" * 40)
         
@@ -378,7 +378,7 @@ def main():
     """Fonction principale"""
     print("🔧 TEST SÉCURISÉ SERVOMOTEUR ET BRUMISATEUR")
     print("=" * 50)
-    print("⚠️  ATTENTION: Mouvements très limités pour la sécurité")
+    print("⚠️  ATTENTION: Mouvements limités pour la sécurité")
     print("💨 Test du brumisateur avec confirmation de sécurité")
     print("=" * 50)
     
@@ -394,7 +394,7 @@ def main():
     
     # Confirmation de l'utilisateur
     print("\n⚠️  CONFIRMATION DE SÉCURITÉ")
-    print("Les tests utilisent des mouvements très limités (±5°)")
+    print("Les tests utilisent des mouvements limités (±30°)")
     print("Assurez-vous qu'aucun objet fragile n'est à proximité du servomoteur")
     print("Le test du brumisateur activera le relais pendant 3 secondes")
     
