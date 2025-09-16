@@ -108,8 +108,8 @@ class LCDInterface:
                 return
             
             # Configuration des pins (comme dans alimante_menu_improved.py)
-            reset_pin = 25  # Pin de reset
-            a0_pin = 24     # Pin DC (Data/Command)
+            reset_pin = 24  # Pin de reset (comme dans config_alimante.py)
+            a0_pin = 25     # Pin DC (Data/Command) (comme dans config_alimante.py)
             
             # Initialiser directement avec st7735 (comme dans alimante_menu_improved.py)
             self.lcd_driver = st7735.ST7735(
