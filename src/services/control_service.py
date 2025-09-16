@@ -14,12 +14,7 @@ import os
 # Ajouter le répertoire src au path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from .sensor_service import SensorService
-from .heating_service import HeatingService
-from .lighting_service import LightingService
-from .humidification_service import HumidificationService
-from .ventilation_service import VentilationService
-from .feeding_service import FeedingService
+# Les imports sont faits dynamiquement dans initialize() pour éviter les dépendances circulaires
 
 class ControlService:
     """
@@ -81,37 +76,43 @@ class ControlService:
             self.logger.info("Initialisation du service de contrôle...")
             
             # Initialiser le service de capteurs
-            self.sensor_service = SensorService(config, self.event_bus)
+            from .sensor_service import SensorService
+            self.sensor_service = SensorService(self.config, self.event_bus)
             if not self.sensor_service.initialize():
                 self.logger.error("Échec initialisation service capteurs")
                 return False
             
             # Initialiser le service de chauffage
-            self.heating_service = HeatingService(config, self.event_bus)
+            from .heating_service import HeatingService
+            self.heating_service = HeatingService(self.config, self.event_bus)
             if not self.heating_service.initialize():
                 self.logger.error("Échec initialisation service chauffage")
                 return False
             
             # Initialiser le service d'éclairage
-            self.lighting_service = LightingService(config, self.event_bus)
+            from .lighting_service import LightingService
+            self.lighting_service = LightingService(self.config, self.event_bus)
             if not self.lighting_service.initialize():
                 self.logger.error("Échec initialisation service éclairage")
                 return False
             
             # Initialiser le service d'humidification
-            self.humidification_service = HumidificationService(config, self.event_bus)
+            from .humidification_service import HumidificationService
+            self.humidification_service = HumidificationService(self.config, self.event_bus)
             if not self.humidification_service.initialize():
                 self.logger.error("Échec initialisation service humidification")
                 return False
             
             # Initialiser le service de ventilation
-            self.ventilation_service = VentilationService(config, self.event_bus)
+            from .ventilation_service import VentilationService
+            self.ventilation_service = VentilationService(self.config, self.event_bus)
             if not self.ventilation_service.initialize():
                 self.logger.error("Échec initialisation service ventilation")
                 return False
             
             # Initialiser le service d'alimentation
-            self.feeding_service = FeedingService(config, self.event_bus)
+            from .feeding_service import FeedingService
+            self.feeding_service = FeedingService(self.config, self.event_bus)
             if not self.feeding_service.initialize():
                 self.logger.error("Échec initialisation service alimentation")
                 return False
