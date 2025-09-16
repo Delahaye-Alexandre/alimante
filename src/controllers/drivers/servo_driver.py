@@ -408,11 +408,8 @@ class ServoDriver(BaseDriver):
                 return False
             
             if RASPBERRY_PI and self.pwm_object:
-                # Positionner le servo à la position fermée (0°) au démarrage
-                # Calculer le duty cycle pour 0° et démarrer le PWM
-                pulse_width = self._angle_to_pulse_width(0)
-                duty_cycle = self._pulse_width_to_duty_cycle(pulse_width)
-                self.pwm_object.start(duty_cycle)
+                # Démarrer le PWM à 0% pour position neutre (pas de mouvement)
+                self.pwm_object.start(0)
                 self.current_angle = 0
             
             self._is_running = True

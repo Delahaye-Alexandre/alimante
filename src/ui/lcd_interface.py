@@ -201,9 +201,16 @@ class LCDInterface:
             if self.update_thread and self.update_thread.is_alive():
                 self.update_thread.join(timeout=2.0)
             
-            # L'objet st7735.ST7735 n'a pas de méthode stop()
-            # Il se ferme automatiquement
+            # Nettoyer l'écran avant l'arrêt
             if self.lcd_driver:
+                try:
+                    # Créer une image noire pour effacer l'écran
+                    black_image = Image.new("RGB", (128, 160), (0, 0, 0))
+                    self.lcd_driver.display(black_image)
+                    self.logger.info("Écran LCD nettoyé")
+                except Exception as e:
+                    self.logger.warning(f"Erreur nettoyage écran: {e}")
+                
                 self.logger.info("Driver LCD ST7735 fermé")
             
             self.logger.info("Interface LCD arrêtée")
@@ -286,7 +293,8 @@ class LCDInterface:
                 return
             
             # Création de l'image (comme dans alimante_menu_improved.py)
-            image = Image.new("RGB", (self.lcd_driver.width, self.lcd_driver.height), (0, 0, 0))
+            # L'écran fait 128x160 selon la configuration JSON
+            image = Image.new("RGB", (128, 160), (0, 0, 0))
             draw = ImageDraw.Draw(image)
             font = ImageFont.load_default()
             
@@ -294,11 +302,11 @@ class LCDInterface:
             title = "ALIMANTE MENU"
             bbox = draw.textbbox((0, 0), title, font=font)
             title_width = bbox[2] - bbox[0]
-            x_title = (self.lcd_driver.width - title_width) // 2
+            x_title = (128 - title_width) // 2
             draw.text((x_title, 5), title, fill=(255, 255, 0), font=font)
             
             # Ligne de séparation
-            draw.line([(5, 20), (self.lcd_driver.width - 5, 20)], fill=(128, 128, 128))
+            draw.line([(5, 20), (123, 20)], fill=(128, 128, 128))
             
             # Statut système avec couleur
             status = self.display_data.get('system_status', 'unknown')
