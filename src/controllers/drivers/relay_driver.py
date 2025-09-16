@@ -322,6 +322,81 @@ class RelayDriver(BaseDriver):
             self.logger.error(f"Erreur reset compteurs: {e}")
             return False
     
+    def start(self) -> bool:
+        """
+        Démarre le driver de relais
+        
+        Returns:
+            True si le démarrage réussit, False sinon
+        """
+        try:
+            if not self.is_ready():
+                self.logger.error("Relais non initialisé")
+                return False
+            
+            self.logger.info(f"Driver relais {self.config.name} démarré")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Erreur démarrage relais: {e}")
+            return False
+    
+    def stop(self) -> None:
+        """
+        Arrête le driver de relais
+        """
+        try:
+            # Éteindre le relais
+            self._set_relay_state(False)
+            self.logger.info(f"Driver relais {self.config.name} arrêté")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur arrêt relais: {e}")
+    
+    def set_state(self, state: bool) -> bool:
+        """
+        Définit l'état du relais (méthode de compatibilité)
+        
+        Args:
+            state: True pour activer, False pour désactiver
+            
+        Returns:
+            True si succès, False sinon
+        """
+        try:
+            return self.write({"state": state})
+            
+        except Exception as e:
+            self.logger.error(f"Erreur set_state relais: {e}")
+            return False
+    
+    def is_running(self) -> bool:
+        """
+        Vérifie si le driver est en cours d'exécution
+        
+        Returns:
+            True si en cours d'exécution, False sinon
+        """
+        return self.is_ready()
+    
+    def get_status(self) -> Dict[str, Any]:
+        """
+        Retourne le statut du driver
+        
+        Returns:
+            Dictionnaire du statut
+        """
+        return {
+            'name': self.config.name,
+            'enabled': self.config.enabled,
+            'state': self.state.value,
+            'is_ready': self.is_ready(),
+            'is_running': self.is_running(),
+            'current_state': self.current_state,
+            'switch_count': self.switch_count,
+            'uptime': self.get_uptime()
+        }
+    
     def cleanup(self) -> None:
         """
         Nettoie les ressources du relais
