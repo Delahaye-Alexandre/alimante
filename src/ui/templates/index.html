@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Alimante - Gestion de Terrariums</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#2E7D32" />
+    <meta
+      name="description"
+      content="Système de gestion automatisée de terrariums Alimante"
+    />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/png" href="/static/images/icon-192.png" />
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="/static/css/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+
+    <!-- Service Worker -->
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/sw.js")
+            .then((registration) => console.log("SW registered"))
+            .catch((error) => console.log("SW registration failed"));
+        });
+      }
+    </script>
+  </head>
+  <body>
+    <!-- Header -->
+    <header class="header">
+      <div class="container">
+        <div class="header-content">
+          <div class="logo">
+            <i class="fas fa-leaf"></i>
+            <h1>Alimante</h1>
+          </div>
+          <div class="status-indicator">
+            <div class="status-dot" id="statusDot"></div>
+            <span id="statusText">Connexion...</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav">
+      <div class="container">
+        <ul class="nav-list">
+          <li class="nav-item active" data-tab="dashboard">
+            <i class="fas fa-tachometer-alt"></i>
+            <span>Tableau de bord</span>
+          </li>
+          <li class="nav-item" data-tab="sensors">
+            <i class="fas fa-thermometer-half"></i>
+            <span>Capteurs</span>
+          </li>
+          <li class="nav-item" data-tab="controls">
+            <i class="fas fa-sliders-h"></i>
+            <span>Contrôles</span>
+          </li>
+          <li class="nav-item" data-tab="alerts">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>Alertes</span>
+          </li>
+          <li class="nav-item" data-tab="config">
+            <i class="fas fa-cog"></i>
+            <span>Configuration</span>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main">
+      <div class="container">
+        <!-- Dashboard Tab -->
+        <div class="tab-content active" id="dashboard">
+          <div class="dashboard-grid">
+            <!-- Status Cards -->
+            <div class="card status-card">
+              <div class="card-header">
+                <h3><i class="fas fa-info-circle"></i> Statut Système</h3>
+              </div>
+              <div class="card-body">
+                <div class="status-item">
+                  <span class="label">État:</span>
+                  <span class="value" id="systemStatus">Initialisation...</span>
+                </div>
+                <div class="status-item">
+                  <span class="label">Uptime:</span>
+                  <span class="value" id="systemUptime">--</span>
+                </div>
+                <div class="status-item">
+                  <span class="label">Dernière MAJ:</span>
+                  <span class="value" id="lastUpdate">--</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Temperature Card -->
+            <div class="card sensor-card">
+              <div class="card-header">
+                <h3><i class="fas fa-thermometer-half"></i> Température</h3>
+              </div>
+              <div class="card-body">
+                <div class="sensor-value">
+                  <span class="value" id="temperatureValue">--</span>
+                  <span class="unit">°C</span>
+                </div>
+                <div class="sensor-status" id="temperatureStatus">
+                  <i class="fas fa-circle"></i>
+                  <span>Capteur non disponible</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Humidity Card -->
+            <div class="card sensor-card">
+              <div class="card-header">
+                <h3><i class="fas fa-tint"></i> Humidité</h3>
+              </div>
+              <div class="card-body">
+                <div class="sensor-value">
+                  <span class="value" id="humidityValue">--</span>
+                  <span class="unit">%</span>
+                </div>
+                <div class="sensor-status" id="humidityStatus">
+                  <i class="fas fa-circle"></i>
+                  <span>Capteur non disponible</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Air Quality Card -->
+            <div class="card sensor-card">
+              <div class="card-header">
+                <h3><i class="fas fa-wind"></i> Qualité Air</h3>
+              </div>
+              <div class="card-body">
+                <div class="sensor-value">
+                  <span class="value" id="airQualityValue">--</span>
+                  <span class="unit">AQI</span>
+                </div>
+                <div class="sensor-status" id="airQualityStatus">
+                  <i class="fas fa-circle"></i>
+                  <span>Capteur non disponible</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Controls Overview -->
+            <div class="card controls-card">
+              <div class="card-header">
+                <h3><i class="fas fa-sliders-h"></i> Contrôles Actifs</h3>
+              </div>
+              <div class="card-body">
+                <div class="control-item">
+                  <span class="control-label">Chauffage:</span>
+                  <div class="control-status" id="heatingStatus">
+                    <i class="fas fa-circle"></i>
+                    <span>Arrêté</span>
+                  </div>
+                </div>
+                <div class="control-item">
+                  <span class="control-label">Éclairage:</span>
+                  <div class="control-status" id="lightingStatus">
+                    <i class="fas fa-circle"></i>
+                    <span>Arrêté</span>
+                  </div>
+                </div>
+                <div class="control-item">
+                  <span class="control-label">Humidification:</span>
+                  <div class="control-status" id="humidificationStatus">
+                    <i class="fas fa-circle"></i>
+                    <span>Arrêté</span>
+                  </div>
+                </div>
+                <div class="control-item">
+                  <span class="control-label">Ventilation:</span>
+                  <div class="control-status" id="ventilationStatus">
+                    <i class="fas fa-circle"></i>
+                    <span>Arrêté</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sensors Tab -->
+        <div class="tab-content" id="sensors">
+          <div class="sensors-grid">
+            <div class="card sensor-detail-card">
+              <div class="card-header">
+                <h3>
+                  <i class="fas fa-thermometer-half"></i> DHT22 - Température &
+                  Humidité
+                </h3>
+              </div>
+              <div class="card-body">
+                <div class="sensor-detail">
+                  <div class="sensor-reading">
+                    <span class="label">Température:</span>
+                    <span class="value" id="dht22Temp">-- °C</span>
+                  </div>
+                  <div class="sensor-reading">
+                    <span class="label">Humidité:</span>
+                    <span class="value" id="dht22Hum">-- %</span>
+                  </div>
+                  <div class="sensor-reading">
+                    <span class="label">Statut:</span>
+                    <span class="value" id="dht22Status">Non disponible</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card sensor-detail-card">
+              <div class="card-header">
+                <h3><i class="fas fa-wind"></i> Qualité de l'Air</h3>
+              </div>
+              <div class="card-body">
+                <div class="sensor-detail">
+                  <div class="sensor-reading">
+                    <span class="label">AQI:</span>
+                    <span class="value" id="airQualityDetail">--</span>
+                  </div>
+                  <div class="sensor-reading">
+                    <span class="label">Statut:</span>
+                    <span class="value" id="airQualityDetailStatus"
+                      >Non disponible</span
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card sensor-detail-card">
+              <div class="card-header">
+                <h3><i class="fas fa-tint"></i> Niveau d'Eau</h3>
+              </div>
+              <div class="card-body">
+                <div class="sensor-detail">
+                  <div class="sensor-reading">
+                    <span class="label">Niveau:</span>
+                    <span class="value" id="waterLevel">-- %</span>
+                  </div>
+                  <div class="sensor-reading">
+                    <span class="label">Statut:</span>
+                    <span class="value" id="waterLevelStatus"
+                      >Non disponible</span
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Controls Tab -->
+        <div class="tab-content" id="controls">
+          <div class="controls-grid">
+            <div class="card control-card">
+              <div class="card-header">
+                <h3><i class="fas fa-fire"></i> Chauffage</h3>
+              </div>
+              <div class="card-body">
+                <div class="control-toggle">
+                  <label class="switch">
+                    <input type="checkbox" id="heatingToggle" />
+                    <span class="slider"></span>
+                  </label>
+                  <span class="control-label">Activer le chauffage</span>
+                </div>
+                <div class="control-info">
+                  <span class="label">Température cible:</span>
+                  <span class="value" id="heatingTarget">25°C</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="card control-card">
+              <div class="card-header">
+                <h3><i class="fas fa-sun"></i> Éclairage</h3>
+              </div>
+              <div class="card-body">
+                <div class="control-toggle">
+                  <label class="switch">
+                    <input type="checkbox" id="lightingToggle" />
+                    <span class="slider"></span>
+                  </label>
+                  <span class="control-label">Activer l'éclairage</span>
+                </div>
+                <div class="control-info">
+                  <span class="label">Intensité:</span>
+                  <span class="value" id="lightingIntensity">0%</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="card control-card">
+              <div class="card-header">
+                <h3><i class="fas fa-tint"></i> Humidification</h3>
+              </div>
+              <div class="card-body">
+                <div class="control-toggle">
+                  <label class="switch">
+                    <input type="checkbox" id="humidificationToggle" />
+                    <span class="slider"></span>
+                  </label>
+                  <span class="control-label">Activer l'humidification</span>
+                </div>
+                <div class="control-info">
+                  <span class="label">Humidité cible:</span>
+                  <span class="value" id="humidificationTarget">60%</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="card control-card">
+              <div class="card-header">
+                <h3><i class="fas fa-fan"></i> Ventilation</h3>
+              </div>
+              <div class="card-body">
+                <div class="control-toggle">
+                  <label class="switch">
+                    <input type="checkbox" id="ventilationToggle" />
+                    <span class="slider"></span>
+                  </label>
+                  <span class="control-label">Activer la ventilation</span>
+                </div>
+                <div class="control-info">
+                  <span class="label">Vitesse:</span>
+                  <span class="value" id="ventilationSpeed">0%</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="card control-card">
+              <div class="card-header">
+                <h3><i class="fas fa-utensils"></i> Alimentation</h3>
+              </div>
+              <div class="card-body">
+                <div class="control-toggle">
+                  <label class="switch">
+                    <input type="checkbox" id="feedingToggle" />
+                    <span class="slider"></span>
+                  </label>
+                  <span class="control-label">Activer l'alimentation</span>
+                </div>
+                <div class="control-info">
+                  <span class="label">Dernière alimentation:</span>
+                  <span class="value" id="lastFeeding">--</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alerts Tab -->
+        <div class="tab-content" id="alerts">
+          <div class="alerts-container">
+            <div class="card alerts-card">
+              <div class="card-header">
+                <h3>
+                  <i class="fas fa-exclamation-triangle"></i> Alertes Système
+                </h3>
+                <button class="btn btn-secondary" id="clearAlertsBtn">
+                  <i class="fas fa-trash"></i> Effacer
+                </button>
+              </div>
+              <div class="card-body">
+                <div class="alerts-list" id="alertsList">
+                  <div class="alert-item info">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Aucune alerte active</span>
+                    <span class="alert-time">--</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Config Tab -->
+        <div class="tab-content" id="config">
+          <div class="config-container">
+            <div class="card config-card">
+              <div class="card-header">
+                <h3><i class="fas fa-cog"></i> Configuration Système</h3>
+              </div>
+              <div class="card-body">
+                <div class="config-section">
+                  <h4>Terrarium</h4>
+                  <div class="config-item">
+                    <label>Nom du terrarium:</label>
+                    <input
+                      type="text"
+                      id="terrariumName"
+                      value="Terrarium Principal"
+                    />
+                  </div>
+                  <div class="config-item">
+                    <label>Espèce:</label>
+                    <select id="speciesSelect">
+                      <option value="mantis_religiosa">Mantis religiosa</option>
+                      <option value="other">Autre</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="config-section">
+                  <h4>Capteurs</h4>
+                  <div class="config-item">
+                    <label>Intervalle de lecture (s):</label>
+                    <input
+                      type="number"
+                      id="sensorInterval"
+                      value="5"
+                      min="1"
+                      max="60"
+                    />
+                  </div>
+                </div>
+
+                <div class="config-section">
+                  <h4>Contrôles</h4>
+                  <div class="config-item">
+                    <label>Mode automatique:</label>
+                    <label class="switch">
+                      <input type="checkbox" id="autoModeToggle" checked />
+                      <span class="slider"></span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="config-actions">
+                  <button class="btn btn-primary" id="saveConfigBtn">
+                    <i class="fas fa-save"></i> Sauvegarder
+                  </button>
+                  <button class="btn btn-secondary" id="resetConfigBtn">
+                    <i class="fas fa-undo"></i> Réinitialiser
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <p>&copy; 2024 Alimante - Système de gestion de terrariums</p>
+      </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="/static/js/app.js"></script>
+  </body>
+</html>

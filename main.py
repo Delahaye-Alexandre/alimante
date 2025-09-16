@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 from src.loops.main_loop import MainLoop
 from src.utils.event_bus import EventBus
 from src.services.safety_service import SafetyService
+from src.ui.ui_controller import UIController
 
 def setup_logging():
     """Configure le système de logging"""
@@ -45,12 +46,23 @@ def main():
         safety_service = SafetyService(event_bus)
         logger.info("Service de sécurité initialisé")
         
+        # Initialiser l'interface utilisateur
+        ui_controller = UIController(event_bus)
+        logger.info("Contrôleur UI initialisé")
+        
         # Démarrage de la boucle principale
         main_loop = MainLoop(event_bus, safety_service)
         logger.info("Boucle principale initialisée")
         
+        # Démarrer l'interface utilisateur
+        if ui_controller.start():
+            logger.info("Interface utilisateur démarrée")
+        else:
+            logger.warning("Échec démarrage interface utilisateur")
+        
         print("✅ Système Alimante démarré avec succès")
         print("📊 Surveillance du ou des terrariums en cours...")
+        print("🌐 Interface web disponible sur http://localhost:8080")
         print("🛑 Appuyez sur Ctrl+C pour arrêter")
         
         # Lancement de la boucle principale
@@ -66,6 +78,14 @@ def main():
         sys.exit(1)
         
     finally:
+        # Arrêter l'interface utilisateur
+        try:
+            if 'ui_controller' in locals():
+                ui_controller.stop()
+                logger.info("Interface utilisateur arrêtée")
+        except Exception as e:
+            logger.error(f"Erreur arrêt interface utilisateur: {e}")
+        
         logger.info("Arrêt du système Alimante")
         print("👋 Au revoir !")
 
