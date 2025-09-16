@@ -94,38 +94,37 @@ class LCDInterface:
         }
     
     def _initialize_driver(self) -> None:
-        """Initialise le driver LCD"""
+        """Initialise le driver LCD - Inspiré d'alimante_menu_improved.py"""
         try:
             if not RASPBERRY_PI:
                 self.logger.warning("Mode simulation: driver ST7735 non disponible")
                 return
             
-            # Configuration du driver
-            driver_config = DriverConfig(
-                name="lcd_display",
-                enabled=True,
-                timeout=5.0,
-                retry_attempts=3,
-                retry_delay=1.0
-            )
+            # Configuration des pins (comme dans alimante_menu_improved.py)
+            reset_pin = 25  # Pin de reset
+            a0_pin = 24     # Pin DC (Data/Command)
             
-            # Initialiser le driver ST7735
-            self.lcd_driver = ST7735Driver(
-                config=driver_config,
-                width=self.width,
-                height=self.height,
-                rotation=self.rotation
+            # Initialiser directement avec st7735 (comme dans alimante_menu_improved.py)
+            self.lcd_driver = st7735.ST7735(
+                port=0,
+                cs=0,
+                dc=a0_pin,
+                rst=reset_pin,
+                rotation=90,   # Rotation comme dans alimante_menu_improved.py
+                invert=False,   # Inversion de l'affichage
+                bgr=False      # Format RGB standard
             )
+            self.lcd_driver.begin()
             
-            if self.lcd_driver.initialize():
-                self.logger.info("Driver LCD ST7735 initialisé")
-            else:
-                self.logger.error("Échec initialisation driver LCD")
-                self.lcd_driver = None
+            self.logger.info(f"Driver LCD ST7735 initialisé: {self.lcd_driver.width}x{self.lcd_driver.height}")
+            self.logger.info("   • Format: RGB standard")
+            self.logger.info("   • Inversion: Désactivée") 
+            self.logger.info("   • Rotation: 90°")
                 
         except Exception as e:
             self.logger.error(f"Erreur initialisation driver LCD: {e}")
             self.stats['errors'] += 1
+            self.lcd_driver = None
     
     def start(self) -> bool:
         """
@@ -248,51 +247,66 @@ class LCDInterface:
             self.stats['errors'] += 1
     
     def _display_home_screen(self) -> None:
-        """Affiche l'écran d'accueil"""
+        """Affiche l'écran d'accueil - Inspiré d'alimante_menu_improved.py"""
         try:
             if not self.lcd_driver:
                 return
             
-            # Effacer l'écran
-            self.lcd_driver.fill(self.colors['black'])
+            # Création de l'image (comme dans alimante_menu_improved.py)
+            image = Image.new("RGB", (self.lcd_driver.width, self.lcd_driver.height), (0, 0, 0))
+            draw = ImageDraw.Draw(image)
+            font = ImageFont.load_default()
             
-            # Titre
-            self.lcd_driver.text("ALIMANTE", 10, 5, self.colors['white'], size=2)
+            # Titre centré (comme dans alimante_menu_improved.py)
+            title = "ALIMANTE MENU"
+            bbox = draw.textbbox((0, 0), title, font=font)
+            title_width = bbox[2] - bbox[0]
+            x_title = (self.lcd_driver.width - title_width) // 2
+            draw.text((x_title, 5), title, fill=(255, 255, 0), font=font)
             
             # Ligne de séparation
-            self.lcd_driver.hline(0, 25, self.width, self.colors['gray'])
+            draw.line([(5, 20), (self.lcd_driver.width - 5, 20)], fill=(128, 128, 128))
             
-            # Statut système
+            # Statut système avec couleur
             status = self.display_data.get('system_status', 'unknown')
-            status_color = self.colors['green'] if status == 'running' else self.colors['red']
-            self.lcd_driver.text(f"Status: {status.upper()}", 5, 35, status_color)
+            if status == 'running':
+                status_color = (0, 255, 0)  # Vert
+                status_text = "SYSTEME PRET"
+            else:
+                status_color = (255, 0, 0)  # Rouge
+                status_text = "SYSTEME ARRET"
             
-            # Données principales
+            draw.text((5, 30), status_text, fill=status_color, font=font)
+            
+            # Données principales des capteurs
             sensors = self.display_data.get('sensors', {})
             dht22_data = sensors.get('dht22', {})
             
-            if dht22_data:
+            if dht22_data and dht22_data.get('temperature') is not None:
                 temp = dht22_data.get('temperature', 0)
                 hum = dht22_data.get('humidity', 0)
                 
-                self.lcd_driver.text(f"Temp: {temp:.1f}°C", 5, 55, self.colors['white'])
-                self.lcd_driver.text(f"Hum:  {hum:.1f}%", 5, 75, self.colors['white'])
+                draw.text((5, 50), f"Temp: {temp:.1f}°C", fill=(255, 255, 255), font=font)
+                draw.text((5, 65), f"Hum:  {hum:.1f}%", fill=(255, 255, 255), font=font)
             else:
-                self.lcd_driver.text("Capteurs: N/A", 5, 55, self.colors['red'])
+                draw.text((5, 50), "Capteurs: N/A", fill=(255, 0, 0), font=font)
             
-            # Alertes
+            # Alertes avec indicateur visuel
             alerts = self.display_data.get('alerts', [])
             if alerts:
-                self.lcd_driver.text(f"Alertes: {len(alerts)}", 5, 95, self.colors['yellow'])
+                draw.text((5, 85), f"Alertes: {len(alerts)}", fill=(255, 165, 0), font=font)
             else:
-                self.lcd_driver.text("Aucune alerte", 5, 95, self.colors['green'])
+                draw.text((5, 85), "Aucune alerte", fill=(0, 255, 0), font=font)
             
-            # Navigation
-            self.lcd_driver.text("Tourner: changer", 5, 120, self.colors['gray'], size=1)
-            self.lcd_driver.text("Appuyer: valider", 5, 135, self.colors['gray'], size=1)
+            # Informations de navigation (comme dans alimante_menu_improved.py)
+            draw.text((5, 110), "Tourner: naviguer", fill=(128, 128, 128), font=font)
+            draw.text((5, 125), "Appuyer: valider", fill=(128, 128, 128), font=font)
             
-            # Mettre à jour l'affichage
-            self.lcd_driver.show()
+            # Indicateur de sélection (comme dans le menu original)
+            draw.text((5, 145), "Sel: 1/7", fill=(128, 128, 128), font=font)
+            
+            # Affichage (comme dans alimante_menu_improved.py)
+            self.lcd_driver.display(image)
             
         except Exception as e:
             self.logger.error(f"Erreur affichage écran accueil: {e}")
