@@ -101,20 +101,25 @@ class LCDInterface:
         }
     
     def _initialize_driver(self) -> None:
-        """Initialise le driver LCD - Inspiré d'alimante_menu_improved.py"""
+        """Initialise le driver LCD - Utilise la configuration JSON"""
         try:
             if not RASPBERRY_PI:
                 self.logger.warning("Mode simulation: driver ST7735 non disponible")
                 return
             
-            # Configuration des pins (comme dans alimante_menu_improved.py)
-            reset_pin = 24  # Pin de reset (comme dans config_alimante.py)
-            a0_pin = 25     # Pin DC (Data/Command) (comme dans config_alimante.py)
+            # Charger la configuration GPIO depuis le fichier JSON
+            gpio_config = self._load_gpio_config()
+            ui_pins = gpio_config.get('gpio_pins', {}).get('ui', {})
+            
+            # Configuration des pins depuis la configuration JSON
+            reset_pin = ui_pins.get('st7735_rst', {}).get('pin', 24)
+            a0_pin = ui_pins.get('st7735_dc', {}).get('pin', 25)
+            cs_pin = ui_pins.get('st7735_cs', {}).get('pin', 8)
             
             # Initialiser directement avec st7735 (comme dans alimante_menu_improved.py)
             self.lcd_driver = st7735.ST7735(
                 port=0,
-                cs=0,
+                cs=cs_pin,
                 dc=a0_pin,
                 rst=reset_pin,
                 rotation=90,   # Rotation comme dans alimante_menu_improved.py
@@ -132,6 +137,26 @@ class LCDInterface:
             self.logger.error(f"Erreur initialisation driver LCD: {e}")
             self.stats['errors'] += 1
             self.lcd_driver = None
+    
+    def _load_gpio_config(self) -> Dict[str, Any]:
+        """Charge la configuration GPIO depuis le fichier JSON"""
+        try:
+            import json
+            config_path = os.path.join(os.path.dirname(__file__), '..', '..', 'config', 'gpio_config.json')
+            with open(config_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            self.logger.warning(f"Impossible de charger gpio_config.json: {e}")
+            # Configuration par défaut
+            return {
+                'gpio_pins': {
+                    'ui': {
+                        'st7735_rst': {'pin': 24},
+                        'st7735_dc': {'pin': 25},
+                        'st7735_cs': {'pin': 8}
+                    }
+                }
+            }
     
     def start(self) -> bool:
         """

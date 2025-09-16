@@ -24,14 +24,22 @@ def test_lcd():
     try:
         print("🔧 Initialisation de l'écran ST7735...")
         
-        # Configuration des pins (comme dans alimante_menu_improved.py)
-        reset_pin = 24  # Pin de reset (comme dans config_alimante.py)
-        a0_pin = 25     # Pin DC (Data/Command) (comme dans config_alimante.py)
+        # Charger la configuration GPIO depuis le fichier JSON
+        import json
+        with open('config/gpio_config.json', 'r', encoding='utf-8') as f:
+            gpio_config = json.load(f)
+        
+        ui_pins = gpio_config.get('gpio_pins', {}).get('ui', {})
+        reset_pin = ui_pins.get('st7735_rst', {}).get('pin', 24)
+        a0_pin = ui_pins.get('st7735_dc', {}).get('pin', 25)
+        cs_pin = ui_pins.get('st7735_cs', {}).get('pin', 8)
+        
+        print(f"📌 Pins configurées: RST={reset_pin}, DC={a0_pin}, CS={cs_pin}")
         
         # Initialiser l'écran
         display = st7735.ST7735(
             port=0,
-            cs=0,
+            cs=cs_pin,
             dc=a0_pin,
             rst=reset_pin,
             rotation=90,   # Rotation comme dans alimante_menu_improved.py
