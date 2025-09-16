@@ -77,8 +77,9 @@ class HeatingService:
             driver_config = DriverConfig(
                 name="heater",
                 enabled=self.heating_config.get('enabled', True),
-                update_interval=1.0,
-                auto_start=False
+                timeout=5.0,
+                retry_attempts=3,
+                retry_delay=1.0
             )
             
             relay_pin = heater_config.get('relay_pin', 19)

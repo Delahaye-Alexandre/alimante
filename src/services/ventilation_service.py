@@ -93,8 +93,9 @@ class VentilationService:
             driver_config = DriverConfig(
                 name="ventilation",
                 enabled=self.ventilation_config.get('enabled', True),
-                update_interval=0.1,
-                auto_start=False
+                timeout=5.0,
+                retry_attempts=3,
+                retry_delay=1.0
             )
             
             pwm_pin = fan_config.get('pwm_pin', 13)

@@ -91,8 +91,9 @@ class SensorService:
             config = DriverConfig(
                 name="dht22",
                 enabled=True,
-                update_interval=2.0,
-                auto_start=False
+                timeout=5.0,
+                retry_attempts=3,
+                retry_delay=1.0
             )
             
             # Récupérer le pin depuis la configuration GPIO
@@ -121,8 +122,9 @@ class SensorService:
             config = DriverConfig(
                 name="air_quality",
                 enabled=True,
-                update_interval=5.0,
-                auto_start=False
+                timeout=5.0,
+                retry_attempts=3,
+                retry_delay=1.0
             )
             
             # Récupérer le pin depuis la configuration GPIO
@@ -151,8 +153,9 @@ class SensorService:
             config = DriverConfig(
                 name="water_level",
                 enabled=True,
-                update_interval=10.0,
-                auto_start=False
+                timeout=5.0,
+                retry_attempts=3,
+                retry_delay=1.0
             )
             
             # Récupérer le pin depuis la configuration GPIO
