@@ -266,6 +266,7 @@ class ControlService:
             current_temp = dht22_data.get('temperature')
             
             if current_temp is None:
+                self.logger.warning("Capteur DHT22 non disponible - contrôle température désactivé")
                 return
             
             # Récupérer les paramètres de l'espèce
@@ -301,6 +302,7 @@ class ControlService:
             current_humidity = dht22_data.get('humidity')
             
             if current_humidity is None:
+                self.logger.warning("Capteur DHT22 non disponible - contrôle humidité désactivé")
                 return
             
             # Récupérer les paramètres de l'espèce
@@ -566,18 +568,9 @@ class ControlService:
             if self.sensor_service:
                 return self.sensor_service.get_current_data()
             else:
-                # Retourner des données par défaut si le service n'est pas disponible
-                return {
-                    'dht22': {'temperature': 20.0, 'humidity': 50.0, 'status': 'service_unavailable'},
-                    'air_quality': {'aqi': 0, 'status': 'service_unavailable'},
-                    'water_level': {'level': 0, 'status': 'service_unavailable'}
-                }
+                self.logger.error("Service de capteurs non disponible")
+                return {}
         except Exception as e:
-            self.logger.warning(f"Erreur récupération données capteurs: {e}")
-            # Retourner des données par défaut en cas d'erreur
-            return {
-                'dht22': {'temperature': 20.0, 'humidity': 50.0, 'status': 'error'},
-                'air_quality': {'aqi': 0, 'status': 'error'},
-                'water_level': {'level': 0, 'status': 'error'}
-            }
+            self.logger.error(f"Erreur récupération données capteurs: {e}")
+            return {}
 

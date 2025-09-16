@@ -427,12 +427,9 @@ class SensorService:
             Dictionnaire des données actuelles
         """
         if not self.sensor_data:
-            # Si aucun capteur n'est disponible, retourner des données par défaut
-            return {
-                'dht22': {'temperature': 20.0, 'humidity': 50.0, 'status': 'no_sensor'},
-                'air_quality': {'aqi': 0, 'status': 'no_sensor'},
-                'water_level': {'level': 0, 'status': 'no_sensor'}
-            }
+            # Si aucun capteur n'est disponible, retourner un dictionnaire vide
+            self.logger.warning("Aucun capteur détecté - données manquantes")
+            return {}
         return self.sensor_data.copy()
     
     def get_sensor_data(self, sensor_name: str) -> Optional[Dict[str, Any]]:

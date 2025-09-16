@@ -149,6 +149,10 @@ class HeatingService:
             dht22_data = sensor_data.get('dht22', {})
             self.current_temperature = dht22_data.get('temperature')
             
+            if self.current_temperature is None:
+                self.logger.warning("Capteur DHT22 non disponible - service chauffage en attente")
+                return
+            
             # Mettre à jour les statistiques
             if self.is_heating:
                 current_time = time.time()
