@@ -8,3 +8,4 @@ gpiod>=0.1.0
 lgpio>=0.1.0
 Flask>=2.0.0
 Flask-CORS>=3.0.0
+gpiodevice>=0.1.0
