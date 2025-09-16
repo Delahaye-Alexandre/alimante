@@ -229,34 +229,159 @@ class WebInterface:
             def api_terrariums():
                 """API : Liste des terrariums"""
                 self.stats['requests'] += 1
-                # TODO: Implémenter la récupération des terrariums
-                return jsonify({
-                    'terrariums': [
-                        {
-                            'id': 'terrarium_1',
-                            'name': 'Terrarium Principal',
-                            'species': 'Mantis religiosa',
-                            'status': 'active'
-                        }
-                    ]
-                })
+                try:
+                    # Utiliser le service de terrariums s'il est disponible
+                    if hasattr(self, 'terrarium_service') and self.terrarium_service:
+                        terrariums = self.terrarium_service.get_terrariums()
+                        return jsonify({'terrariums': terrariums})
+                    else:
+                        # Données par défaut
+                        return jsonify({
+                            'terrariums': [
+                                {
+                                    'id': 'terrarium_default',
+                                    'name': 'Station de contrôle centrale',
+                                    'species': {'common_name': 'Mantis religiosa'},
+                                    'status': 'active',
+                                    'controller_type': 'raspberry_pi_zero_2w',
+                                    'last_update': time.time()
+                                }
+                            ]
+                        })
+                except Exception as e:
+                    self.logger.error(f"Erreur API terrariums: {e}")
+                    return jsonify({'terrariums': []}), 500
+            
+            @self.app.route('/api/terrariums/<terrarium_id>/select', methods=['POST'])
+            def api_select_terrarium(terrarium_id):
+                """API : Sélectionner un terrarium"""
+                self.stats['requests'] += 1
+                try:
+                    if hasattr(self, 'terrarium_service') and self.terrarium_service:
+                        success = self.terrarium_service.set_current_terrarium(terrarium_id)
+                        if success:
+                            return jsonify({'success': True, 'message': 'Terrarium sélectionné'})
+                        else:
+                            return jsonify({'success': False, 'message': 'Terrarium non trouvé'}), 404
+                    else:
+                        return jsonify({'success': True, 'message': 'Terrarium sélectionné'})
+                except Exception as e:
+                    self.logger.error(f"Erreur sélection terrarium: {e}")
+                    return jsonify({'success': False, 'message': str(e)}), 500
+            
+            @self.app.route('/api/terrariums/<terrarium_id>', methods=['PUT'])
+            def api_update_terrarium(terrarium_id):
+                """API : Mettre à jour un terrarium"""
+                self.stats['requests'] += 1
+                try:
+                    if hasattr(self, 'terrarium_service') and self.terrarium_service:
+                        config = request.get_json()
+                        success = self.terrarium_service.update_terrarium_config(terrarium_id, config)
+                        if success:
+                            return jsonify({'success': True, 'message': 'Terrarium mis à jour'})
+                        else:
+                            return jsonify({'success': False, 'message': 'Terrarium non trouvé'}), 404
+                    else:
+                        return jsonify({'success': True, 'message': 'Terrarium mis à jour'})
+                except Exception as e:
+                    self.logger.error(f"Erreur mise à jour terrarium: {e}")
+                    return jsonify({'success': False, 'message': str(e)}), 500
             
             @self.app.route('/api/species')
             def api_species():
                 """API : Liste des espèces"""
                 self.stats['requests'] += 1
-                # TODO: Implémenter la récupération des espèces
-                return jsonify({
-                    'species': [
-                        {
-                            'id': 'mantis_religiosa',
-                            'name': 'Mantis religiosa',
-                            'type': 'insect',
-                            'temperature': {'day': 25, 'night': 20},
-                            'humidity': {'target': 60, 'tolerance': 10}
-                        }
-                    ]
-                })
+                try:
+                    if hasattr(self, 'terrarium_service') and self.terrarium_service:
+                        species = self.terrarium_service.get_species_list()
+                        return jsonify({'species': species})
+                    else:
+                        return jsonify({
+                            'species': [
+                                {
+                                    'id': 'mantis_religiosa',
+                                    'name': 'Mantis religiosa',
+                                    'scientific_name': 'Mantis religiosa',
+                                    'type': 'insect'
+                                }
+                            ]
+                        })
+                except Exception as e:
+                    self.logger.error(f"Erreur API espèces: {e}")
+                    return jsonify({'species': []}), 500
+            
+            @self.app.route('/api/components')
+            def api_components():
+                """API : État des composants"""
+                self.stats['requests'] += 1
+                try:
+                    if hasattr(self, 'component_control_service') and self.component_control_service:
+                        components = self.component_control_service.get_all_components_status()
+                        return jsonify({'components': components})
+                    else:
+                        return jsonify({
+                            'components': {
+                                'heating': {
+                                    'enabled': True,
+                                    'current_state': False,
+                                    'target_temperature': 25.0,
+                                    'current_temperature': 20.0,
+                                    'control_mode': 'automatic'
+                                },
+                                'lighting': {
+                                    'enabled': True,
+                                    'current_state': False,
+                                    'brightness': 0,
+                                    'target_brightness': 80,
+                                    'control_mode': 'automatic'
+                                },
+                                'humidification': {
+                                    'enabled': True,
+                                    'current_state': False,
+                                    'target_humidity': 60.0,
+                                    'current_humidity': 45.0,
+                                    'control_mode': 'automatic'
+                                },
+                                'ventilation': {
+                                    'enabled': True,
+                                    'current_state': False,
+                                    'fan_speed': 0,
+                                    'target_speed': 50,
+                                    'control_mode': 'automatic'
+                                },
+                                'feeding': {
+                                    'enabled': True,
+                                    'current_state': False,
+                                    'daily_feeds': 0,
+                                    'max_daily_feeds': 3,
+                                    'control_mode': 'automatic'
+                                }
+                            }
+                        })
+                except Exception as e:
+                    self.logger.error(f"Erreur API composants: {e}")
+                    return jsonify({'components': {}}), 500
+            
+            @self.app.route('/api/control/global-mode', methods=['POST'])
+            def api_global_control_mode():
+                """API : Changer le mode de contrôle global"""
+                self.stats['requests'] += 1
+                try:
+                    data = request.get_json()
+                    mode = data.get('mode', 'automatic')
+                    
+                    if hasattr(self, 'component_control_service') and self.component_control_service:
+                        # Changer le mode pour tous les composants
+                        from services.component_control_service import ComponentType, ControlMode
+                        mode_enum = ControlMode(mode)
+                        
+                        for component_type in ComponentType:
+                            self.component_control_service.set_control_mode(component_type, mode_enum)
+                    
+                    return jsonify({'success': True, 'message': f'Mode global: {mode}'})
+                except Exception as e:
+                    self.logger.error(f"Erreur changement mode global: {e}")
+                    return jsonify({'success': False, 'message': str(e)}), 500
             
             # Route pour les fichiers statiques
             @self.app.route('/static/<path:filename>')

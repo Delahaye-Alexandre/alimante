@@ -79,6 +79,9 @@ class UIController:
         # Charger la configuration
         self._load_config()
         
+        # Initialiser les services
+        self._initialize_services()
+        
         # Initialiser les composants
         self._initialize_components()
         
@@ -134,6 +137,29 @@ class UIController:
         except Exception as e:
             self.logger.warning(f"Erreur chargement configuration UI: {e}")
     
+    def _initialize_services(self) -> None:
+        """Initialise les services de gestion"""
+        try:
+            # Service de gestion des terrariums
+            from services.terrarium_service import TerrariumService
+            self.terrarium_service = TerrariumService(self.event_bus)
+            self.logger.info("Service de terrariums initialisé")
+            
+            # Service de contrôle des composants
+            from services.component_control_service import ComponentControlService
+            self.component_control_service = ComponentControlService(self.event_bus)
+            self.logger.info("Service de contrôle des composants initialisé")
+            
+            # Passer les services à l'interface web
+            if self.web_interface:
+                self.web_interface.terrarium_service = self.terrarium_service
+                self.web_interface.component_control_service = self.component_control_service
+                self.logger.info("Services passés à l'interface web")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur initialisation services: {e}")
+            self.stats['errors'] += 1
+    
     def _initialize_components(self) -> None:
         """Initialise les composants de l'interface"""
         try:
@@ -147,6 +173,13 @@ class UIController:
             if self.mode in [UIMode.WEB, UIMode.BOTH] and self.config['web']['enabled']:
                 from .web_interface import WebInterface
                 self.web_interface = WebInterface(self.config['web'], self.event_bus)
+                
+                # Passer les services à l'interface web
+                if hasattr(self, 'terrarium_service'):
+                    self.web_interface.terrarium_service = self.terrarium_service
+                if hasattr(self, 'component_control_service'):
+                    self.web_interface.component_control_service = self.component_control_service
+                
                 self.logger.info("Interface web initialisée")
             
             # Initialiser l'encodeur rotatif
@@ -289,6 +322,15 @@ class UIController:
         try:
             # Mettre à jour le timestamp
             self.display_data['timestamp'] = time.time()
+            
+            # Données des terrariums
+            if hasattr(self, 'terrarium_service') and self.terrarium_service:
+                self.display_data['terrariums'] = self.terrarium_service.get_terrariums()
+                self.display_data['current_terrarium'] = self.terrarium_service.get_current_terrarium()
+            
+            # Données des composants
+            if hasattr(self, 'component_control_service') and self.component_control_service:
+                self.display_data['components'] = self.component_control_service.get_all_components_status()
             
             # Émettre un événement de mise à jour
             self.event_bus.emit('ui_data_updated', {

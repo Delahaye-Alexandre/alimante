@@ -11,14 +11,20 @@ from .humidification_service import HumidificationService
 from .ventilation_service import VentilationService
 from .feeding_service import FeedingService
 from .safety_service import SafetyService
+from .terrarium_service import TerrariumService
+from .component_control_service import ComponentControlService, ComponentType, ControlMode
 
 __all__ = [
     'SensorService',
-    'ControlService',
+    'ControlService', 
     'HeatingService',
     'LightingService',
     'HumidificationService',
     'VentilationService',
     'FeedingService',
-    'SafetyService'
+    'SafetyService',
+    'TerrariumService',
+    'ComponentControlService',
+    'ComponentType',
+    'ControlMode'
 ]

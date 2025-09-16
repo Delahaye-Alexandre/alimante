@@ -718,3 +718,366 @@ input:checked+.slider:before {
         transform: rotate(360deg);
     }
 }
+
+/* Terrarium Selector */
+.terrarium-selector {
+    background: var(--surface-color);
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 0;
+}
+
+.terrarium-selector .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.terrarium-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.terrarium-name {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.terrarium-species {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.terrarium-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.terrarium-dropdown {
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background: var(--surface-color);
+    min-width: 200px;
+}
+
+/* Controls Header */
+.controls-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.controls-header h2 {
+    color: var(--text-primary);
+    font-size: 1.8rem;
+}
+
+.control-mode-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.control-mode-selector select {
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background: var(--surface-color);
+}
+
+/* Enhanced Control Cards */
+.control-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.control-mode {
+    display: flex;
+    align-items: center;
+}
+
+.mode-select {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background: var(--surface-color);
+    font-size: 0.8rem;
+}
+
+.control-slider {
+    margin: 1rem 0;
+}
+
+.control-slider label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.control-slider input[type="range"] {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--border-color);
+    outline: none;
+    -webkit-appearance: none;
+}
+
+.control-slider input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+    box-shadow: var(--shadow);
+}
+
+.control-slider input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+    border: none;
+    box-shadow: var(--shadow);
+}
+
+.control-slider .value {
+    float: right;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.control-actions {
+    margin: 1rem 0;
+    text-align: center;
+}
+
+.control-actions .btn {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1rem;
+}
+
+/* Terrariums Tab */
+.terrariums-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.terrariums-header h2 {
+    color: var(--text-primary);
+    font-size: 1.8rem;
+}
+
+.terrariums-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.terrarium-card {
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+    cursor: pointer;
+}
+
+.terrarium-card:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
+}
+
+.terrarium-card.active {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.2);
+}
+
+.terrarium-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.terrarium-card-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.terrarium-card-status {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.terrarium-card-status.active {
+    background: var(--success-color);
+    color: white;
+}
+
+.terrarium-card-status.inactive {
+    background: var(--text-disabled);
+    color: white;
+}
+
+.terrarium-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.terrarium-card-info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.terrarium-card-info-item .label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.terrarium-card-info-item .value {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.terrarium-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.terrarium-card-actions .btn {
+    flex: 1;
+    padding: 0.5rem;
+    font-size: 0.9rem;
+}
+
+/* Terrarium Details */
+.terrarium-details {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 2rem;
+}
+
+.terrarium-details .card {
+    max-width: 600px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.terrarium-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.terrarium-form .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.terrarium-form label {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.terrarium-form input,
+.terrarium-form select,
+.terrarium-form textarea {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background: var(--surface-color);
+    font-size: 1rem;
+}
+
+.terrarium-form textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.terrarium-form .form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Mobile Responsive Updates */
+@media (max-width: 768px) {
+    .terrarium-selector .container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .terrarium-controls {
+        justify-content: center;
+    }
+    
+    .terrarium-dropdown {
+        min-width: auto;
+        flex: 1;
+    }
+    
+    .controls-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .terrariums-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .terrariums-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .terrarium-details {
+        padding: 1rem;
+    }
+}

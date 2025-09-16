@@ -50,6 +50,30 @@
       </div>
     </header>
 
+        <!-- Terrarium Selector -->
+    <div class="terrarium-selector">
+      <div class="container">
+        <div class="terrarium-info">
+          <div class="terrarium-name">
+            <i class="fas fa-home"></i>
+            <span id="currentTerrariumName">Sélection du terrarium...</span>
+          </div>
+          <div class="terrarium-species" id="currentTerrariumSpecies">
+            <i class="fas fa-paw"></i>
+            <span>Espèce non définie</span>
+          </div>
+        </div>
+        <div class="terrarium-controls">
+          <select id="terrariumSelect" class="terrarium-dropdown">
+            <option value="">Chargement...</option>
+          </select>
+          <button class="btn btn-sm btn-primary" id="refreshTerrariumsBtn">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Navigation -->
     <nav class="nav">
       <div class="container">
@@ -65,6 +89,10 @@
           <li class="nav-item" data-tab="controls">
             <i class="fas fa-sliders-h"></i>
             <span>Contrôles</span>
+          </li>
+          <li class="nav-item" data-tab="terrariums">
+            <i class="fas fa-home"></i>
+            <span>Terrariums</span>
           </li>
           <li class="nav-item" data-tab="alerts">
             <i class="fas fa-exclamation-triangle"></i>
@@ -267,10 +295,29 @@
 
         <!-- Controls Tab -->
         <div class="tab-content" id="controls">
+          <div class="controls-header">
+            <h2>Contrôle des Composants</h2>
+            <div class="control-mode-selector">
+              <label>Mode de contrôle:</label>
+              <select id="globalControlMode">
+                <option value="automatic">Automatique</option>
+                <option value="manual">Manuel</option>
+                <option value="disabled">Désactivé</option>
+              </select>
+            </div>
+          </div>
+          
           <div class="controls-grid">
             <div class="card control-card">
               <div class="card-header">
                 <h3><i class="fas fa-fire"></i> Chauffage</h3>
+                <div class="control-mode">
+                  <select id="heatingMode" class="mode-select">
+                    <option value="automatic">Auto</option>
+                    <option value="manual">Manuel</option>
+                    <option value="disabled">Off</option>
+                  </select>
+                </div>
               </div>
               <div class="card-body">
                 <div class="control-toggle">
@@ -278,11 +325,16 @@
                     <input type="checkbox" id="heatingToggle" />
                     <span class="slider"></span>
                   </label>
-                  <span class="control-label">Activer le chauffage</span>
+                  <span class="control-label">État</span>
+                </div>
+                <div class="control-slider">
+                  <label>Température cible:</label>
+                  <input type="range" id="heatingTargetSlider" min="15" max="35" value="25" step="0.5" />
+                  <span class="value" id="heatingTarget">25°C</span>
                 </div>
                 <div class="control-info">
-                  <span class="label">Température cible:</span>
-                  <span class="value" id="heatingTarget">25°C</span>
+                  <span class="label">Actuel:</span>
+                  <span class="value" id="heatingCurrent">--°C</span>
                 </div>
               </div>
             </div>
@@ -290,6 +342,13 @@
             <div class="card control-card">
               <div class="card-header">
                 <h3><i class="fas fa-sun"></i> Éclairage</h3>
+                <div class="control-mode">
+                  <select id="lightingMode" class="mode-select">
+                    <option value="automatic">Auto</option>
+                    <option value="manual">Manuel</option>
+                    <option value="disabled">Off</option>
+                  </select>
+                </div>
               </div>
               <div class="card-body">
                 <div class="control-toggle">
@@ -297,11 +356,16 @@
                     <input type="checkbox" id="lightingToggle" />
                     <span class="slider"></span>
                   </label>
-                  <span class="control-label">Activer l'éclairage</span>
+                  <span class="control-label">État</span>
+                </div>
+                <div class="control-slider">
+                  <label>Intensité:</label>
+                  <input type="range" id="lightingIntensitySlider" min="0" max="100" value="0" step="5" />
+                  <span class="value" id="lightingIntensity">0%</span>
                 </div>
                 <div class="control-info">
-                  <span class="label">Intensité:</span>
-                  <span class="value" id="lightingIntensity">0%</span>
+                  <span class="label">Programme:</span>
+                  <span class="value" id="lightingSchedule">08:00 - 20:00</span>
                 </div>
               </div>
             </div>
@@ -309,6 +373,13 @@
             <div class="card control-card">
               <div class="card-header">
                 <h3><i class="fas fa-tint"></i> Humidification</h3>
+                <div class="control-mode">
+                  <select id="humidificationMode" class="mode-select">
+                    <option value="automatic">Auto</option>
+                    <option value="manual">Manuel</option>
+                    <option value="disabled">Off</option>
+                  </select>
+                </div>
               </div>
               <div class="card-body">
                 <div class="control-toggle">
@@ -316,11 +387,16 @@
                     <input type="checkbox" id="humidificationToggle" />
                     <span class="slider"></span>
                   </label>
-                  <span class="control-label">Activer l'humidification</span>
+                  <span class="control-label">État</span>
+                </div>
+                <div class="control-slider">
+                  <label>Humidité cible:</label>
+                  <input type="range" id="humidificationTargetSlider" min="20" max="90" value="60" step="5" />
+                  <span class="value" id="humidificationTarget">60%</span>
                 </div>
                 <div class="control-info">
-                  <span class="label">Humidité cible:</span>
-                  <span class="value" id="humidificationTarget">60%</span>
+                  <span class="label">Actuel:</span>
+                  <span class="value" id="humidificationCurrent">--%</span>
                 </div>
               </div>
             </div>
@@ -328,6 +404,13 @@
             <div class="card control-card">
               <div class="card-header">
                 <h3><i class="fas fa-fan"></i> Ventilation</h3>
+                <div class="control-mode">
+                  <select id="ventilationMode" class="mode-select">
+                    <option value="automatic">Auto</option>
+                    <option value="manual">Manuel</option>
+                    <option value="disabled">Off</option>
+                  </select>
+                </div>
               </div>
               <div class="card-body">
                 <div class="control-toggle">
@@ -335,11 +418,16 @@
                     <input type="checkbox" id="ventilationToggle" />
                     <span class="slider"></span>
                   </label>
-                  <span class="control-label">Activer la ventilation</span>
+                  <span class="control-label">État</span>
+                </div>
+                <div class="control-slider">
+                  <label>Vitesse:</label>
+                  <input type="range" id="ventilationSpeedSlider" min="0" max="100" value="0" step="10" />
+                  <span class="value" id="ventilationSpeed">0%</span>
                 </div>
                 <div class="control-info">
-                  <span class="label">Vitesse:</span>
-                  <span class="value" id="ventilationSpeed">0%</span>
+                  <span class="label">Mode auto:</span>
+                  <span class="value" id="ventilationAutoMode">Activé</span>
                 </div>
               </div>
             </div>
@@ -347,18 +435,57 @@
             <div class="card control-card">
               <div class="card-header">
                 <h3><i class="fas fa-utensils"></i> Alimentation</h3>
+                <div class="control-mode">
+                  <select id="feedingMode" class="mode-select">
+                    <option value="automatic">Auto</option>
+                    <option value="manual">Manuel</option>
+                    <option value="disabled">Off</option>
+                  </select>
+                </div>
               </div>
               <div class="card-body">
-                <div class="control-toggle">
-                  <label class="switch">
-                    <input type="checkbox" id="feedingToggle" />
-                    <span class="slider"></span>
-                  </label>
-                  <span class="control-label">Activer l'alimentation</span>
+                <div class="control-actions">
+                  <button class="btn btn-primary" id="feedNowBtn">
+                    <i class="fas fa-utensils"></i> Nourrir maintenant
+                  </button>
                 </div>
                 <div class="control-info">
                   <span class="label">Dernière alimentation:</span>
                   <span class="value" id="lastFeeding">--</span>
+                </div>
+                <div class="control-info">
+                  <span class="label">Alimentations aujourd'hui:</span>
+                  <span class="value" id="dailyFeeds">0/3</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Terrariums Tab -->
+        <div class="tab-content" id="terrariums">
+          <div class="terrariums-header">
+            <h2>Gestion des Terrariums</h2>
+            <button class="btn btn-primary" id="addTerrariumBtn">
+              <i class="fas fa-plus"></i> Nouveau Terrarium
+            </button>
+          </div>
+          
+          <div class="terrariums-grid" id="terrariumsGrid">
+            <!-- Les terrariums seront chargés dynamiquement -->
+          </div>
+          
+          <div class="terrarium-details" id="terrariumDetails" style="display: none;">
+            <div class="card">
+              <div class="card-header">
+                <h3 id="terrariumDetailsTitle">Détails du Terrarium</h3>
+                <button class="btn btn-secondary" id="closeTerrariumDetails">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              <div class="card-body">
+                <div class="terrarium-form" id="terrariumForm">
+                  <!-- Le formulaire sera généré dynamiquement -->
                 </div>
               </div>
             </div>

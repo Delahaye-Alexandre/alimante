@@ -9,6 +9,10 @@ class AlimanteApp {
     this.updateInterval = 2000; // 2 secondes
     this.isConnected = false;
     this.currentTab = "dashboard";
+    this.currentTerrarium = null;
+    this.terrariums = [];
+    this.species = [];
+    this.components = {};
     this.data = {
       sensors: {},
       controls: {},
@@ -24,12 +28,18 @@ class AlimanteApp {
 
     // Initialiser les événements
     this.setupEventListeners();
+    this.setupNewEventListeners();
 
     // Démarrer la mise à jour des données
     this.startDataUpdates();
 
     // Charger les données initiales
     this.loadInitialData();
+
+    // Charger les nouvelles données
+    this.loadTerrariums();
+    this.loadSpecies();
+    this.loadComponents();
 
     console.log("Application Alimante initialisée");
   }
@@ -558,6 +568,371 @@ class AlimanteApp {
       return `${minutes}m ${secs}s`;
     } else {
       return `${secs}s`;
+    }
+  }
+
+  // === NOUVELLES FONCTIONNALITÉS ===
+
+  // Gestion des terrariums
+  async loadTerrariums() {
+    try {
+      const response = await fetch(`${this.apiBase}/api/terrariums`);
+      if (response.ok) {
+        const data = await response.json();
+        this.terrariums = data.terrariums || [];
+        this.updateTerrariumSelector();
+        this.updateTerrariumsGrid();
+      }
+    } catch (error) {
+      console.error("Erreur chargement terrariums:", error);
+    }
+  }
+
+  async loadSpecies() {
+    try {
+      const response = await fetch(`${this.apiBase}/api/species`);
+      if (response.ok) {
+        const data = await response.json();
+        this.species = data.species || [];
+      }
+    } catch (error) {
+      console.error("Erreur chargement espèces:", error);
+    }
+  }
+
+  updateTerrariumSelector() {
+    const selector = document.getElementById('terrariumSelect');
+    const nameElement = document.getElementById('currentTerrariumName');
+    const speciesElement = document.getElementById('currentTerrariumSpecies');
+
+    if (selector) {
+      selector.innerHTML = '<option value="">Sélectionner un terrarium...</option>';
+      this.terrariums.forEach(terrarium => {
+        const option = document.createElement('option');
+        option.value = terrarium.id;
+        option.textContent = terrarium.name;
+        selector.appendChild(option);
+      });
+    }
+
+    if (this.currentTerrarium) {
+      const terrarium = this.terrariums.find(t => t.id === this.currentTerrarium);
+      if (terrarium) {
+        if (nameElement) nameElement.textContent = terrarium.name;
+        if (speciesElement) {
+          const speciesName = terrarium.species?.common_name || 'Non définie';
+          speciesElement.textContent = speciesName;
+        }
+        if (selector) selector.value = terrarium.id;
+      }
+    }
+  }
+
+  updateTerrariumsGrid() {
+    const grid = document.getElementById('terrariumsGrid');
+    if (!grid) return;
+
+    grid.innerHTML = '';
+    this.terrariums.forEach(terrarium => {
+      const card = this.createTerrariumCard(terrarium);
+      grid.appendChild(card);
+    });
+  }
+
+  createTerrariumCard(terrarium) {
+    const card = document.createElement('div');
+    card.className = `terrarium-card ${terrarium.id === this.currentTerrarium ? 'active' : ''}`;
+    card.dataset.terrariumId = terrarium.id;
+
+    card.innerHTML = `
+      <div class="terrarium-card-header">
+        <div class="terrarium-card-title">${terrarium.name}</div>
+        <div class="terrarium-card-status ${terrarium.status}">${terrarium.status}</div>
+      </div>
+      <div class="terrarium-card-info">
+        <div class="terrarium-card-info-item">
+          <span class="label">Espèce:</span>
+          <span class="value">${terrarium.species?.common_name || 'Non définie'}</span>
+        </div>
+        <div class="terrarium-card-info-item">
+          <span class="label">Type:</span>
+          <span class="value">${terrarium.controller_type || 'Inconnu'}</span>
+        </div>
+        <div class="terrarium-card-info-item">
+          <span class="label">Dernière MAJ:</span>
+          <span class="value">${this.formatTime(terrarium.last_update)}</span>
+        </div>
+      </div>
+      <div class="terrarium-card-actions">
+        <button class="btn btn-primary" onclick="alimanteApp.selectTerrarium('${terrarium.id}')">
+          <i class="fas fa-check"></i> Sélectionner
+        </button>
+        <button class="btn btn-secondary" onclick="alimanteApp.editTerrarium('${terrarium.id}')">
+          <i class="fas fa-edit"></i> Modifier
+        </button>
+      </div>
+    `;
+
+    return card;
+  }
+
+  async selectTerrarium(terrariumId) {
+    try {
+      const response = await fetch(`${this.apiBase}/api/terrariums/${terrariumId}/select`, {
+        method: 'POST'
+      });
+      
+      if (response.ok) {
+        this.currentTerrarium = terrariumId;
+        this.updateTerrariumSelector();
+        this.updateTerrariumsGrid();
+        this.showNotification('Terrarium sélectionné', 'success');
+      }
+    } catch (error) {
+      console.error("Erreur sélection terrarium:", error);
+      this.showNotification('Erreur sélection terrarium', 'error');
+    }
+  }
+
+  editTerrarium(terrariumId) {
+    const terrarium = this.terrariums.find(t => t.id === terrariumId);
+    if (!terrarium) return;
+
+    this.showTerrariumDetails(terrarium);
+  }
+
+  showTerrariumDetails(terrarium) {
+    const details = document.getElementById('terrariumDetails');
+    const title = document.getElementById('terrariumDetailsTitle');
+    const form = document.getElementById('terrariumForm');
+
+    if (title) title.textContent = `Modifier ${terrarium.name}`;
+    
+    if (form) {
+      form.innerHTML = `
+        <div class="form-group">
+          <label>Nom du terrarium:</label>
+          <input type="text" id="terrariumName" value="${terrarium.name}">
+        </div>
+        <div class="form-group">
+          <label>Description:</label>
+          <textarea id="terrariumDescription">${terrarium.description || ''}</textarea>
+        </div>
+        <div class="form-group">
+          <label>Espèce:</label>
+          <select id="terrariumSpecies">
+            <option value="">Sélectionner une espèce...</option>
+            ${this.species.map(s => `<option value="${s.id}" ${s.id === terrarium.species?.species_id ? 'selected' : ''}>${s.name}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Type de contrôleur:</label>
+          <select id="terrariumControllerType">
+            <option value="raspberry_pi_zero_2w" ${terrarium.controller_type === 'raspberry_pi_zero_2w' ? 'selected' : ''}>Raspberry Pi Zero 2W</option>
+            <option value="esp32" ${terrarium.controller_type === 'esp32' ? 'selected' : ''}>ESP32</option>
+            <option value="arduino" ${terrarium.controller_type === 'arduino' ? 'selected' : ''}>Arduino</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Statut:</label>
+          <select id="terrariumStatus">
+            <option value="active" ${terrarium.status === 'active' ? 'selected' : ''}>Actif</option>
+            <option value="inactive" ${terrarium.status === 'inactive' ? 'selected' : ''}>Inactif</option>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="alimanteApp.saveTerrarium('${terrarium.id}')">
+            <i class="fas fa-save"></i> Sauvegarder
+          </button>
+          <button class="btn btn-secondary" onclick="alimanteApp.closeTerrariumDetails()">
+            <i class="fas fa-times"></i> Annuler
+          </button>
+        </div>
+      `;
+    }
+
+    if (details) details.style.display = 'flex';
+  }
+
+  closeTerrariumDetails() {
+    const details = document.getElementById('terrariumDetails');
+    if (details) details.style.display = 'none';
+  }
+
+  async saveTerrarium(terrariumId) {
+    try {
+      const terrarium = this.terrariums.find(t => t.id === terrariumId);
+      if (!terrarium) return;
+
+      const updatedTerrarium = {
+        ...terrarium,
+        name: document.getElementById('terrariumName').value,
+        description: document.getElementById('terrariumDescription').value,
+        species: this.species.find(s => s.id === document.getElementById('terrariumSpecies').value),
+        controller_type: document.getElementById('terrariumControllerType').value,
+        status: document.getElementById('terrariumStatus').value
+      };
+
+      const response = await fetch(`${this.apiBase}/api/terrariums/${terrariumId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updatedTerrarium)
+      });
+
+      if (response.ok) {
+        this.closeTerrariumDetails();
+        this.loadTerrariums();
+        this.showNotification('Terrarium mis à jour', 'success');
+      }
+    } catch (error) {
+      console.error("Erreur sauvegarde terrarium:", error);
+      this.showNotification('Erreur sauvegarde terrarium', 'error');
+    }
+  }
+
+  // Gestion des composants
+  async loadComponents() {
+    try {
+      const response = await fetch(`${this.apiBase}/api/components`);
+      if (response.ok) {
+        const data = await response.json();
+        this.components = data.components || {};
+        this.updateComponentControls();
+      }
+    } catch (error) {
+      console.error("Erreur chargement composants:", error);
+    }
+  }
+
+  updateComponentControls() {
+    // Mettre à jour les contrôles des composants
+    Object.keys(this.components).forEach(componentType => {
+      const component = this.components[componentType];
+      this.updateComponentControl(componentType, component);
+    });
+  }
+
+  updateComponentControl(componentType, component) {
+    const toggle = document.getElementById(`${componentType}Toggle`);
+    const modeSelect = document.getElementById(`${componentType}Mode`);
+    const targetSlider = document.getElementById(`${componentType}TargetSlider`);
+    const targetValue = document.getElementById(`${componentType}Target`);
+
+    if (toggle) {
+      toggle.checked = component.current_state || false;
+    }
+
+    if (modeSelect) {
+      modeSelect.value = component.control_mode || 'automatic';
+    }
+
+    if (targetSlider && targetValue) {
+      const target = component.target_temperature || component.target_humidity || component.target_brightness || component.target_speed || 0;
+      targetSlider.value = target;
+      targetValue.textContent = `${target}${componentType === 'heating' ? '°C' : componentType === 'humidification' ? '%' : componentType === 'lighting' ? '%' : componentType === 'ventilation' ? '%' : ''}`;
+    }
+  }
+
+  async controlComponent(componentType, command) {
+    try {
+      const response = await fetch(`${this.apiBase}/api/control`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          component: componentType,
+          command: command
+        })
+      });
+
+      if (response.ok) {
+        this.showNotification(`${componentType} contrôlé`, 'success');
+      } else {
+        this.showNotification(`Erreur contrôle ${componentType}`, 'error');
+      }
+    } catch (error) {
+      console.error(`Erreur contrôle ${componentType}:`, error);
+      this.showNotification(`Erreur contrôle ${componentType}`, 'error');
+    }
+  }
+
+  // Utilitaires
+  formatTime(timestamp) {
+    if (!timestamp) return '--';
+    const date = new Date(timestamp * 1000);
+    return date.toLocaleTimeString();
+  }
+
+  // Initialisation des nouveaux événements
+  setupNewEventListeners() {
+    // Sélecteur de terrarium
+    document.getElementById('terrariumSelect')?.addEventListener('change', (e) => {
+      if (e.target.value) {
+        this.selectTerrarium(e.target.value);
+      }
+    });
+
+    document.getElementById('refreshTerrariumsBtn')?.addEventListener('click', () => {
+      this.loadTerrariums();
+    });
+
+    // Contrôles des composants
+    document.getElementById('globalControlMode')?.addEventListener('change', (e) => {
+      this.setGlobalControlMode(e.target.value);
+    });
+
+    // Sliders de contrôle
+    ['heating', 'lighting', 'humidification', 'ventilation'].forEach(component => {
+      const slider = document.getElementById(`${component}TargetSlider`);
+      const value = document.getElementById(`${component}Target`);
+      
+      if (slider && value) {
+        slider.addEventListener('input', (e) => {
+          const val = e.target.value;
+          const unit = component === 'heating' ? '°C' : component === 'humidification' ? '%' : component === 'lighting' ? '%' : component === 'ventilation' ? '%' : '';
+          value.textContent = `${val}${unit}`;
+          
+          // Envoyer la commande
+          const command = {};
+          if (component === 'heating') command.target_temperature = parseFloat(val);
+          else if (component === 'lighting') command.brightness = parseInt(val);
+          else if (component === 'humidification') command.target_humidity = parseInt(val);
+          else if (component === 'ventilation') command.fan_speed = parseInt(val);
+          
+          this.controlComponent(component, command);
+        });
+      }
+    });
+
+    // Bouton d'alimentation
+    document.getElementById('feedNowBtn')?.addEventListener('click', () => {
+      this.controlComponent('feeding', { feed: true });
+    });
+
+    // Fermeture des détails de terrarium
+    document.getElementById('closeTerrariumDetails')?.addEventListener('click', () => {
+      this.closeTerrariumDetails();
+    });
+  }
+
+  async setGlobalControlMode(mode) {
+    try {
+      const response = await fetch(`${this.apiBase}/api/control/global-mode`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ mode })
+      });
+
+      if (response.ok) {
+        this.showNotification(`Mode global: ${mode}`, 'success');
+      }
+    } catch (error) {
+      console.error("Erreur changement mode global:", error);
     }
   }
 }
