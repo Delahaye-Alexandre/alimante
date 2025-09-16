@@ -287,9 +287,13 @@ class WebInterface:
             True si le démarrage réussit, False sinon
         """
         try:
+            self.logger.info(f"Tentative de démarrage du serveur web sur {self.host}:{self.port}")
+            
             if not self.app:
-                self.logger.warning("Application Flask non disponible")
+                self.logger.error("Application Flask non disponible - initialisation échouée")
                 return False
+            
+            self.logger.info("Application Flask disponible, démarrage du serveur...")
             
             # Démarrer le serveur dans un thread séparé
             self.is_running = True
@@ -301,7 +305,12 @@ class WebInterface:
             )
             self.server_thread.start()
             
+            # Attendre un peu pour vérifier que le serveur démarre
+            import time
+            time.sleep(1)
+            
             self.logger.info(f"Interface web démarrée sur http://{self.host}:{self.port}")
+            self.logger.info(f"Interface web accessible sur http://localhost:{self.port}")
             return True
             
         except Exception as e:
@@ -327,6 +336,7 @@ class WebInterface:
     def _run_server(self) -> None:
         """Lance le serveur Flask"""
         try:
+            self.logger.info(f"Démarrage du serveur Flask sur {self.host}:{self.port}")
             self.app.run(
                 host=self.host,
                 port=self.port,
