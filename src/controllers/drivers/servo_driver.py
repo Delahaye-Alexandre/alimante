@@ -34,7 +34,7 @@ class ServoDriver(BaseDriver):
         self.frequency = frequency
         self.current_angle = 0
         self.pwm_object = None
-        self.is_running = False
+        self._is_running = False
         
         # Configuration servo
         self.min_angle = 0
@@ -77,7 +77,7 @@ class ServoDriver(BaseDriver):
             # Créer l'objet PWM
             self.pwm_object = GPIO.PWM(self.gpio_pin, self.frequency)
             self.pwm_object.start(0)
-            self.is_running = True
+            self._is_running = True
             
             # Position initiale : fermé
             self._set_angle(0)
@@ -395,6 +395,29 @@ class ServoDriver(BaseDriver):
             self.logger.error(f"Erreur définition limites impulsion: {e}")
             return False
     
+    def start(self) -> bool:
+        """
+        Démarre le servo (démarre le PWM)
+        
+        Returns:
+            True si succès, False sinon
+        """
+        try:
+            if not self.is_ready():
+                self.logger.error("Servo non initialisé")
+                return False
+            
+            if RASPBERRY_PI and self.pwm_object:
+                self.pwm_object.start(0)  # Commencer avec 0% de duty cycle
+            
+            self._is_running = True
+            self.logger.info(f"Servo pin {self.gpio_pin} démarré")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Erreur démarrage servo: {e}")
+            return False
+    
     def stop(self) -> bool:
         """
         Arrête le servo (arrête le PWM)
@@ -406,13 +429,41 @@ class ServoDriver(BaseDriver):
             if RASPBERRY_PI and self.pwm_object:
                 self.pwm_object.stop()
             
-            self.is_running = False
+            self._is_running = False
             self.logger.info(f"Servo pin {self.gpio_pin} arrêté")
             return True
             
         except Exception as e:
             self.logger.error(f"Erreur arrêt servo: {e}")
             return False
+    
+    def is_running(self) -> bool:
+        """
+        Vérifie si le servo est en cours d'exécution
+        
+        Returns:
+            True si en cours d'exécution, False sinon
+        """
+        return self._is_running and self.is_ready()
+    
+    def get_status(self) -> Dict[str, Any]:
+        """
+        Retourne le statut du servo
+        
+        Returns:
+            Dictionnaire du statut
+        """
+        return {
+            'name': self.config.name,
+            'enabled': self.config.enabled,
+            'state': self.state.value,
+            'is_ready': self.is_ready(),
+            'is_running': self.is_running(),
+            'current_angle': self.current_angle,
+            'frequency': self.frequency,
+            'min_angle': self.min_angle,
+            'max_angle': self.max_angle
+        }
     
     def cleanup(self) -> None:
         """
