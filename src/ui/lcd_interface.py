@@ -17,11 +17,18 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from utils.event_bus import EventBus
 
 try:
+    import st7735
+    from PIL import Image, ImageDraw, ImageFont
     from controllers.drivers.st7735_driver import ST7735Driver
     from controllers.drivers.base_driver import DriverConfig
     RASPBERRY_PI = True
 except ImportError:
+    # Mode simulation pour Windows
     RASPBERRY_PI = False
+    st7735 = None
+    Image = None
+    ImageDraw = None
+    ImageFont = None
     ST7735Driver = None
     DriverConfig = None
 
@@ -62,6 +69,13 @@ class LCDInterface:
         self.rotation = config.get('rotation', 0)
         self.brightness = config.get('brightness', 100)
         
+        # Statistiques (initialiser avant _initialize_driver)
+        self.stats = {
+            'updates': 0,
+            'errors': 0,
+            'start_time': time.time()
+        }
+        
         # Driver LCD
         self.lcd_driver = None
         self._initialize_driver()
@@ -84,13 +98,6 @@ class LCDInterface:
             'gray': 0x8410,
             'dark_gray': 0x4208,
             'light_gray': 0xC618
-        }
-        
-        # Statistiques
-        self.stats = {
-            'updates': 0,
-            'errors': 0,
-            'start_time': time.time()
         }
     
     def _initialize_driver(self) -> None:
