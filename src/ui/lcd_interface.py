@@ -56,6 +56,12 @@ class LCDInterface:
         self.display_data = {}
         self.last_update = 0
         
+        # Configuration d'affichage
+        self.width = config.get('width', 128)
+        self.height = config.get('height', 160)
+        self.rotation = config.get('rotation', 0)
+        self.brightness = config.get('brightness', 100)
+        
         # Driver LCD
         self.lcd_driver = None
         self._initialize_driver()
@@ -63,12 +69,6 @@ class LCDInterface:
         # Thread de mise à jour
         self.update_thread = None
         self.stop_event = threading.Event()
-        
-        # Configuration d'affichage
-        self.width = config.get('width', 128)
-        self.height = config.get('height', 160)
-        self.rotation = config.get('rotation', 0)
-        self.brightness = config.get('brightness', 100)
         
         # Couleurs (format RGB565)
         self.colors = {

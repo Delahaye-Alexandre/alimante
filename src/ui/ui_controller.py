@@ -163,21 +163,21 @@ class UIController:
         """S'abonne aux événements du système"""
         try:
             # Événements des capteurs
-            self.event_bus.subscribe('sensor_data_updated', self._on_sensor_data_updated)
+            self.event_bus.on('sensor_data_updated', self._on_sensor_data_updated)
             
             # Événements de contrôle
-            self.event_bus.subscribe('control_decision', self._on_control_decision)
+            self.event_bus.on('control_decision', self._on_control_decision)
             
             # Événements d'alerte
-            self.event_bus.subscribe('alert_generated', self._on_alert_generated)
+            self.event_bus.on('alert_generated', self._on_alert_generated)
             
             # Événements système
-            self.event_bus.subscribe('system_status_changed', self._on_system_status_changed)
+            self.event_bus.on('system_status_changed', self._on_system_status_changed)
             
             # Événements de l'encodeur
             if self.encoder_interface:
-                self.event_bus.subscribe('encoder_turned', self._on_encoder_turned)
-                self.event_bus.subscribe('encoder_pressed', self._on_encoder_pressed)
+                self.event_bus.on('encoder_turned', self._on_encoder_turned)
+                self.event_bus.on('encoder_pressed', self._on_encoder_pressed)
             
             self.logger.info("Abonnements aux événements configurés")
             
