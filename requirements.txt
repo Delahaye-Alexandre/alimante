@@ -5,3 +5,4 @@ RPI.GPIO>=0.7.1
 gpiozero>=1.5.1
 spidev>=3.5
 gpiod>=0.1.0
+lgpio>=0.1.0
