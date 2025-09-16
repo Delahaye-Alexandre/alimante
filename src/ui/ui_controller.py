@@ -265,7 +265,7 @@ class UIController:
                 
                 # Mettre à jour l'interface LCD
                 if self.lcd_interface and self.lcd_interface.is_running:
-                    self.lcd_interface.update_display()
+                    self.lcd_interface.update(self.display_data)
                     self.stats['lcd_updates'] += 1
                 
                 # Mettre à jour l'interface web
