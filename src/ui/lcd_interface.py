@@ -176,8 +176,10 @@ class LCDInterface:
             if self.update_thread and self.update_thread.is_alive():
                 self.update_thread.join(timeout=2.0)
             
+            # L'objet st7735.ST7735 n'a pas de méthode stop()
+            # Il se ferme automatiquement
             if self.lcd_driver:
-                self.lcd_driver.stop()
+                self.logger.info("Driver LCD ST7735 fermé")
             
             self.logger.info("Interface LCD arrêtée")
             
@@ -313,6 +315,7 @@ class LCDInterface:
             
             # Affichage (comme dans alimante_menu_improved.py)
             self.lcd_driver.display(image)
+            self.logger.info("Écran LCD mis à jour avec succès")
             
         except Exception as e:
             self.logger.error(f"Erreur affichage écran accueil: {e}")
