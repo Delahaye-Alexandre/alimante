@@ -240,8 +240,10 @@ class MainLoop:
                 self.control_service.update()
             
             # Vérifier les alertes de sécurité
-            if self.safety_service:
-                self.safety_service.check_safety_limits()
+            if self.safety_service and self.control_service:
+                # Récupérer les données des capteurs depuis le service de contrôle
+                sensor_data = self.control_service.get_sensor_data()
+                self.safety_service.check_safety_limits(sensor_data)
             
             # Émettre un événement de cycle
             self.event_bus.emit('main_loop_cycle', {
