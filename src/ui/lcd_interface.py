@@ -146,10 +146,9 @@ class LCDInterface:
                 self.is_running = True
                 return True
             
-            # Démarrer le driver
-            if not self.lcd_driver.start():
-                self.logger.error("Échec démarrage driver LCD")
-                return False
+            # L'objet st7735.ST7735 n'a pas de méthode start()
+            # Il est déjà initialisé dans _initialize_driver()
+            self.logger.info("Driver LCD ST7735 prêt")
             
             # Démarrer le thread de mise à jour
             self.is_running = True
