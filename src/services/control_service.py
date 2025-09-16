@@ -564,7 +564,7 @@ class ControlService:
         """
         try:
             if self.sensor_service:
-                return self.sensor_service.get_sensor_data()
+                return self.sensor_service.get_all_sensor_data()
             else:
                 return {}
         except Exception as e:
