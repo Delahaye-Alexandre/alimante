@@ -319,24 +319,24 @@ class LCDInterface:
                 temp = dht22_data.get('temperature', 0)
                 hum = dht22_data.get('humidity', 0)
                 
-                draw.text((5, 50), f"Temp: {temp:.1f}°C", fill=(255, 255, 255), font=font)
-                draw.text((5, 65), f"Hum:  {hum:.1f}%", fill=(255, 255, 255), font=font)
+                draw.text((5, 40), f"Temp: {temp:.1f}°C", fill=(255, 255, 255), font=font)
+                draw.text((5, 55), f"Hum:  {hum:.1f}%", fill=(255, 255, 255), font=font)
             else:
-                draw.text((5, 50), "Capteurs: N/A", fill=(255, 0, 0), font=font)
+                draw.text((5, 40), "Capteurs: N/A", fill=(255, 0, 0), font=font)
             
             # Alertes avec indicateur visuel
             alerts = self.display_data.get('alerts', [])
             if alerts:
-                draw.text((5, 85), f"Alertes: {len(alerts)}", fill=(255, 165, 0), font=font)
+                draw.text((5, 75), f"Alertes: {len(alerts)}", fill=(255, 165, 0), font=font)
             else:
-                draw.text((5, 85), "Aucune alerte", fill=(0, 255, 0), font=font)
+                draw.text((5, 75), "Aucune alerte", fill=(0, 255, 0), font=font)
             
-            # Informations de navigation (comme dans alimante_menu_improved.py)
-            draw.text((5, 110), "Tourner: naviguer", fill=(128, 128, 128), font=font)
-            draw.text((5, 125), "Appuyer: valider", fill=(128, 128, 128), font=font)
+            # Informations de navigation (adaptées à la taille d'écran)
+            draw.text((5, 95), "Tourner: naviguer", fill=(128, 128, 128), font=font)
+            draw.text((5, 110), "Appuyer: valider", fill=(128, 128, 128), font=font)
             
-            # Indicateur de sélection (comme dans le menu original)
-            draw.text((5, 145), "Sel: 1/7", fill=(128, 128, 128), font=font)
+            # Indicateur de sélection (adapté à la taille d'écran)
+            draw.text((5, 125), "Sel: 1/7", fill=(128, 128, 128), font=font)
             
             # Affichage (comme dans alimante_menu_improved.py)
             self.lcd_driver.display(image)

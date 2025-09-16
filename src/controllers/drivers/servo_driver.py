@@ -408,7 +408,9 @@ class ServoDriver(BaseDriver):
                 return False
             
             if RASPBERRY_PI and self.pwm_object:
-                self.pwm_object.start(0)  # Commencer avec 0% de duty cycle
+                # Positionner le servo à la position fermée (0°) au démarrage
+                self._set_angle(0)
+                self.pwm_object.start(self._angle_to_duty_cycle(0))
             
             self._is_running = True
             self.logger.info(f"Servo pin {self.gpio_pin} démarré")
