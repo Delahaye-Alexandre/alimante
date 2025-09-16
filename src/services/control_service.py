@@ -554,4 +554,20 @@ class ControlService:
             
         except Exception as e:
             self.logger.error(f"Erreur nettoyage service contrôle: {e}")
+    
+    def get_sensor_data(self) -> Dict[str, Any]:
+        """
+        Récupère les données des capteurs depuis le service de capteurs
+        
+        Returns:
+            Dictionnaire contenant les données des capteurs
+        """
+        try:
+            if self.sensor_service:
+                return self.sensor_service.get_sensor_data()
+            else:
+                return {}
+        except Exception as e:
+            self.logger.error(f"Erreur récupération données capteurs: {e}")
+            return {}
 
