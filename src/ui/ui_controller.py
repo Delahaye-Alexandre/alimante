@@ -264,12 +264,12 @@ class UIController:
                 self._update_display_data()
                 
                 # Mettre à jour l'interface LCD
-                if self.lcd_interface and self.lcd_interface.is_running():
-                    self.lcd_interface.update(self.display_data)
+                if self.lcd_interface and self.lcd_interface.is_running:
+                    self.lcd_interface.update_display()
                     self.stats['lcd_updates'] += 1
                 
                 # Mettre à jour l'interface web
-                if self.web_interface and self.web_interface.is_running():
+                if self.web_interface and self.web_interface.is_running:
                     self.web_interface.update(self.display_data)
                     self.stats['web_updates'] += 1
                 
