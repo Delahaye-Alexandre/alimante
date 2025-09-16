@@ -80,14 +80,14 @@ class AlimanteMenuImproved:
                 dc=self.a0_pin,
                 rst=self.reset_pin,
                 rotation=90,   # Rotation inversée (90° au lieu de 270°)
-                invert=True,   # Inversion de l'affichage
+                invert=False,   # Inversion de l'affichage
                 bgr=False      # Format RGB standard
             )
             self.display.begin()
             self.is_display_initialized = True
             print(f"✅ Écran initialisé: {self.display.width}x{self.display.height}")
             print("   • Format: RGB standard")
-            print("   • Inversion: Activée")
+            print("   • Inversion: Désactivée")
             print("   • Rotation: 90°")
             return True
             
@@ -127,7 +127,7 @@ class AlimanteMenuImproved:
             return False
 
     def _on_rotation(self):
-        """Callback de rotation de l'encodeur (SENS NORMAL)"""
+        """Callback de rotation de l'encodeur (INVERSÉ)"""
         if not self.is_running:
             return
             
@@ -137,13 +137,13 @@ class AlimanteMenuImproved:
         # Mise à jour du compteur
         self.counter = self.encoder.steps
         
-        # Mise à jour de la sélection du menu (SENS NORMAL)
+        # Mise à jour de la sélection du menu (INVERSÉ)
         if self.encoder.steps > old_counter:
-            # Rotation horaire = menu vers le bas (sens normal)
-            self.current_selection = (self.current_selection + 1) % len(self.menu_items)
-        else:
-            # Rotation anti-horaire = menu vers le haut (sens normal)
+            # Rotation horaire = menu vers le bas (inversé)
             self.current_selection = (self.current_selection - 1) % len(self.menu_items)
+        else:
+            # Rotation anti-horaire = menu vers le haut (inversé)
+            self.current_selection = (self.current_selection + 1) % len(self.menu_items)
         
         # Mise à jour de l'affichage
         self.update_display()
