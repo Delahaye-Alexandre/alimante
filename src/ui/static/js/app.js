@@ -431,7 +431,7 @@ class AlimanteApp {
     try {
       // Utiliser le nouveau format de contrôle
       const command = { state: enabled };
-      
+
       const response = await fetch(`${this.apiBase}/api/control`, {
         method: "POST",
         headers: {
@@ -606,14 +606,15 @@ class AlimanteApp {
   }
 
   updateTerrariumSelector() {
-    const selector = document.getElementById('terrariumSelect');
-    const nameElement = document.getElementById('currentTerrariumName');
-    const speciesElement = document.getElementById('currentTerrariumSpecies');
+    const selector = document.getElementById("terrariumSelect");
+    const nameElement = document.getElementById("currentTerrariumName");
+    const speciesElement = document.getElementById("currentTerrariumSpecies");
 
     if (selector) {
-      selector.innerHTML = '<option value="">Sélectionner un terrarium...</option>';
-      this.terrariums.forEach(terrarium => {
-        const option = document.createElement('option');
+      selector.innerHTML =
+        '<option value="">Sélectionner un terrarium...</option>';
+      this.terrariums.forEach((terrarium) => {
+        const option = document.createElement("option");
         option.value = terrarium.id;
         option.textContent = terrarium.name;
         selector.appendChild(option);
@@ -621,11 +622,13 @@ class AlimanteApp {
     }
 
     if (this.currentTerrarium) {
-      const terrarium = this.terrariums.find(t => t.id === this.currentTerrarium);
+      const terrarium = this.terrariums.find(
+        (t) => t.id === this.currentTerrarium
+      );
       if (terrarium) {
         if (nameElement) nameElement.textContent = terrarium.name;
         if (speciesElement) {
-          const speciesName = terrarium.species?.common_name || 'Non définie';
+          const speciesName = terrarium.species?.common_name || "Non définie";
           speciesElement.textContent = speciesName;
         }
         if (selector) selector.value = terrarium.id;
@@ -634,34 +637,40 @@ class AlimanteApp {
   }
 
   updateTerrariumsGrid() {
-    const grid = document.getElementById('terrariumsGrid');
+    const grid = document.getElementById("terrariumsGrid");
     if (!grid) return;
 
-    grid.innerHTML = '';
-    this.terrariums.forEach(terrarium => {
+    grid.innerHTML = "";
+    this.terrariums.forEach((terrarium) => {
       const card = this.createTerrariumCard(terrarium);
       grid.appendChild(card);
     });
   }
 
   createTerrariumCard(terrarium) {
-    const card = document.createElement('div');
-    card.className = `terrarium-card ${terrarium.id === this.currentTerrarium ? 'active' : ''}`;
+    const card = document.createElement("div");
+    card.className = `terrarium-card ${
+      terrarium.id === this.currentTerrarium ? "active" : ""
+    }`;
     card.dataset.terrariumId = terrarium.id;
 
     card.innerHTML = `
       <div class="terrarium-card-header">
         <div class="terrarium-card-title">${terrarium.name}</div>
-        <div class="terrarium-card-status ${terrarium.status}">${terrarium.status}</div>
+        <div class="terrarium-card-status ${terrarium.status}">${
+      terrarium.status
+    }</div>
       </div>
       <div class="terrarium-card-info">
         <div class="terrarium-card-info-item">
           <span class="label">Espèce:</span>
-          <span class="value">${terrarium.species?.common_name || 'Non définie'}</span>
+          <span class="value">${
+            terrarium.species?.common_name || "Non définie"
+          }</span>
         </div>
         <div class="terrarium-card-info-item">
           <span class="label">Type:</span>
-          <span class="value">${terrarium.controller_type || 'Inconnu'}</span>
+          <span class="value">${terrarium.controller_type || "Inconnu"}</span>
         </div>
         <div class="terrarium-card-info-item">
           <span class="label">Dernière MAJ:</span>
@@ -669,10 +678,14 @@ class AlimanteApp {
         </div>
       </div>
       <div class="terrarium-card-actions">
-        <button class="btn btn-primary" onclick="alimanteApp.selectTerrarium('${terrarium.id}')">
+        <button class="btn btn-primary" onclick="alimanteApp.selectTerrarium('${
+          terrarium.id
+        }')">
           <i class="fas fa-check"></i> Sélectionner
         </button>
-        <button class="btn btn-secondary" onclick="alimanteApp.editTerrarium('${terrarium.id}')">
+        <button class="btn btn-secondary" onclick="alimanteApp.editTerrarium('${
+          terrarium.id
+        }')">
           <i class="fas fa-edit"></i> Modifier
         </button>
       </div>
@@ -683,36 +696,39 @@ class AlimanteApp {
 
   async selectTerrarium(terrariumId) {
     try {
-      const response = await fetch(`${this.apiBase}/api/terrariums/${terrariumId}/select`, {
-        method: 'POST'
-      });
-      
+      const response = await fetch(
+        `${this.apiBase}/api/terrariums/${terrariumId}/select`,
+        {
+          method: "POST",
+        }
+      );
+
       if (response.ok) {
         this.currentTerrarium = terrariumId;
         this.updateTerrariumSelector();
         this.updateTerrariumsGrid();
-        this.showNotification('Terrarium sélectionné', 'success');
+        this.showNotification("Terrarium sélectionné", "success");
       }
     } catch (error) {
       console.error("Erreur sélection terrarium:", error);
-      this.showNotification('Erreur sélection terrarium', 'error');
+      this.showNotification("Erreur sélection terrarium", "error");
     }
   }
 
   editTerrarium(terrariumId) {
-    const terrarium = this.terrariums.find(t => t.id === terrariumId);
+    const terrarium = this.terrariums.find((t) => t.id === terrariumId);
     if (!terrarium) return;
 
     this.showTerrariumDetails(terrarium);
   }
 
   showTerrariumDetails(terrarium) {
-    const details = document.getElementById('terrariumDetails');
-    const title = document.getElementById('terrariumDetailsTitle');
-    const form = document.getElementById('terrariumForm');
+    const details = document.getElementById("terrariumDetails");
+    const title = document.getElementById("terrariumDetailsTitle");
+    const form = document.getElementById("terrariumForm");
 
     if (title) title.textContent = `Modifier ${terrarium.name}`;
-    
+
     if (form) {
       form.innerHTML = `
         <div class="form-group">
@@ -721,32 +737,55 @@ class AlimanteApp {
         </div>
         <div class="form-group">
           <label>Description:</label>
-          <textarea id="terrariumDescription">${terrarium.description || ''}</textarea>
+          <textarea id="terrariumDescription">${
+            terrarium.description || ""
+          }</textarea>
         </div>
         <div class="form-group">
           <label>Espèce:</label>
           <select id="terrariumSpecies">
             <option value="">Sélectionner une espèce...</option>
-            ${this.species.map(s => `<option value="${s.id}" ${s.id === terrarium.species?.species_id ? 'selected' : ''}>${s.name}</option>`).join('')}
+            ${this.species
+              .map(
+                (s) =>
+                  `<option value="${s.id}" ${
+                    s.id === terrarium.species?.species_id ? "selected" : ""
+                  }>${s.name}</option>`
+              )
+              .join("")}
           </select>
         </div>
         <div class="form-group">
           <label>Type de contrôleur:</label>
           <select id="terrariumControllerType">
-            <option value="raspberry_pi_zero_2w" ${terrarium.controller_type === 'raspberry_pi_zero_2w' ? 'selected' : ''}>Raspberry Pi Zero 2W</option>
-            <option value="esp32" ${terrarium.controller_type === 'esp32' ? 'selected' : ''}>ESP32</option>
-            <option value="arduino" ${terrarium.controller_type === 'arduino' ? 'selected' : ''}>Arduino</option>
+            <option value="raspberry_pi_zero_2w" ${
+              terrarium.controller_type === "raspberry_pi_zero_2w"
+                ? "selected"
+                : ""
+            }>Raspberry Pi Zero 2W</option>
+            <option value="esp32" ${
+              terrarium.controller_type === "esp32" ? "selected" : ""
+            }>ESP32</option>
+            <option value="arduino" ${
+              terrarium.controller_type === "arduino" ? "selected" : ""
+            }>Arduino</option>
           </select>
         </div>
         <div class="form-group">
           <label>Statut:</label>
           <select id="terrariumStatus">
-            <option value="active" ${terrarium.status === 'active' ? 'selected' : ''}>Actif</option>
-            <option value="inactive" ${terrarium.status === 'inactive' ? 'selected' : ''}>Inactif</option>
+            <option value="active" ${
+              terrarium.status === "active" ? "selected" : ""
+            }>Actif</option>
+            <option value="inactive" ${
+              terrarium.status === "inactive" ? "selected" : ""
+            }>Inactif</option>
           </select>
         </div>
         <div class="form-actions">
-          <button class="btn btn-primary" onclick="alimanteApp.saveTerrarium('${terrarium.id}')">
+          <button class="btn btn-primary" onclick="alimanteApp.saveTerrarium('${
+            terrarium.id
+          }')">
             <i class="fas fa-save"></i> Sauvegarder
           </button>
           <button class="btn btn-secondary" onclick="alimanteApp.closeTerrariumDetails()">
@@ -756,44 +795,50 @@ class AlimanteApp {
       `;
     }
 
-    if (details) details.style.display = 'flex';
+    if (details) details.style.display = "flex";
   }
 
   closeTerrariumDetails() {
-    const details = document.getElementById('terrariumDetails');
-    if (details) details.style.display = 'none';
+    const details = document.getElementById("terrariumDetails");
+    if (details) details.style.display = "none";
   }
 
   async saveTerrarium(terrariumId) {
     try {
-      const terrarium = this.terrariums.find(t => t.id === terrariumId);
+      const terrarium = this.terrariums.find((t) => t.id === terrariumId);
       if (!terrarium) return;
 
       const updatedTerrarium = {
         ...terrarium,
-        name: document.getElementById('terrariumName').value,
-        description: document.getElementById('terrariumDescription').value,
-        species: this.species.find(s => s.id === document.getElementById('terrariumSpecies').value),
-        controller_type: document.getElementById('terrariumControllerType').value,
-        status: document.getElementById('terrariumStatus').value
+        name: document.getElementById("terrariumName").value,
+        description: document.getElementById("terrariumDescription").value,
+        species: this.species.find(
+          (s) => s.id === document.getElementById("terrariumSpecies").value
+        ),
+        controller_type: document.getElementById("terrariumControllerType")
+          .value,
+        status: document.getElementById("terrariumStatus").value,
       };
 
-      const response = await fetch(`${this.apiBase}/api/terrariums/${terrariumId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(updatedTerrarium)
-      });
+      const response = await fetch(
+        `${this.apiBase}/api/terrariums/${terrariumId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(updatedTerrarium),
+        }
+      );
 
       if (response.ok) {
         this.closeTerrariumDetails();
         this.loadTerrariums();
-        this.showNotification('Terrarium mis à jour', 'success');
+        this.showNotification("Terrarium mis à jour", "success");
       }
     } catch (error) {
       console.error("Erreur sauvegarde terrarium:", error);
-      this.showNotification('Erreur sauvegarde terrarium', 'error');
+      this.showNotification("Erreur sauvegarde terrarium", "error");
     }
   }
 
@@ -813,7 +858,7 @@ class AlimanteApp {
 
   updateComponentControls() {
     // Mettre à jour les contrôles des composants
-    Object.keys(this.components).forEach(componentType => {
+    Object.keys(this.components).forEach((componentType) => {
       const component = this.components[componentType];
       this.updateComponentControl(componentType, component);
     });
@@ -822,7 +867,9 @@ class AlimanteApp {
   updateComponentControl(componentType, component) {
     const toggle = document.getElementById(`${componentType}Toggle`);
     const modeSelect = document.getElementById(`${componentType}Mode`);
-    const targetSlider = document.getElementById(`${componentType}TargetSlider`);
+    const targetSlider = document.getElementById(
+      `${componentType}TargetSlider`
+    );
     const targetValue = document.getElementById(`${componentType}Target`);
 
     if (toggle) {
@@ -830,43 +877,58 @@ class AlimanteApp {
     }
 
     if (modeSelect) {
-      modeSelect.value = component.control_mode || 'automatic';
+      modeSelect.value = component.control_mode || "automatic";
     }
 
     if (targetSlider && targetValue) {
-      const target = component.target_temperature || component.target_humidity || component.target_brightness || component.target_speed || 0;
+      const target =
+        component.target_temperature ||
+        component.target_humidity ||
+        component.target_brightness ||
+        component.target_speed ||
+        0;
       targetSlider.value = target;
-      targetValue.textContent = `${target}${componentType === 'heating' ? '°C' : componentType === 'humidification' ? '%' : componentType === 'lighting' ? '%' : componentType === 'ventilation' ? '%' : ''}`;
+      targetValue.textContent = `${target}${
+        componentType === "heating"
+          ? "°C"
+          : componentType === "humidification"
+          ? "%"
+          : componentType === "lighting"
+          ? "%"
+          : componentType === "ventilation"
+          ? "%"
+          : ""
+      }`;
     }
   }
 
   async controlComponent(componentType, command) {
     try {
       const response = await fetch(`${this.apiBase}/api/control`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           component: componentType,
-          command: command
-        })
+          command: command,
+        }),
       });
 
       if (response.ok) {
-        this.showNotification(`${componentType} contrôlé`, 'success');
+        this.showNotification(`${componentType} contrôlé`, "success");
       } else {
-        this.showNotification(`Erreur contrôle ${componentType}`, 'error');
+        this.showNotification(`Erreur contrôle ${componentType}`, "error");
       }
     } catch (error) {
       console.error(`Erreur contrôle ${componentType}:`, error);
-      this.showNotification(`Erreur contrôle ${componentType}`, 'error');
+      this.showNotification(`Erreur contrôle ${componentType}`, "error");
     }
   }
 
   // Utilitaires
   formatTime(timestamp) {
-    if (!timestamp) return '--';
+    if (!timestamp) return "--";
     const date = new Date(timestamp * 1000);
     return date.toLocaleTimeString();
   }
@@ -874,67 +936,90 @@ class AlimanteApp {
   // Initialisation des nouveaux événements
   setupNewEventListeners() {
     // Sélecteur de terrarium
-    document.getElementById('terrariumSelect')?.addEventListener('change', (e) => {
-      if (e.target.value) {
-        this.selectTerrarium(e.target.value);
-      }
-    });
+    document
+      .getElementById("terrariumSelect")
+      ?.addEventListener("change", (e) => {
+        if (e.target.value) {
+          this.selectTerrarium(e.target.value);
+        }
+      });
 
-    document.getElementById('refreshTerrariumsBtn')?.addEventListener('click', () => {
-      this.loadTerrariums();
-    });
+    document
+      .getElementById("refreshTerrariumsBtn")
+      ?.addEventListener("click", () => {
+        this.loadTerrariums();
+      });
 
     // Contrôles des composants
-    document.getElementById('globalControlMode')?.addEventListener('change', (e) => {
-      this.setGlobalControlMode(e.target.value);
-    });
+    document
+      .getElementById("globalControlMode")
+      ?.addEventListener("change", (e) => {
+        this.setGlobalControlMode(e.target.value);
+      });
 
     // Sliders de contrôle
-    ['heating', 'lighting', 'humidification', 'ventilation'].forEach(component => {
-      const slider = document.getElementById(`${component}TargetSlider`);
-      const value = document.getElementById(`${component}Target`);
-      
-      if (slider && value) {
-        slider.addEventListener('input', (e) => {
-          const val = e.target.value;
-          const unit = component === 'heating' ? '°C' : component === 'humidification' ? '%' : component === 'lighting' ? '%' : component === 'ventilation' ? '%' : '';
-          value.textContent = `${val}${unit}`;
-          
-          // Envoyer la commande
-          const command = {};
-          if (component === 'heating') command.target_temperature = parseFloat(val);
-          else if (component === 'lighting') command.brightness = parseInt(val);
-          else if (component === 'humidification') command.target_humidity = parseInt(val);
-          else if (component === 'ventilation') command.fan_speed = parseInt(val);
-          
-          this.controlComponent(component, command);
-        });
+    ["heating", "lighting", "humidification", "ventilation"].forEach(
+      (component) => {
+        const slider = document.getElementById(`${component}TargetSlider`);
+        const value = document.getElementById(`${component}Target`);
+
+        if (slider && value) {
+          slider.addEventListener("input", (e) => {
+            const val = e.target.value;
+            const unit =
+              component === "heating"
+                ? "°C"
+                : component === "humidification"
+                ? "%"
+                : component === "lighting"
+                ? "%"
+                : component === "ventilation"
+                ? "%"
+                : "";
+            value.textContent = `${val}${unit}`;
+
+            // Envoyer la commande
+            const command = {};
+            if (component === "heating")
+              command.target_temperature = parseFloat(val);
+            else if (component === "lighting")
+              command.brightness = parseInt(val);
+            else if (component === "humidification")
+              command.target_humidity = parseInt(val);
+            else if (component === "ventilation")
+              command.fan_speed = parseInt(val);
+
+            this.controlComponent(component, command);
+          });
+        }
       }
-    });
+    );
 
     // Bouton d'alimentation
-    document.getElementById('feedNowBtn')?.addEventListener('click', () => {
-      this.controlComponent('feeding', { feed: true });
+    document.getElementById("feedNowBtn")?.addEventListener("click", () => {
+      this.controlComponent("feeding", { feed: true });
     });
 
     // Fermeture des détails de terrarium
-    document.getElementById('closeTerrariumDetails')?.addEventListener('click', () => {
-      this.closeTerrariumDetails();
-    });
+    document
+      .getElementById("closeTerrariumDetails")
+      ?.addEventListener("click", () => {
+        this.closeTerrariumDetails();
+      });
   }
 
   async setGlobalControlMode(mode) {
     try {
       const response = await fetch(`${this.apiBase}/api/control/global-mode`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ mode })
+        body: JSON.stringify({ mode }),
       });
 
       if (response.ok) {
-        this.showNotification(`Mode global: ${mode}`, 'success');
+        this.showNotification(`Mode global: ${mode}`, "success");
       }
     } catch (error) {
       console.error("Erreur changement mode global:", error);
