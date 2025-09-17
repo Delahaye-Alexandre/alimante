@@ -187,11 +187,14 @@ class ComponentControlService:
             # Driver du servomoteur d'alimentation
             try:
                 servo_config = DriverConfig(
-                    pin=gpio_config.get('servo', {}).get('pin', 18),
-                    frequency=gpio_config.get('servo', {}).get('frequency', 50)
+                    name="feeding_servo",
+                    enabled=True
                 )
-                self.drivers[ComponentType.FEEDING] = ServoDriver(servo_config)
-                self.logger.info(f"Driver servomoteur initialisé sur pin {servo_config.pin}")
+                pwm_pin = gpio_config.get('servo', {}).get('pin', 18)
+                frequency = gpio_config.get('servo', {}).get('frequency', 50)
+                
+                self.drivers[ComponentType.FEEDING] = ServoDriver(servo_config, pwm_pin, frequency)
+                self.logger.info(f"Driver servomoteur initialisé sur pin {pwm_pin}")
             except Exception as e:
                 self.logger.error(f"Erreur initialisation driver servomoteur: {e}")
                 self.drivers[ComponentType.FEEDING] = None
