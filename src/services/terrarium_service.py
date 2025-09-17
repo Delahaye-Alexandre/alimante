@@ -109,12 +109,21 @@ class TerrariumService:
                     'type': 'insect'
                 }
             
-            # Créer le terrarium principal
+            # Créer le terrarium principal en utilisant la configuration de l'espèce
             terrarium_id = 'terrarium_principal'
+            
+            # Extraire les paramètres environnementaux de la configuration de l'espèce
+            env_req = species_config.get('environmental_requirements', {})
+            temp_config = env_req.get('temperature', {})
+            humidity_config = env_req.get('humidity', {})
+            lighting_config = env_req.get('lighting', {})
+            ventilation_config = env_req.get('ventilation', {})
+            feeding_req = species_config.get('feeding_requirements', {})
+            
             terrarium_config = {
                 'terrarium_id': terrarium_id,
                 'name': 'Terrarium Principal',
-                'description': 'Terrarium principal pour la mante religieuse',
+                'description': f'Terrarium principal pour {species_config.get("common_name", "la mante religieuse")}',
                 'active': True,
                 'controller_type': 'raspberry_pi_zero_2w',
                 'created_date': time.strftime('%Y-%m-%d'),
@@ -123,31 +132,39 @@ class TerrariumService:
                     'species_id': species_config.get('species_id', 'mantis_religiosa'),
                     'common_name': species_config.get('common_name', 'Mante religieuse'),
                     'scientific_name': species_config.get('scientific_name', 'Mantis religiosa'),
-                    'type': species_config.get('type', 'insect')
+                    'type': species_config.get('category', 'insect')
                 },
                 'environmental_settings': {
                     'temperature': {
-                        'day_target': 25.0,
-                        'night_target': 20.0,
+                        'day_target': temp_config.get('day', {}).get('optimal', 25.0),
+                        'night_target': temp_config.get('night', {}).get('optimal', 20.0),
+                        'min': temp_config.get('day', {}).get('min', 22.0),
+                        'max': temp_config.get('day', {}).get('max', 28.0),
                         'hysteresis': 1.0
                     },
                     'humidity': {
-                        'target': 65.0,
+                        'target': humidity_config.get('optimal', 65.0),
+                        'min': humidity_config.get('min', 50.0),
+                        'max': humidity_config.get('max', 80.0),
                         'hysteresis': 5.0
                     },
                     'lighting': {
-                        'on_time': '08:00',
-                        'off_time': '20:00',
-                        'intensity': 60
+                        'on_time': lighting_config.get('photoperiod', {}).get('day_start', '08:00'),
+                        'off_time': lighting_config.get('photoperiod', {}).get('day_end', '20:00'),
+                        'intensity': lighting_config.get('intensity', {}).get('optimal', 60),
+                        'fade_enabled': lighting_config.get('fade', {}).get('enabled', True)
                     },
                     'ventilation': {
-                        'base_speed': 25,
-                        'max_speed': 60
+                        'base_speed': ventilation_config.get('air_circulation', {}).get('base_speed', 25),
+                        'max_speed': ventilation_config.get('air_circulation', {}).get('max_speed', 60),
+                        'enabled': ventilation_config.get('air_circulation', {}).get('enabled', True)
                     }
                 },
                 'feeding_schedule': {
                     'enabled': True,
-                    'times': ['10:00', '19:00'],
+                    'times': feeding_req.get('schedule', {}).get('times', ['10:00', '19:00']),
+                    'frequency': feeding_req.get('schedule', {}).get('frequency', 'daily'),
+                    'portion_size': feeding_req.get('schedule', {}).get('portion_size', 'small'),
                     'max_daily_feeds': 3
                 }
             }

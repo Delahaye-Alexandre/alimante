@@ -59,65 +59,87 @@ class ComponentControlService:
     def _initialize_components(self) -> None:
         """Initialise les composants par défaut"""
         try:
-            # Composants de chauffage (paramètres pour mantis_religiosa)
+            # Charger la configuration de l'espèce par défaut
+            species_config = self._load_default_species_config()
+            
+            # Composants de chauffage
+            temp_config = species_config.get('environmental_requirements', {}).get('temperature', {})
+            day_temp = temp_config.get('day', {}).get('optimal', 25.0)
+            night_temp = temp_config.get('night', {}).get('optimal', 20.0)
+            
             self.components[ComponentType.HEATING] = {
                 'enabled': True,
                 'current_state': False,
-                'target_temperature': 25.0,  # Température optimale jour
+                'target_temperature': day_temp,
+                'night_temperature': night_temp,
                 'current_temperature': 20.0,
                 'power_level': 0,
                 'control_mode': 'automatic',
                 'last_update': time.time()
             }
             
-            # Composants d'éclairage (paramètres pour mantis_religiosa)
+            # Composants d'éclairage
+            lighting_config = species_config.get('environmental_requirements', {}).get('lighting', {})
+            photoperiod = lighting_config.get('photoperiod', {})
+            intensity = lighting_config.get('intensity', {})
+            
             self.components[ComponentType.LIGHTING] = {
                 'enabled': True,
                 'current_state': False,
                 'brightness': 0,
-                'target_brightness': 60,  # Intensité optimale
+                'target_brightness': intensity.get('optimal', 60),
                 'color_temperature': 6500,
                 'control_mode': 'automatic',
                 'schedule': {
-                    'on_time': '08:00',
-                    'off_time': '20:00',
-                    'fade_duration': 30
+                    'on_time': photoperiod.get('day_start', '08:00'),
+                    'off_time': photoperiod.get('day_end', '20:00'),
+                    'fade_duration': lighting_config.get('fade', {}).get('sunrise_duration', 30)
                 },
                 'last_update': time.time()
             }
             
-            # Composants d'humidification (paramètres pour mantis_religiosa)
+            # Composants d'humidification
+            humidity_config = species_config.get('environmental_requirements', {}).get('humidity', {})
+            
             self.components[ComponentType.HUMIDIFICATION] = {
                 'enabled': True,
                 'current_state': False,
-                'target_humidity': 65.0,  # Humidité optimale
+                'target_humidity': humidity_config.get('optimal', 65.0),
                 'current_humidity': 45.0,
                 'control_mode': 'automatic',
                 'cycle_time': 300,  # 5 minutes
                 'last_update': time.time()
             }
             
-            # Composants de ventilation (paramètres pour mantis_religiosa)
+            # Composants de ventilation
+            ventilation_config = species_config.get('environmental_requirements', {}).get('ventilation', {})
+            air_circulation = ventilation_config.get('air_circulation', {})
+            
             self.components[ComponentType.VENTILATION] = {
                 'enabled': True,
                 'current_state': False,
                 'fan_speed': 0,
-                'target_speed': 25,  # Vitesse de base
+                'target_speed': air_circulation.get('base_speed', 25),
+                'max_speed': air_circulation.get('max_speed', 60),
                 'control_mode': 'automatic',
                 'auto_mode': True,
                 'last_update': time.time()
             }
             
-            # Composants d'alimentation (paramètres pour mantis_religiosa)
+            # Composants d'alimentation
+            feeding_config = species_config.get('feeding_requirements', {})
+            schedule = feeding_config.get('schedule', {})
+            
             self.components[ComponentType.FEEDING] = {
                 'enabled': True,
                 'current_state': False,
                 'servo_angle': 0,
                 'control_mode': 'automatic',
-                'feeding_schedule': ['10:00', '19:00'],  # Horaires d'alimentation
+                'feeding_schedule': schedule.get('times', ['10:00', '19:00']),
                 'last_feeding': None,
                 'daily_feeds': 0,
-                'max_daily_feeds': 3,  # Maximum quotidien
+                'max_daily_feeds': 3,
+                'portion_size': schedule.get('portion_size', 'small'),
                 'last_update': time.time()
             }
             
@@ -126,11 +148,57 @@ class ComponentControlService:
                 self.control_modes[component_type] = ControlMode.AUTOMATIC
                 self.manual_controls[component_type] = False
             
-            self.logger.info("Composants initialisés avec paramètres mantis_religiosa")
+            species_name = species_config.get('common_name', 'espèce par défaut')
+            self.logger.info(f"Composants initialisés avec paramètres de {species_name}")
             
         except Exception as e:
             self.logger.error(f"Erreur initialisation composants: {e}")
             self.stats['errors'] += 1
+    
+    def _load_default_species_config(self) -> Dict[str, Any]:
+        """Charge la configuration de l'espèce par défaut (mantis_religiosa)"""
+        try:
+            from pathlib import Path
+            import json
+            
+            # Chemin vers la configuration de l'espèce
+            config_dir = Path(__file__).parent.parent.parent / 'config'
+            species_file = config_dir / 'species' / 'insects' / 'mantis_religiosa.json'
+            
+            if species_file.exists():
+                with open(species_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            else:
+                self.logger.warning(f"Fichier de configuration {species_file} non trouvé, utilisation des valeurs par défaut")
+                return self._get_fallback_species_config()
+                
+        except Exception as e:
+            self.logger.error(f"Erreur chargement configuration espèce: {e}")
+            return self._get_fallback_species_config()
+    
+    def _get_fallback_species_config(self) -> Dict[str, Any]:
+        """Configuration de fallback si le fichier JSON n'est pas trouvé"""
+        return {
+            'common_name': 'Mante religieuse',
+            'environmental_requirements': {
+                'temperature': {
+                    'day': {'optimal': 25.0},
+                    'night': {'optimal': 20.0}
+                },
+                'humidity': {'optimal': 65.0},
+                'lighting': {
+                    'photoperiod': {'day_start': '08:00', 'day_end': '20:00'},
+                    'intensity': {'optimal': 60},
+                    'fade': {'sunrise_duration': 30}
+                },
+                'ventilation': {
+                    'air_circulation': {'base_speed': 25, 'max_speed': 60}
+                }
+            },
+            'feeding_requirements': {
+                'schedule': {'times': ['10:00', '19:00'], 'portion_size': 'small'}
+            }
+        }
     
     def get_component_status(self, component_type: ComponentType) -> Optional[Dict[str, Any]]:
         """
