@@ -407,22 +407,22 @@ class ComponentControlService:
             return False
     
     def _control_heating(self, command: Dict[str, Any]) -> bool:
-        """Contrôle du chauffage"""
+        """Contrôle du chauffage via HeatingService"""
         try:
             if 'state' in command:
                 self.components[ComponentType.HEATING]['current_state'] = command['state']
                 self.logger.info(f"Chauffage: {'ON' if command['state'] else 'OFF'}")
                 
-                # Contrôler le relais de chauffage
-                if ComponentType.HEATING in self.drivers and self.drivers[ComponentType.HEATING]:
-                    try:
-                        self.drivers[ComponentType.HEATING].set_state(command['state'])
-                        self.logger.info(f"Relais chauffage: {'ON' if command['state'] else 'OFF'}")
-                    except Exception as e:
-                        self.logger.error(f"Erreur contrôle relais chauffage: {e}")
-                        return False
+                # Émettre un événement pour HeatingService
+                if self.event_bus:
+                    self.event_bus.emit('heating_control_request', {
+                        'state': command['state'],
+                        'target_temperature': command.get('target_temperature', 25),
+                        'power_level': command.get('power_level', 100)
+                    })
+                    self.logger.info("Événement chauffage émis vers HeatingService")
                 else:
-                    self.logger.warning("Driver chauffage non disponible")
+                    self.logger.warning("EventBus non disponible pour contrôle chauffage")
             
             if 'target_temperature' in command:
                 self.components[ComponentType.HEATING]['target_temperature'] = command['target_temperature']
@@ -498,16 +498,16 @@ class ComponentControlService:
                 self.components[ComponentType.HUMIDIFICATION]['current_state'] = command['state']
                 self.logger.info(f"Humidificateur: {'ON' if command['state'] else 'OFF'}")
                 
-                # Contrôler le relais d'humidification
-                if ComponentType.HUMIDIFICATION in self.drivers and self.drivers[ComponentType.HUMIDIFICATION]:
-                    try:
-                        self.drivers[ComponentType.HUMIDIFICATION].set_state(command['state'])
-                        self.logger.info(f"Relais humidification: {'ON' if command['state'] else 'OFF'}")
-                    except Exception as e:
-                        self.logger.error(f"Erreur contrôle relais humidification: {e}")
-                        return False
+                # Émettre un événement pour HumidificationService
+                if self.event_bus:
+                    self.event_bus.emit('humidification_control_request', {
+                        'state': command['state'],
+                        'target_humidity': command.get('target_humidity', 60),
+                        'intensity': command.get('intensity', 80)
+                    })
+                    self.logger.info("Événement humidification émis vers HumidificationService")
                 else:
-                    self.logger.warning("Driver humidification non disponible")
+                    self.logger.warning("EventBus non disponible pour contrôle humidification")
             
             if 'target_humidity' in command:
                 self.components[ComponentType.HUMIDIFICATION]['target_humidity'] = command['target_humidity']

@@ -54,6 +54,10 @@ class HeatingService:
             'last_heating_stop': 0
         }
         
+        # S'abonner aux événements de contrôle
+        if self.event_bus:
+            self.event_bus.subscribe('heating_control_request', self._on_heating_control_request)
+        
     def initialize(self) -> bool:
         """
         Initialise le service de chauffage
@@ -272,6 +276,29 @@ class HeatingService:
             'heating_status': self.get_heating_status(),
             'driver_status': self.heater_driver.get_status() if self.heater_driver else None
         }
+    
+    def _on_heating_control_request(self, event_data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement pour une demande de contrôle du chauffage"""
+        try:
+            self.logger.info(f"Demande de contrôle chauffage reçue: {event_data}")
+            
+            state = event_data.get('state', False)
+            target_temp = event_data.get('target_temperature', 25.0)
+            power_level = event_data.get('power_level', 100)
+            
+            # Mettre à jour la température cible
+            self.target_temperature = target_temp
+            
+            # Contrôler le chauffage
+            if state:
+                self.start()
+                self.logger.info(f"Chauffage activé - Température cible: {target_temp}°C")
+            else:
+                self.stop()
+                self.logger.info("Chauffage désactivé")
+                
+        except Exception as e:
+            self.logger.error(f"Erreur gestion événement chauffage: {e}")
     
     def cleanup(self) -> None:
         """Nettoie le service de chauffage"""

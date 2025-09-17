@@ -58,6 +58,10 @@ class HumidificationService:
             'last_humidification_stop': 0
         }
         
+        # S'abonner aux événements de contrôle
+        if self.event_bus:
+            self.event_bus.subscribe('humidification_control_request', self._on_humidification_control_request)
+        
     def initialize(self) -> bool:
         """
         Initialise le service d'humidification
@@ -284,6 +288,29 @@ class HumidificationService:
             'humidification_status': self.get_humidification_status(),
             'driver_status': self.humidifier_driver.get_status() if self.humidifier_driver else None
         }
+    
+    def _on_humidification_control_request(self, event_data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement pour une demande de contrôle de l'humidification"""
+        try:
+            self.logger.info(f"Demande de contrôle humidification reçue: {event_data}")
+            
+            state = event_data.get('state', False)
+            target_humidity = event_data.get('target_humidity', 60.0)
+            intensity = event_data.get('intensity', 80)
+            
+            # Mettre à jour l'humidité cible
+            self.target_humidity = target_humidity
+            
+            # Contrôler l'humidification
+            if state:
+                self.start()
+                self.logger.info(f"Humidification activée - Humidité cible: {target_humidity}%")
+            else:
+                self.stop()
+                self.logger.info("Humidification désactivée")
+                
+        except Exception as e:
+            self.logger.error(f"Erreur gestion événement humidification: {e}")
     
     def cleanup(self) -> None:
         """Nettoie le service d'humidification"""
