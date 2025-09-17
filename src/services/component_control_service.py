@@ -166,6 +166,8 @@ class ComponentControlService:
         try:
             # Importer les drivers
             from controllers.drivers.servo_driver import ServoDriver
+            from controllers.drivers.relay_driver import RelayDriver
+            from controllers.drivers.pwm_driver import PWMDriver
             from controllers.drivers.base_driver import DriverConfig
             
             # Charger la configuration GPIO
@@ -207,8 +209,95 @@ class ComponentControlService:
                 self.logger.error(f"Erreur initialisation driver servomoteur: {e}")
                 self.drivers[ComponentType.FEEDING] = None
             
-            # Note: Les autres drivers (relais, PWM) ne sont pas nécessaires pour le contrôle web
-            # car ils sont gérés par les services individuels
+            # Driver du chauffage (relais)
+            try:
+                heating_config = DriverConfig(
+                    name="heating_relay",
+                    enabled=True
+                )
+                heating_pin = gpio_config.get('relay', {}).get('heating', 19)
+                
+                heating_driver = RelayDriver(heating_config, heating_pin, active_high=True)
+                
+                # Initialiser le driver
+                if heating_driver.initialize():
+                    self.drivers[ComponentType.HEATING] = heating_driver
+                    self.logger.info(f"Driver chauffage initialisé sur pin {heating_pin}")
+                else:
+                    self.logger.error("Échec initialisation driver chauffage")
+                    self.drivers[ComponentType.HEATING] = None
+                    
+            except Exception as e:
+                self.logger.error(f"Erreur initialisation driver chauffage: {e}")
+                self.drivers[ComponentType.HEATING] = None
+            
+            # Driver de l'humidification (relais)
+            try:
+                humidification_config = DriverConfig(
+                    name="humidification_relay",
+                    enabled=True
+                )
+                humidification_pin = gpio_config.get('relay', {}).get('humidification', 5)
+                
+                humidification_driver = RelayDriver(humidification_config, humidification_pin, active_high=True)
+                
+                # Initialiser le driver
+                if humidification_driver.initialize():
+                    self.drivers[ComponentType.HUMIDIFICATION] = humidification_driver
+                    self.logger.info(f"Driver humidification initialisé sur pin {humidification_pin}")
+                else:
+                    self.logger.error("Échec initialisation driver humidification")
+                    self.drivers[ComponentType.HUMIDIFICATION] = None
+                    
+            except Exception as e:
+                self.logger.error(f"Erreur initialisation driver humidification: {e}")
+                self.drivers[ComponentType.HUMIDIFICATION] = None
+            
+            # Driver de l'éclairage (PWM)
+            try:
+                lighting_config = DriverConfig(
+                    name="lighting_pwm",
+                    enabled=True
+                )
+                lighting_pin = gpio_config.get('pwm', {}).get('lighting', 12)
+                lighting_frequency = 1000  # 1kHz pour l'éclairage
+                
+                lighting_driver = PWMDriver(lighting_config, lighting_pin, lighting_frequency)
+                
+                # Initialiser le driver
+                if lighting_driver.initialize():
+                    self.drivers[ComponentType.LIGHTING] = lighting_driver
+                    self.logger.info(f"Driver éclairage initialisé sur pin {lighting_pin}")
+                else:
+                    self.logger.error("Échec initialisation driver éclairage")
+                    self.drivers[ComponentType.LIGHTING] = None
+                    
+            except Exception as e:
+                self.logger.error(f"Erreur initialisation driver éclairage: {e}")
+                self.drivers[ComponentType.LIGHTING] = None
+            
+            # Driver de la ventilation (PWM)
+            try:
+                ventilation_config = DriverConfig(
+                    name="ventilation_pwm",
+                    enabled=True
+                )
+                ventilation_pin = gpio_config.get('pwm', {}).get('ventilation', 13)
+                ventilation_frequency = 1000  # 1kHz pour la ventilation
+                
+                ventilation_driver = PWMDriver(ventilation_config, ventilation_pin, ventilation_frequency)
+                
+                # Initialiser le driver
+                if ventilation_driver.initialize():
+                    self.drivers[ComponentType.VENTILATION] = ventilation_driver
+                    self.logger.info(f"Driver ventilation initialisé sur pin {ventilation_pin}")
+                else:
+                    self.logger.error("Échec initialisation driver ventilation")
+                    self.drivers[ComponentType.VENTILATION] = None
+                    
+            except Exception as e:
+                self.logger.error(f"Erreur initialisation driver ventilation: {e}")
+                self.drivers[ComponentType.VENTILATION] = None
             
         except Exception as e:
             self.logger.error(f"Erreur initialisation drivers: {e}")
@@ -416,6 +505,17 @@ class ComponentControlService:
             if 'state' in command:
                 self.components[ComponentType.HEATING]['current_state'] = command['state']
                 self.logger.info(f"Chauffage: {'ON' if command['state'] else 'OFF'}")
+                
+                # Contrôler le relais de chauffage
+                if ComponentType.HEATING in self.drivers and self.drivers[ComponentType.HEATING]:
+                    try:
+                        self.drivers[ComponentType.HEATING].set_state(command['state'])
+                        self.logger.info(f"Relais chauffage: {'ON' if command['state'] else 'OFF'}")
+                    except Exception as e:
+                        self.logger.error(f"Erreur contrôle relais chauffage: {e}")
+                        return False
+                else:
+                    self.logger.warning("Driver chauffage non disponible")
             
             if 'target_temperature' in command:
                 self.components[ComponentType.HEATING]['target_temperature'] = command['target_temperature']
@@ -438,12 +538,40 @@ class ComponentControlService:
             if 'state' in command:
                 self.components[ComponentType.LIGHTING]['current_state'] = command['state']
                 self.logger.info(f"Éclairage: {'ON' if command['state'] else 'OFF'}")
+                
+                # Contrôler le PWM d'éclairage
+                if ComponentType.LIGHTING in self.drivers and self.drivers[ComponentType.LIGHTING]:
+                    try:
+                        if command['state']:
+                            # Activer l'éclairage avec la luminosité actuelle
+                            brightness = self.components[ComponentType.LIGHTING].get('brightness', 60)
+                            duty_cycle = brightness / 100.0
+                            self.drivers[ComponentType.LIGHTING].set_duty_cycle(duty_cycle)
+                        else:
+                            # Éteindre l'éclairage
+                            self.drivers[ComponentType.LIGHTING].set_duty_cycle(0.0)
+                        self.logger.info(f"PWM éclairage: {'ON' if command['state'] else 'OFF'}")
+                    except Exception as e:
+                        self.logger.error(f"Erreur contrôle PWM éclairage: {e}")
+                        return False
+                else:
+                    self.logger.warning("Driver éclairage non disponible")
             
             if 'brightness' in command:
                 brightness = max(0, min(100, command['brightness']))
                 self.components[ComponentType.LIGHTING]['brightness'] = brightness
                 self.components[ComponentType.LIGHTING]['target_brightness'] = brightness
                 self.logger.info(f"Luminosité: {brightness}%")
+                
+                # Contrôler le PWM d'éclairage
+                if ComponentType.LIGHTING in self.drivers and self.drivers[ComponentType.LIGHTING]:
+                    try:
+                        duty_cycle = brightness / 100.0
+                        self.drivers[ComponentType.LIGHTING].set_duty_cycle(duty_cycle)
+                        self.logger.info(f"PWM éclairage: {brightness}%")
+                    except Exception as e:
+                        self.logger.error(f"Erreur contrôle PWM éclairage: {e}")
+                        return False
             
             if 'color_temperature' in command:
                 self.components[ComponentType.LIGHTING]['color_temperature'] = command['color_temperature']
@@ -462,6 +590,17 @@ class ComponentControlService:
             if 'state' in command:
                 self.components[ComponentType.HUMIDIFICATION]['current_state'] = command['state']
                 self.logger.info(f"Humidificateur: {'ON' if command['state'] else 'OFF'}")
+                
+                # Contrôler le relais d'humidification
+                if ComponentType.HUMIDIFICATION in self.drivers and self.drivers[ComponentType.HUMIDIFICATION]:
+                    try:
+                        self.drivers[ComponentType.HUMIDIFICATION].set_state(command['state'])
+                        self.logger.info(f"Relais humidification: {'ON' if command['state'] else 'OFF'}")
+                    except Exception as e:
+                        self.logger.error(f"Erreur contrôle relais humidification: {e}")
+                        return False
+                else:
+                    self.logger.warning("Driver humidification non disponible")
             
             if 'target_humidity' in command:
                 self.components[ComponentType.HUMIDIFICATION]['target_humidity'] = command['target_humidity']
@@ -484,12 +623,40 @@ class ComponentControlService:
             if 'state' in command:
                 self.components[ComponentType.VENTILATION]['current_state'] = command['state']
                 self.logger.info(f"Ventilation: {'ON' if command['state'] else 'OFF'}")
+                
+                # Contrôler le PWM de ventilation
+                if ComponentType.VENTILATION in self.drivers and self.drivers[ComponentType.VENTILATION]:
+                    try:
+                        if command['state']:
+                            # Activer la ventilation avec la vitesse actuelle
+                            speed = self.components[ComponentType.VENTILATION].get('fan_speed', 50)
+                            duty_cycle = speed / 100.0
+                            self.drivers[ComponentType.VENTILATION].set_duty_cycle(duty_cycle)
+                        else:
+                            # Arrêter la ventilation
+                            self.drivers[ComponentType.VENTILATION].set_duty_cycle(0.0)
+                        self.logger.info(f"PWM ventilation: {'ON' if command['state'] else 'OFF'}")
+                    except Exception as e:
+                        self.logger.error(f"Erreur contrôle PWM ventilation: {e}")
+                        return False
+                else:
+                    self.logger.warning("Driver ventilation non disponible")
             
             if 'fan_speed' in command:
                 speed = max(0, min(100, command['fan_speed']))
                 self.components[ComponentType.VENTILATION]['fan_speed'] = speed
                 self.components[ComponentType.VENTILATION]['target_speed'] = speed
                 self.logger.info(f"Vitesse ventilateur: {speed}%")
+                
+                # Contrôler le PWM de ventilation
+                if ComponentType.VENTILATION in self.drivers and self.drivers[ComponentType.VENTILATION]:
+                    try:
+                        duty_cycle = speed / 100.0
+                        self.drivers[ComponentType.VENTILATION].set_duty_cycle(duty_cycle)
+                        self.logger.info(f"PWM ventilation: {speed}%")
+                    except Exception as e:
+                        self.logger.error(f"Erreur contrôle PWM ventilation: {e}")
+                        return False
             
             if 'auto_mode' in command:
                 self.components[ComponentType.VENTILATION]['auto_mode'] = command['auto_mode']
