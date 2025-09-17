@@ -477,7 +477,7 @@ class ActuatorController(BaseController):
         
         # Publier l'action sur le bus d'événements
         if self.event_bus:
-            self.event_bus.publish("actuator_action", action)
+            self.event_bus.emit("actuator_action", action)
     
     def cleanup(self) -> None:
         """Nettoie les ressources des actionneurs"""

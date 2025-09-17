@@ -203,7 +203,7 @@ class SensorController(BaseController):
             
             # Publier les données sur le bus d'événements
             if self.event_bus:
-                self.event_bus.publish("sensor_data", new_data)
+                self.event_bus.emit("sensor_data", new_data)
             
             return True
             
@@ -265,7 +265,7 @@ class SensorController(BaseController):
             
             # Publier l'alerte sur le bus d'événements
             if self.event_bus:
-                self.event_bus.publish("alert", alert)
+                self.event_bus.emit("alert", alert)
     
     def get_current_data(self) -> Dict[str, Any]:
         """Retourne les données actuelles"""

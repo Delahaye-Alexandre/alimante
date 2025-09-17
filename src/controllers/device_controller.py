@@ -407,7 +407,7 @@ class DeviceController(BaseController):
         
         # Publier l'interaction sur le bus d'événements
         if self.event_bus:
-            self.event_bus.publish("device_interaction", interaction)
+            self.event_bus.emit("device_interaction", interaction)
     
     def cleanup(self) -> None:
         """Nettoie les ressources des périphériques"""
