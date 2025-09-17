@@ -484,6 +484,36 @@ class ComponentControlService:
         self.components[ComponentType.FEEDING]['daily_feeds'] = 0
         self.logger.info("Compteur d'alimentations quotidiennes remis à zéro")
     
+    def control_component(self, component_name: str, command: Dict[str, Any]) -> bool:
+        """
+        Contrôle un composant par son nom (interface web)
+        
+        Args:
+            component_name: Nom du composant (heating, lighting, etc.)
+            command: Commande à exécuter
+            
+        Returns:
+            True si succès, False sinon
+        """
+        try:
+            # Convertir le nom en ComponentType
+            component_type = None
+            for ct in ComponentType:
+                if ct.value == component_name:
+                    component_type = ct
+                    break
+            
+            if not component_type:
+                self.logger.error(f"Composant {component_name} non trouvé")
+                return False
+            
+            # Utiliser la méthode manual_control existante
+            return self.manual_control(component_type, command)
+            
+        except Exception as e:
+            self.logger.error(f"Erreur contrôle composant {component_name}: {e}")
+            return False
+    
     def get_stats(self) -> Dict[str, Any]:
         """
         Retourne les statistiques du service

@@ -182,17 +182,45 @@ class WebInterface:
                 self.stats['requests'] += 1
                 try:
                     data = request.get_json()
-                    action = data.get('action')
-                    value = data.get('value')
                     
-                    # Émettre un événement de contrôle
-                    self.event_bus.emit('manual_control', {
-                        'action': action,
-                        'value': value,
-                        'timestamp': time.time()
-                    })
+                    # Support des deux formats : ancien et nouveau
+                    if 'component' in data and 'command' in data:
+                        # Nouveau format (depuis l'interface web)
+                        component = data.get('component')
+                        command = data.get('command')
+                        
+                        # Utiliser le service de contrôle des composants s'il est disponible
+                        if hasattr(self, 'component_control_service') and self.component_control_service:
+                            success = self.component_control_service.control_component(component, command)
+                            if success:
+                                return jsonify({'success': True, 'message': f'Composant {component} contrôlé'})
+                            else:
+                                return jsonify({'success': False, 'error': f'Erreur contrôle composant {component}'}), 400
+                        else:
+                            # Fallback : émettre un événement
+                            self.event_bus.emit('component_control', {
+                                'component': component,
+                                'command': command,
+                                'timestamp': time.time()
+                            })
+                            return jsonify({'success': True, 'message': 'Commande envoyée'})
                     
-                    return jsonify({'success': True, 'message': 'Commande envoyée'})
+                    elif 'action' in data and 'value' in data:
+                        # Ancien format (compatibilité)
+                        action = data.get('action')
+                        value = data.get('value')
+                        
+                        # Émettre un événement de contrôle
+                        self.event_bus.emit('manual_control', {
+                            'action': action,
+                            'value': value,
+                            'timestamp': time.time()
+                        })
+                        
+                        return jsonify({'success': True, 'message': 'Commande envoyée'})
+                    
+                    else:
+                        return jsonify({'success': False, 'error': 'Format de données invalide'}), 400
                     
                 except Exception as e:
                     self.logger.error(f"Erreur contrôle manuel: {e}")
