@@ -44,6 +44,9 @@ class ComponentControlService:
         self.control_modes = {}
         self.manual_controls = {}
         
+        # Drivers des composants
+        self.drivers = {}
+        
         # Statistiques
         self.stats = {
             'commands_sent': 0,
@@ -55,6 +58,9 @@ class ComponentControlService:
         
         # Initialiser les composants par défaut
         self._initialize_components()
+        
+        # Initialiser les drivers
+        self._initialize_drivers()
         
     def _initialize_components(self) -> None:
         """Initialise les composants par défaut"""
@@ -153,6 +159,48 @@ class ComponentControlService:
             
         except Exception as e:
             self.logger.error(f"Erreur initialisation composants: {e}")
+            self.stats['errors'] += 1
+    
+    def _initialize_drivers(self) -> None:
+        """Initialise les drivers des composants"""
+        try:
+            # Importer les drivers
+            from controllers.drivers.servo_driver import ServoDriver
+            from controllers.drivers.base_driver import DriverConfig
+            
+            # Charger la configuration GPIO
+            from pathlib import Path
+            import json
+            
+            config_path = Path.cwd() / 'config' / 'gpio_config.json'
+            if config_path.exists():
+                with open(config_path, 'r') as f:
+                    gpio_config = json.load(f)
+            else:
+                self.logger.warning("Configuration GPIO non trouvée, utilisation des valeurs par défaut")
+                gpio_config = {
+                    'servo': {'pin': 18, 'frequency': 50},
+                    'relay': {'heating': 19, 'humidification': 5},
+                    'pwm': {'lighting': 12, 'ventilation': 13}
+                }
+            
+            # Driver du servomoteur d'alimentation
+            try:
+                servo_config = DriverConfig(
+                    pin=gpio_config.get('servo', {}).get('pin', 18),
+                    frequency=gpio_config.get('servo', {}).get('frequency', 50)
+                )
+                self.drivers[ComponentType.FEEDING] = ServoDriver(servo_config)
+                self.logger.info(f"Driver servomoteur initialisé sur pin {servo_config.pin}")
+            except Exception as e:
+                self.logger.error(f"Erreur initialisation driver servomoteur: {e}")
+                self.drivers[ComponentType.FEEDING] = None
+            
+            # Note: Les autres drivers (relais, PWM) ne sont pas nécessaires pour le contrôle web
+            # car ils sont gérés par les services individuels
+            
+        except Exception as e:
+            self.logger.error(f"Erreur initialisation drivers: {e}")
             self.stats['errors'] += 1
     
     def _load_default_species_config(self) -> Dict[str, Any]:
