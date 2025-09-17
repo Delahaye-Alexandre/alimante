@@ -257,12 +257,18 @@ class WebInterface:
             def api_terrariums():
                 """API : Liste des terrariums"""
                 self.stats['requests'] += 1
+                self.logger.info("API /api/terrariums appelée")
                 try:
                     # Utiliser le service de terrariums s'il est disponible
                     if hasattr(self, 'terrarium_service') and self.terrarium_service:
+                        self.logger.info("Service terrarium disponible, récupération des terrariums...")
                         terrariums = self.terrarium_service.get_terrariums()
+                        self.logger.info(f"Terrariums récupérés: {len(terrariums)}")
+                        for terrarium in terrariums:
+                            self.logger.info(f"  - {terrarium.get('name', 'Sans nom')} (ID: {terrarium.get('id', 'N/A')})")
                         return jsonify({'terrariums': terrariums})
                     else:
+                        self.logger.warning("Service terrarium non disponible, utilisation des données par défaut")
                         # Données par défaut
                         return jsonify({
                             'terrariums': [
@@ -342,11 +348,17 @@ class WebInterface:
             def api_components():
                 """API : État des composants"""
                 self.stats['requests'] += 1
+                self.logger.info("API /api/components appelée")
                 try:
                     if hasattr(self, 'component_control_service') and self.component_control_service:
+                        self.logger.info("Service component_control disponible, récupération des composants...")
                         components = self.component_control_service.get_all_components_status()
+                        self.logger.info(f"Composants récupérés: {len(components)}")
+                        for comp_name, comp_data in components.items():
+                            self.logger.info(f"  - {comp_name}: {comp_data.get('control_mode', 'N/A')} mode, target_temp={comp_data.get('target_temperature', 'N/A')}")
                         return jsonify({'components': components})
                     else:
+                        self.logger.warning("Service component_control non disponible, utilisation des données par défaut")
                         return jsonify({
                             'components': {
                                 'heating': {
@@ -490,10 +502,11 @@ class WebInterface:
         """Lance le serveur Flask"""
         try:
             self.logger.info(f"Démarrage du serveur Flask sur {self.host}:{self.port}")
+            self.logger.info(f"Services disponibles: terrarium_service={hasattr(self, 'terrarium_service')}, component_control_service={hasattr(self, 'component_control_service')}")
             self.app.run(
                 host=self.host,
                 port=self.port,
-                debug=self.debug,
+                debug=True,  # Activer le mode debug pour plus de logs
                 use_reloader=False,
                 threaded=True
             )
