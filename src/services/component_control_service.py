@@ -569,6 +569,8 @@ class ComponentControlService:
             True si succès, False sinon
         """
         try:
+            self.logger.info(f"Contrôle composant demandé: {component_name} avec commande: {command}")
+            
             # Convertir le nom en ComponentType
             component_type = None
             for ct in ComponentType:
@@ -580,11 +582,24 @@ class ComponentControlService:
                 self.logger.error(f"Composant {component_name} non trouvé")
                 return False
             
+            self.logger.info(f"Type de composant trouvé: {component_type}")
+            
+            # Vérifier si le driver existe
+            if component_type not in self.drivers:
+                self.logger.error(f"Driver pour {component_name} non disponible")
+                return False
+            
+            self.logger.info(f"Driver {component_name} disponible, exécution du contrôle...")
+            
             # Utiliser la méthode manual_control existante
-            return self.manual_control(component_type, command)
+            result = self.manual_control(component_type, command)
+            self.logger.info(f"Résultat du contrôle {component_name}: {result}")
+            return result
             
         except Exception as e:
             self.logger.error(f"Erreur contrôle composant {component_name}: {e}")
+            import traceback
+            self.logger.error(f"Traceback: {traceback.format_exc()}")
             return False
     
     def get_stats(self) -> Dict[str, Any]:
