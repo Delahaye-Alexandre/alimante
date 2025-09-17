@@ -25,10 +25,16 @@ class TerrariumService:
         self.event_bus = event_bus
         self.logger = logging.getLogger(__name__)
         
-        # Configuration
-        self.config_dir = Path(__file__).parent.parent.parent / 'config'
+        # Configuration - utiliser le répertoire de travail actuel
+        current_dir = Path.cwd()
+        self.config_dir = current_dir / 'config'
         self.terrariums_dir = self.config_dir / 'terrariums'
         self.species_dir = self.config_dir / 'species'
+        
+        self.logger.info(f"Initialisation TerrariumService")
+        self.logger.info(f"Config dir: {self.config_dir}")
+        self.logger.info(f"Terrariums dir: {self.terrariums_dir}")
+        self.logger.info(f"Species dir: {self.species_dir}")
         
         # État des terrariums
         self.terrariums = {}
@@ -44,7 +50,9 @@ class TerrariumService:
         }
         
         # Charger les terrariums disponibles
+        self.logger.info("Début du chargement des terrariums...")
         self._load_terrariums()
+        self.logger.info(f"TerrariumService initialisé avec {len(self.terrariums)} terrariums")
         
     def _load_terrariums(self) -> None:
         """Charge tous les terrariums disponibles"""
