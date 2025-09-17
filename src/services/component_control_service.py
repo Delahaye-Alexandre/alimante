@@ -546,7 +546,7 @@ class ComponentControlService:
                 # Contrôler le servo-moteur
                 if ComponentType.FEEDING in self.drivers and self.drivers[ComponentType.FEEDING]:
                     try:
-                        self.drivers[ComponentType.FEEDING].set_angle(angle)
+                        self.drivers[ComponentType.FEEDING].write({"angle": angle, "duration": 1.0})
                         self.logger.info(f"Servo-moteur positionné à {angle}°")
                     except Exception as e:
                         self.logger.error(f"Erreur positionnement servo-moteur: {e}")
