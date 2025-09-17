@@ -79,14 +79,17 @@ class UIController:
         # Charger la configuration
         self._load_config()
         
-        # Initialiser les services
-        self._initialize_services()
-        
         # Initialiser les composants
         self._initialize_components()
         
+        # Initialiser les services (après les composants)
+        self._initialize_services()
+        
         # S'abonner aux événements
         self._subscribe_to_events()
+        
+        # Passer les services à l'interface web après initialisation
+        self._pass_services_to_web()
     
     def _load_default_config(self) -> Dict[str, Any]:
         """Charge la configuration par défaut"""
@@ -150,14 +153,23 @@ class UIController:
             self.component_control_service = ComponentControlService(self.event_bus)
             self.logger.info("Service de contrôle des composants initialisé")
             
-            # Passer les services à l'interface web
-            if self.web_interface:
-                self.web_interface.terrarium_service = self.terrarium_service
-                self.web_interface.component_control_service = self.component_control_service
-                self.logger.info("Services passés à l'interface web")
-            
         except Exception as e:
             self.logger.error(f"Erreur initialisation services: {e}")
+            self.stats['errors'] += 1
+    
+    def _pass_services_to_web(self) -> None:
+        """Passe les services à l'interface web"""
+        try:
+            if hasattr(self, 'web_interface') and self.web_interface:
+                if hasattr(self, 'terrarium_service') and self.terrarium_service:
+                    self.web_interface.terrarium_service = self.terrarium_service
+                    self.logger.info("Service de terrariums passé à l'interface web")
+                
+                if hasattr(self, 'component_control_service') and self.component_control_service:
+                    self.web_interface.component_control_service = self.component_control_service
+                    self.logger.info("Service de contrôle des composants passé à l'interface web")
+        except Exception as e:
+            self.logger.error(f"Erreur passage services à l'interface web: {e}")
             self.stats['errors'] += 1
     
     def _initialize_components(self) -> None:
@@ -173,13 +185,6 @@ class UIController:
             if self.mode in [UIMode.WEB, UIMode.BOTH] and self.config['web']['enabled']:
                 from .web_interface import WebInterface
                 self.web_interface = WebInterface(self.config['web'], self.event_bus)
-                
-                # Passer les services à l'interface web
-                if hasattr(self, 'terrarium_service'):
-                    self.web_interface.terrarium_service = self.terrarium_service
-                if hasattr(self, 'component_control_service'):
-                    self.web_interface.component_control_service = self.component_control_service
-                
                 self.logger.info("Interface web initialisée")
             
             # Initialiser l'encodeur rotatif
