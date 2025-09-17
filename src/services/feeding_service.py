@@ -423,7 +423,7 @@ class FeedingService:
             self.logger.info(f"Demande d'alimentation manuelle reçue: {event_data}")
             
             # Exécuter l'alimentation
-            if self.feed():
+            if self.feed_animals_double_trap(fly_count=1, trap_delay=1.0):
                 self.logger.info("Alimentation exécutée avec succès")
             else:
                 self.logger.error("Échec de l'alimentation")
