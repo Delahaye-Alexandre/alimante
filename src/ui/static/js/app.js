@@ -429,14 +429,17 @@ class AlimanteApp {
 
   async toggleControl(controlName, enabled) {
     try {
+      // Utiliser le nouveau format de contrôle
+      const command = { state: enabled };
+      
       const response = await fetch(`${this.apiBase}/api/control`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          action: controlName,
-          value: enabled,
+          component: controlName,
+          command: command,
         }),
       });
 
@@ -447,6 +450,8 @@ class AlimanteApp {
         console.log(
           `Contrôle ${controlName} ${enabled ? "activé" : "désactivé"}`
         );
+        // Recharger les composants pour mettre à jour l'affichage
+        this.loadComponents();
       } else {
         console.error("Erreur contrôle:", result.error);
         // Remettre le toggle dans l'état précédent
