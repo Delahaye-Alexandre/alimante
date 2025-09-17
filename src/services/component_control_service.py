@@ -458,8 +458,27 @@ class ComponentControlService:
                 self.components[ComponentType.FEEDING]['last_feeding'] = time.time()
                 self.logger.info(f"Alimentation exécutée (quotidien: {self.components[ComponentType.FEEDING]['daily_feeds']})")
                 
-                # Simuler l'ouverture du servo
-                self.components[ComponentType.FEEDING]['servo_angle'] = 90
+                # Contrôler le servo-moteur
+                if ComponentType.FEEDING in self.drivers and self.drivers[ComponentType.FEEDING]:
+                    try:
+                        # Ouvrir le servo (angle 90°)
+                        self.drivers[ComponentType.FEEDING].set_angle(90)
+                        self.components[ComponentType.FEEDING]['servo_angle'] = 90
+                        self.logger.info("Servo-moteur ouvert (90°)")
+                        
+                        # Attendre un peu puis fermer
+                        time.sleep(2)  # 2 secondes d'ouverture
+                        self.drivers[ComponentType.FEEDING].set_angle(0)
+                        self.components[ComponentType.FEEDING]['servo_angle'] = 0
+                        self.logger.info("Servo-moteur fermé (0°)")
+                        
+                    except Exception as e:
+                        self.logger.error(f"Erreur contrôle servo-moteur: {e}")
+                        return False
+                else:
+                    self.logger.warning("Driver servo-moteur non disponible")
+                    # Simuler l'ouverture du servo
+                    self.components[ComponentType.FEEDING]['servo_angle'] = 90
                 
                 # Émettre un événement d'alimentation
                 if self.event_bus:
@@ -469,8 +488,20 @@ class ComponentControlService:
                     })
             
             if 'servo_angle' in command:
-                self.components[ComponentType.FEEDING]['servo_angle'] = command['servo_angle']
-                self.logger.info(f"Angle servo: {command['servo_angle']}°")
+                angle = command['servo_angle']
+                self.components[ComponentType.FEEDING]['servo_angle'] = angle
+                self.logger.info(f"Angle servo: {angle}°")
+                
+                # Contrôler le servo-moteur
+                if ComponentType.FEEDING in self.drivers and self.drivers[ComponentType.FEEDING]:
+                    try:
+                        self.drivers[ComponentType.FEEDING].set_angle(angle)
+                        self.logger.info(f"Servo-moteur positionné à {angle}°")
+                    except Exception as e:
+                        self.logger.error(f"Erreur positionnement servo-moteur: {e}")
+                        return False
+                else:
+                    self.logger.warning("Driver servo-moteur non disponible")
             
             self.components[ComponentType.FEEDING]['last_update'] = time.time()
             return True
