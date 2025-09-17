@@ -423,7 +423,7 @@ class FeedingService:
             self.logger.info(f"Demande d'alimentation manuelle reçue: {event_data}")
             
             # Exécuter l'alimentation
-            if self.feed_now():
+            if self.feed():
                 self.logger.info("Alimentation exécutée avec succès")
             else:
                 self.logger.error("Échec de l'alimentation")
