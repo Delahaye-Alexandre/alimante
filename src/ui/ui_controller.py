@@ -217,6 +217,41 @@ class UIController:
                 self.event_bus.on('encoder_turned', self._on_encoder_turned)
                 self.event_bus.on('encoder_pressed', self._on_encoder_pressed)
             
+            # Événements de sécurité
+            self.event_bus.on('emergency_stop', self._on_emergency_stop)
+            self.event_bus.on('emergency_resume', self._on_emergency_resume)
+            self.event_bus.on('safety_alert', self._on_safety_alert)
+            
+            # Événements de données
+            self.event_bus.on('sensor_data', self._on_sensor_data)
+            self.event_bus.on('sensor_alert', self._on_sensor_alert)
+            self.event_bus.on('actuator_action', self._on_actuator_action)
+            self.event_bus.on('device_interaction', self._on_device_interaction)
+            
+            # Événements de contrôle
+            self.event_bus.on('control_mode_changed', self._on_control_mode_changed)
+            self.event_bus.on('component_controlled', self._on_component_controlled)
+            self.event_bus.on('feeding_completed', self._on_feeding_completed)
+            self.event_bus.on('feeding_failed', self._on_feeding_failed)
+            
+            # Événements de services
+            self.event_bus.on('heating_changed', self._on_heating_changed)
+            self.event_bus.on('humidification_changed', self._on_humidification_changed)
+            self.event_bus.on('lighting_changed', self._on_lighting_changed)
+            self.event_bus.on('ventilation_changed', self._on_ventilation_changed)
+            
+            # Événements de terrarium
+            self.event_bus.on('terrarium_changed', self._on_terrarium_changed)
+            self.event_bus.on('terrarium_config_updated', self._on_terrarium_config_updated)
+            
+            # Événements de configuration
+            self.event_bus.on('config_updated', self._on_config_updated)
+            self.event_bus.on('component_control', self._on_component_control)
+            self.event_bus.on('manual_control', self._on_manual_control)
+            
+            # Événements de cycle
+            self.event_bus.on('main_loop_cycle', self._on_main_loop_cycle)
+            
             self.logger.info("Abonnements aux événements configurés")
             
         except Exception as e:
@@ -463,6 +498,267 @@ class UIController:
             'encoder_enabled': self.encoder_interface is not None,
             'stats': self.stats
         }
+    
+    # Gestionnaires d'événements de sécurité
+    def _on_emergency_stop(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement emergency_stop"""
+        try:
+            reason = data.get('reason', 'Raison inconnue')
+            self.logger.critical(f"ARRÊT D'URGENCE: {reason}")
+            
+            # Mettre à jour l'affichage
+            self.display_data['system_status'] = 'emergency'
+            self.display_data['alerts'].append({
+                'type': 'emergency',
+                'message': f"ARRÊT D'URGENCE: {reason}",
+                'timestamp': time.time(),
+                'severity': 'critical'
+            })
+            
+            # Forcer la mise à jour de l'affichage
+            self._update_display()
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion emergency_stop: {e}")
+    
+    def _on_emergency_resume(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement emergency_resume"""
+        try:
+            self.logger.info("Reprise normale du système")
+            self.display_data['system_status'] = 'normal'
+            self._update_display()
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion emergency_resume: {e}")
+    
+    def _on_safety_alert(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement safety_alert"""
+        try:
+            message = data.get('message', 'Alerte inconnue')
+            self.logger.warning(f"Alerte sécurité: {message}")
+            
+            # Ajouter à la liste des alertes
+            self.display_data['alerts'].append({
+                'type': 'safety',
+                'message': message,
+                'timestamp': time.time(),
+                'severity': 'warning'
+            })
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion safety_alert: {e}")
+    
+    # Gestionnaires d'événements de données
+    def _on_sensor_data(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement sensor_data"""
+        try:
+            self.logger.debug(f"Données capteurs reçues: {data}")
+            # Les données sont déjà traitées par _on_sensor_data_updated
+        except Exception as e:
+            self.logger.error(f"Erreur gestion sensor_data: {e}")
+    
+    def _on_sensor_alert(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement sensor_alert"""
+        try:
+            message = data.get('message', 'Alerte capteur inconnue')
+            self.logger.warning(f"Alerte capteur: {message}")
+            
+            self.display_data['alerts'].append({
+                'type': 'sensor',
+                'message': message,
+                'timestamp': time.time(),
+                'severity': 'warning'
+            })
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion sensor_alert: {e}")
+    
+    def _on_actuator_action(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement actuator_action"""
+        try:
+            self.logger.debug(f"Action actionneur: {data}")
+            # Mettre à jour l'état des actionneurs dans l'affichage
+            if 'actuator' in data:
+                self.display_data['controls'][data['actuator']] = data.get('state', False)
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion actuator_action: {e}")
+    
+    def _on_device_interaction(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement device_interaction"""
+        try:
+            self.logger.debug(f"Interaction périphérique: {data}")
+            # Loguer l'interaction pour debugging
+        except Exception as e:
+            self.logger.error(f"Erreur gestion device_interaction: {e}")
+    
+    # Gestionnaires d'événements de contrôle
+    def _on_control_mode_changed(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement control_mode_changed"""
+        try:
+            component = data.get('component', 'unknown')
+            mode = data.get('mode', 'unknown')
+            self.logger.info(f"Mode contrôle changé: {component} -> {mode}")
+            
+            # Mettre à jour l'affichage
+            self.display_data['controls'][f"{component}_mode"] = mode
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion control_mode_changed: {e}")
+    
+    def _on_component_controlled(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement component_controlled"""
+        try:
+            component = data.get('component', 'unknown')
+            command = data.get('command', {})
+            self.logger.debug(f"Composant contrôlé: {component} - {command}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion component_controlled: {e}")
+    
+    def _on_feeding_completed(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement feeding_completed"""
+        try:
+            fly_count = data.get('fly_count', 0)
+            self.logger.info(f"Alimentation terminée: {fly_count} mouches")
+            
+            self.display_data['alerts'].append({
+                'type': 'feeding',
+                'message': f"Alimentation terminée: {fly_count} mouches",
+                'timestamp': time.time(),
+                'severity': 'info'
+            })
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion feeding_completed: {e}")
+    
+    def _on_feeding_failed(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement feeding_failed"""
+        try:
+            error = data.get('error', 'Erreur inconnue')
+            self.logger.error(f"Échec alimentation: {error}")
+            
+            self.display_data['alerts'].append({
+                'type': 'feeding',
+                'message': f"Échec alimentation: {error}",
+                'timestamp': time.time(),
+                'severity': 'error'
+            })
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion feeding_failed: {e}")
+    
+    # Gestionnaires d'événements de services
+    def _on_heating_changed(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement heating_changed"""
+        try:
+            heating = data.get('heating', False)
+            temperature = data.get('temperature', 0)
+            self.logger.debug(f"Chauffage: {heating}, Température: {temperature}°C")
+            
+            self.display_data['controls']['heating'] = heating
+            self.display_data['sensors']['temperature'] = temperature
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion heating_changed: {e}")
+    
+    def _on_humidification_changed(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement humidification_changed"""
+        try:
+            humidifying = data.get('humidifying', False)
+            humidity = data.get('humidity', 0)
+            self.logger.debug(f"Humidification: {humidifying}, Humidité: {humidity}%")
+            
+            self.display_data['controls']['humidification'] = humidifying
+            self.display_data['sensors']['humidity'] = humidity
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion humidification_changed: {e}")
+    
+    def _on_lighting_changed(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement lighting_changed"""
+        try:
+            lighting = data.get('lighting', False)
+            intensity = data.get('intensity', 0)
+            self.logger.debug(f"Éclairage: {lighting}, Intensité: {intensity}%")
+            
+            self.display_data['controls']['lighting'] = lighting
+            self.display_data['controls']['lighting_intensity'] = intensity
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion lighting_changed: {e}")
+    
+    def _on_ventilation_changed(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement ventilation_changed"""
+        try:
+            speed = data.get('speed', 0)
+            is_ventilating = data.get('is_ventilating', False)
+            self.logger.debug(f"Ventilation: {is_ventilating}, Vitesse: {speed}%")
+            
+            self.display_data['controls']['ventilation'] = is_ventilating
+            self.display_data['controls']['ventilation_speed'] = speed
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion ventilation_changed: {e}")
+    
+    # Gestionnaires d'événements de terrarium
+    def _on_terrarium_changed(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement terrarium_changed"""
+        try:
+            terrarium_id = data.get('terrarium_id', 'unknown')
+            self.logger.info(f"Terrarium changé: {terrarium_id}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion terrarium_changed: {e}")
+    
+    def _on_terrarium_config_updated(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement terrarium_config_updated"""
+        try:
+            terrarium_id = data.get('terrarium_id', 'unknown')
+            self.logger.info(f"Configuration terrarium mise à jour: {terrarium_id}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion terrarium_config_updated: {e}")
+    
+    # Gestionnaires d'événements de configuration
+    def _on_config_updated(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement config_updated"""
+        try:
+            config = data.get('config', {})
+            self.logger.info("Configuration mise à jour")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion config_updated: {e}")
+    
+    def _on_component_control(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement component_control"""
+        try:
+            component = data.get('component', 'unknown')
+            command = data.get('command', {})
+            self.logger.debug(f"Contrôle composant: {component} - {command}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion component_control: {e}")
+    
+    def _on_manual_control(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement manual_control"""
+        try:
+            action = data.get('action', 'unknown')
+            value = data.get('value', None)
+            self.logger.debug(f"Contrôle manuel: {action} = {value}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion manual_control: {e}")
+    
+    # Gestionnaire d'événement de cycle
+    def _on_main_loop_cycle(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement main_loop_cycle"""
+        try:
+            cycle = data.get('cycle', 0)
+            self.logger.debug(f"Cycle principal: {cycle}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion main_loop_cycle: {e}")
     
     def cleanup(self) -> None:
         """Nettoie les ressources du contrôleur UI"""

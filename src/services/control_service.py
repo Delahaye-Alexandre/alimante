@@ -57,6 +57,15 @@ class ControlService:
         self.decision_history = []
         self.max_history_size = 1000
         
+        # S'abonner aux événements critiques
+        if self.event_bus:
+            self.event_bus.on('emergency_stop', self._on_emergency_stop)
+            self.event_bus.on('emergency_resume', self._on_emergency_resume)
+            self.event_bus.on('safety_alert', self._on_safety_alert)
+            self.event_bus.on('sensor_data_updated', self._on_sensor_data_updated)
+            self.event_bus.on('control_mode_changed', self._on_control_mode_changed)
+            self.event_bus.on('component_controlled', self._on_component_controlled)
+        
         # Statistiques
         self.stats = {
             'control_cycles': 0,
@@ -500,6 +509,79 @@ class ControlService:
         self.emergency_stop = False
         self.system_mode = "auto"
         self.logger.info("Arrêt d'urgence désactivé")
+    
+    def _on_emergency_stop(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement emergency_stop"""
+        try:
+            self.emergency_stop = True
+            self.system_mode = "emergency"
+            self.logger.critical(f"Arrêt d'urgence reçu: {data.get('reason', 'Raison inconnue')}")
+            
+            # Appliquer l'arrêt d'urgence immédiatement
+            self._apply_emergency_stop()
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion emergency_stop: {e}")
+    
+    def _on_emergency_resume(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement emergency_resume"""
+        try:
+            self.emergency_stop = False
+            self.system_mode = "auto"
+            self.logger.info("Reprise normale reçue")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion emergency_resume: {e}")
+    
+    def _on_safety_alert(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement safety_alert"""
+        try:
+            self.logger.warning(f"Alerte sécurité: {data.get('message', 'Alerte inconnue')}")
+            
+            # Loguer la décision
+            self._log_decision("safety_alert", f"Alert: {data.get('message', 'Unknown')}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion safety_alert: {e}")
+    
+    def _on_sensor_data_updated(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement sensor_data_updated"""
+        try:
+            sensor_data = data.get('data', {})
+            self.logger.debug(f"Données capteurs mises à jour: {sensor_data}")
+            
+            # Déclencher un cycle de contrôle si en mode auto
+            if self.system_mode == "auto" and not self.emergency_stop:
+                self._apply_automatic_control(sensor_data)
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion sensor_data_updated: {e}")
+    
+    def _on_control_mode_changed(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement control_mode_changed"""
+        try:
+            component = data.get('component', 'unknown')
+            mode = data.get('mode', 'unknown')
+            self.logger.info(f"Mode de contrôle changé: {component} -> {mode}")
+            
+            # Loguer la décision
+            self._log_decision("mode_changed", f"{component}: {mode}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion control_mode_changed: {e}")
+    
+    def _on_component_controlled(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement component_controlled"""
+        try:
+            component = data.get('component', 'unknown')
+            command = data.get('command', {})
+            self.logger.debug(f"Composant contrôlé: {component} - {command}")
+            
+            # Loguer la décision
+            self._log_decision("component_controlled", f"{component}: {command}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion component_controlled: {e}")
     
     def get_system_status(self) -> Dict[str, Any]:
         """
