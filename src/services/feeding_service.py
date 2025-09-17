@@ -72,32 +72,40 @@ class FeedingService:
         try:
             self.logger.info("Initialisation du service d'alimentation...")
             
-            # Récupérer la configuration GPIO
-            gpio_pins = self.gpio_config.get('gpio_pins', {})
-            actuators = gpio_pins.get('actuators', {})
-            servo_config = actuators.get('feeder_servo', {})
-            
-            if not servo_config:
-                self.logger.error("Configuration servo alimentation non trouvée")
-                return False
-            
-            # Créer le driver servo pour l'alimentation
-            driver_config = DriverConfig(
-                name="feeding_servo",
-                enabled=self.feeding_config.get('enabled', True),
-                timeout=5.0,
-                retry_attempts=3,
-                retry_delay=1.0
-            )
-            
-            pwm_pin = servo_config.get('pwm_pin', 18)
-            frequency = servo_config.get('frequency', 50)
-            
-            self.servo_driver = ServoDriver(driver_config, pwm_pin, frequency)
-            
-            if not self.servo_driver.initialize():
-                self.logger.error("Échec initialisation driver alimentation")
-                return False
+            # Vérifier si un driver a déjà été passé (par ComponentControlService)
+            if hasattr(self, '_external_servo_driver') and self._external_servo_driver:
+                self.servo_driver = self._external_servo_driver
+                self.logger.info("Utilisation du driver servomoteur externe")
+            else:
+                # Initialiser un nouveau driver
+                self.logger.info("Initialisation du driver servomoteur interne...")
+                
+                # Récupérer la configuration GPIO
+                gpio_pins = self.gpio_config.get('gpio_pins', {})
+                actuators = gpio_pins.get('actuators', {})
+                servo_config = actuators.get('feeder_servo', {})
+                
+                if not servo_config:
+                    self.logger.error("Configuration servo alimentation non trouvée")
+                    return False
+                
+                # Créer le driver servo pour l'alimentation
+                driver_config = DriverConfig(
+                    name="feeding_servo",
+                    enabled=self.feeding_config.get('enabled', True),
+                    timeout=5.0,
+                    retry_attempts=3,
+                    retry_delay=1.0
+                )
+                
+                pwm_pin = servo_config.get('pwm_pin', 18)
+                frequency = servo_config.get('frequency', 50)
+                
+                self.servo_driver = ServoDriver(driver_config, pwm_pin, frequency)
+                
+                if not self.servo_driver.initialize():
+                    self.logger.error("Échec initialisation driver alimentation")
+                    return False
             
             # Récupérer les paramètres d'alimentation
             self.trap_delay = self.feeding_config.get('trap_delay', 1.0)
