@@ -186,28 +186,9 @@ class ComponentControlService:
                     'pwm': {'lighting': 12, 'ventilation': 13}
                 }
             
-            # Driver du servomoteur d'alimentation
-            try:
-                servo_config = DriverConfig(
-                    name="feeding_servo",
-                    enabled=True
-                )
-                pwm_pin = gpio_config.get('servo', {}).get('pin', 18)
-                frequency = gpio_config.get('servo', {}).get('frequency', 50)
-                
-                servo_driver = ServoDriver(servo_config, pwm_pin, frequency)
-                
-                # Initialiser le driver
-                if servo_driver.initialize():
-                    self.drivers[ComponentType.FEEDING] = servo_driver
-                    self.logger.info(f"Driver servomoteur initialisé sur pin {pwm_pin}")
-                else:
-                    self.logger.error("Échec initialisation driver servomoteur")
-                    self.drivers[ComponentType.FEEDING] = None
-                    
-            except Exception as e:
-                self.logger.error(f"Erreur initialisation driver servomoteur: {e}")
-                self.drivers[ComponentType.FEEDING] = None
+            # Note: Le servomoteur est géré par FeedingService, pas besoin de l'initialiser ici
+            # pour éviter les conflits de PWM
+            self.drivers[ComponentType.FEEDING] = None
             
             # Driver du chauffage (relais)
             try:
@@ -310,7 +291,7 @@ class ComponentControlService:
             import json
             
             # Chemin vers la configuration de l'espèce
-            config_dir = Path(__file__).parent.parent.parent / 'config'
+            config_dir = Path.cwd() / 'config'
             species_file = config_dir / 'species' / 'insects' / 'mantis_religiosa.json'
             
             if species_file.exists():
@@ -684,27 +665,16 @@ class ComponentControlService:
                 self.components[ComponentType.FEEDING]['last_feeding'] = time.time()
                 self.logger.info(f"Alimentation exécutée (quotidien: {self.components[ComponentType.FEEDING]['daily_feeds']})")
                 
-                # Contrôler le servo-moteur
-                if ComponentType.FEEDING in self.drivers and self.drivers[ComponentType.FEEDING]:
-                    try:
-                        # Ouvrir le servo (angle 90°)
-                        self.drivers[ComponentType.FEEDING].write({"angle": 90, "duration": 1.0})
-                        self.components[ComponentType.FEEDING]['servo_angle'] = 90
-                        self.logger.info("Servo-moteur ouvert (90°)")
-                        
-                        # Attendre un peu puis fermer
-                        time.sleep(2)  # 2 secondes d'ouverture
-                        self.drivers[ComponentType.FEEDING].write({"angle": 0, "duration": 1.0})
-                        self.components[ComponentType.FEEDING]['servo_angle'] = 0
-                        self.logger.info("Servo-moteur fermé (0°)")
-                        
-                    except Exception as e:
-                        self.logger.error(f"Erreur contrôle servo-moteur: {e}")
-                        return False
-                else:
-                    self.logger.warning("Driver servo-moteur non disponible")
-                    # Simuler l'ouverture du servo
-                    self.components[ComponentType.FEEDING]['servo_angle'] = 90
+                # Simuler l'alimentation (le servomoteur est géré par FeedingService)
+                self.components[ComponentType.FEEDING]['servo_angle'] = 90
+                self.logger.info("Alimentation simulée (servo-moteur géré par FeedingService)")
+                
+                # Émettre un événement pour déclencher l'alimentation via FeedingService
+                if self.event_bus:
+                    self.event_bus.emit('manual_feeding_request', {
+                        'angle': 90,
+                        'duration': 2.0
+                    })
                 
                 # Émettre un événement d'alimentation
                 if self.event_bus:
@@ -718,16 +688,15 @@ class ComponentControlService:
                 self.components[ComponentType.FEEDING]['servo_angle'] = angle
                 self.logger.info(f"Angle servo: {angle}°")
                 
-                # Contrôler le servo-moteur
-                if ComponentType.FEEDING in self.drivers and self.drivers[ComponentType.FEEDING]:
-                    try:
-                        self.drivers[ComponentType.FEEDING].write({"angle": angle, "duration": 1.0})
-                        self.logger.info(f"Servo-moteur positionné à {angle}°")
-                    except Exception as e:
-                        self.logger.error(f"Erreur positionnement servo-moteur: {e}")
-                        return False
-                else:
-                    self.logger.warning("Driver servo-moteur non disponible")
+                # Simuler le positionnement (le servomoteur est géré par FeedingService)
+                self.logger.info(f"Position servo simulée: {angle}° (géré par FeedingService)")
+                
+                # Émettre un événement pour déclencher le positionnement via FeedingService
+                if self.event_bus:
+                    self.event_bus.emit('servo_position_request', {
+                        'angle': angle,
+                        'duration': 1.0
+                    })
             
             self.components[ComponentType.FEEDING]['last_update'] = time.time()
             return True
