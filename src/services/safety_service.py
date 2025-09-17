@@ -86,41 +86,55 @@ class SafetyService:
             self.stats['safety_checks'] += 1
             violations = []
             
-            # Vérifier la température
-            if 'dht22' in sensor_data:
+            # Vérifier la température (format direct ou dht22)
+            temperature = None
+            humidity = None
+            
+            if 'dht22' in sensor_data and isinstance(sensor_data['dht22'], dict):
                 temp_data = sensor_data['dht22']
                 temperature = temp_data.get('temperature')
                 humidity = temp_data.get('humidity')
-                
-                if temperature is not None:
-                    temp_violation = self._check_temperature_limits(temperature)
-                    if temp_violation:
-                        violations.append(temp_violation)
-                
-                if humidity is not None:
-                    hum_violation = self._check_humidity_limits(humidity)
-                    if hum_violation:
-                        violations.append(hum_violation)
+            elif 'temperature' in sensor_data:
+                temperature = sensor_data.get('temperature')
+                humidity = sensor_data.get('humidity')
             
-            # Vérifier la qualité de l'air
+            if temperature is not None:
+                temp_violation = self._check_temperature_limits(temperature)
+                if temp_violation:
+                    violations.append(temp_violation)
+            
+            if humidity is not None:
+                hum_violation = self._check_humidity_limits(humidity)
+                if hum_violation:
+                    violations.append(hum_violation)
+            
+            # Vérifier la qualité de l'air (format direct ou air_quality)
+            aqi = None
             if 'air_quality' in sensor_data:
-                air_data = sensor_data['air_quality']
-                aqi = air_data.get('aqi')
-                
-                if aqi is not None:
-                    air_violation = self._check_air_quality_limits(aqi)
-                    if air_violation:
-                        violations.append(air_violation)
+                if isinstance(sensor_data['air_quality'], dict):
+                    air_data = sensor_data['air_quality']
+                    aqi = air_data.get('aqi')
+                else:
+                    aqi = sensor_data['air_quality']
             
-            # Vérifier le niveau d'eau
+            if aqi is not None:
+                air_violation = self._check_air_quality_limits(aqi)
+                if air_violation:
+                    violations.append(air_violation)
+            
+            # Vérifier le niveau d'eau (format direct ou water_level)
+            water_level = None
             if 'water_level' in sensor_data:
-                water_data = sensor_data['water_level']
-                level = water_data.get('level')
-                
-                if level is not None:
-                    water_violation = self._check_water_level_limits(level)
-                    if water_violation:
-                        violations.append(water_violation)
+                if isinstance(sensor_data['water_level'], dict):
+                    water_data = sensor_data['water_level']
+                    water_level = water_data.get('level')
+                else:
+                    water_level = sensor_data['water_level']
+            
+            if water_level is not None:
+                water_violation = self._check_water_level_limits(water_level)
+                if water_violation:
+                    violations.append(water_violation)
             
             # Traiter les violations
             if violations:

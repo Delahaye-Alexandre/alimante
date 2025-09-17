@@ -516,7 +516,7 @@ class UIController:
             })
             
             # Forcer la mise à jour de l'affichage
-            self._update_display()
+            self._update_display_data()
             
         except Exception as e:
             self.logger.error(f"Erreur gestion emergency_stop: {e}")
@@ -526,7 +526,7 @@ class UIController:
         try:
             self.logger.info("Reprise normale du système")
             self.display_data['system_status'] = 'normal'
-            self._update_display()
+            self._update_display_data()
             
         except Exception as e:
             self.logger.error(f"Erreur gestion emergency_resume: {e}")
