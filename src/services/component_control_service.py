@@ -190,95 +190,21 @@ class ComponentControlService:
             # pour éviter les conflits de PWM
             self.drivers[ComponentType.FEEDING] = None
             
-            # Driver du chauffage (relais)
-            try:
-                heating_config = DriverConfig(
-                    name="heating_relay",
-                    enabled=True
-                )
-                heating_pin = gpio_config.get('relay', {}).get('heating', 19)
-                
-                heating_driver = RelayDriver(heating_config, heating_pin, active_high=True)
-                
-                # Initialiser le driver
-                if heating_driver.initialize():
-                    self.drivers[ComponentType.HEATING] = heating_driver
-                    self.logger.info(f"Driver chauffage initialisé sur pin {heating_pin}")
-                else:
-                    self.logger.error("Échec initialisation driver chauffage")
-                    self.drivers[ComponentType.HEATING] = None
-                    
-            except Exception as e:
-                self.logger.error(f"Erreur initialisation driver chauffage: {e}")
-                self.drivers[ComponentType.HEATING] = None
+            # Note: Le chauffage est géré par HeatingService, pas besoin de l'initialiser ici
+            # pour éviter les conflits de GPIO
+            self.drivers[ComponentType.HEATING] = None
             
-            # Driver de l'humidification (relais)
-            try:
-                humidification_config = DriverConfig(
-                    name="humidification_relay",
-                    enabled=True
-                )
-                humidification_pin = gpio_config.get('relay', {}).get('humidification', 5)
-                
-                humidification_driver = RelayDriver(humidification_config, humidification_pin, active_high=True)
-                
-                # Initialiser le driver
-                if humidification_driver.initialize():
-                    self.drivers[ComponentType.HUMIDIFICATION] = humidification_driver
-                    self.logger.info(f"Driver humidification initialisé sur pin {humidification_pin}")
-                else:
-                    self.logger.error("Échec initialisation driver humidification")
-                    self.drivers[ComponentType.HUMIDIFICATION] = None
-                    
-            except Exception as e:
-                self.logger.error(f"Erreur initialisation driver humidification: {e}")
-                self.drivers[ComponentType.HUMIDIFICATION] = None
+            # Note: L'humidification est gérée par HumidificationService, pas besoin de l'initialiser ici
+            # pour éviter les conflits de GPIO
+            self.drivers[ComponentType.HUMIDIFICATION] = None
             
-            # Driver de l'éclairage (PWM)
-            try:
-                lighting_config = DriverConfig(
-                    name="lighting_pwm",
-                    enabled=True
-                )
-                lighting_pin = gpio_config.get('pwm', {}).get('lighting', 12)
-                lighting_frequency = 1000  # 1kHz pour l'éclairage
-                
-                lighting_driver = PWMDriver(lighting_config, lighting_pin, lighting_frequency)
-                
-                # Initialiser le driver
-                if lighting_driver.initialize():
-                    self.drivers[ComponentType.LIGHTING] = lighting_driver
-                    self.logger.info(f"Driver éclairage initialisé sur pin {lighting_pin}")
-                else:
-                    self.logger.error("Échec initialisation driver éclairage")
-                    self.drivers[ComponentType.LIGHTING] = None
-                    
-            except Exception as e:
-                self.logger.error(f"Erreur initialisation driver éclairage: {e}")
-                self.drivers[ComponentType.LIGHTING] = None
+            # Note: L'éclairage est géré par LightingService, pas besoin de l'initialiser ici
+            # pour éviter les conflits de PWM
+            self.drivers[ComponentType.LIGHTING] = None
             
-            # Driver de la ventilation (PWM)
-            try:
-                ventilation_config = DriverConfig(
-                    name="ventilation_pwm",
-                    enabled=True
-                )
-                ventilation_pin = gpio_config.get('pwm', {}).get('ventilation', 13)
-                ventilation_frequency = 1000  # 1kHz pour la ventilation
-                
-                ventilation_driver = PWMDriver(ventilation_config, ventilation_pin, ventilation_frequency)
-                
-                # Initialiser le driver
-                if ventilation_driver.initialize():
-                    self.drivers[ComponentType.VENTILATION] = ventilation_driver
-                    self.logger.info(f"Driver ventilation initialisé sur pin {ventilation_pin}")
-                else:
-                    self.logger.error("Échec initialisation driver ventilation")
-                    self.drivers[ComponentType.VENTILATION] = None
-                    
-            except Exception as e:
-                self.logger.error(f"Erreur initialisation driver ventilation: {e}")
-                self.drivers[ComponentType.VENTILATION] = None
+            # Note: La ventilation est gérée par VentilationService, pas besoin de l'initialiser ici
+            # pour éviter les conflits de PWM
+            self.drivers[ComponentType.VENTILATION] = None
             
         except Exception as e:
             self.logger.error(f"Erreur initialisation drivers: {e}")
