@@ -60,7 +60,7 @@ class HumidificationService:
         
         # S'abonner aux événements de contrôle
         if self.event_bus:
-            self.event_bus.subscribe('humidification_control_request', self._on_humidification_control_request)
+            self.event_bus.on('humidification_control_request', self._on_humidification_control_request)
         
     def initialize(self) -> bool:
         """
