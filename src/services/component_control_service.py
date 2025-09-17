@@ -513,13 +513,13 @@ class ComponentControlService:
                 if ComponentType.FEEDING in self.drivers and self.drivers[ComponentType.FEEDING]:
                     try:
                         # Ouvrir le servo (angle 90°)
-                        self.drivers[ComponentType.FEEDING].set_angle(90)
+                        self.drivers[ComponentType.FEEDING].write({"angle": 90, "duration": 1.0})
                         self.components[ComponentType.FEEDING]['servo_angle'] = 90
                         self.logger.info("Servo-moteur ouvert (90°)")
                         
                         # Attendre un peu puis fermer
                         time.sleep(2)  # 2 secondes d'ouverture
-                        self.drivers[ComponentType.FEEDING].set_angle(0)
+                        self.drivers[ComponentType.FEEDING].write({"angle": 0, "duration": 1.0})
                         self.components[ComponentType.FEEDING]['servo_angle'] = 0
                         self.logger.info("Servo-moteur fermé (0°)")
                         
