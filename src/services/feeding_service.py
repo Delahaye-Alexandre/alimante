@@ -62,6 +62,11 @@ class FeedingService:
             'flies_delivered': 0
         }
         
+        # S'abonner aux événements de contrôle
+        if self.event_bus:
+            self.event_bus.on('manual_feeding_request', self._on_manual_feeding_request)
+            self.event_bus.on('servo_position_request', self._on_servo_position_request)
+        
     def initialize(self) -> bool:
         """
         Initialise le service d'alimentation
@@ -411,6 +416,36 @@ class FeedingService:
             'feeding_status': self.get_feeding_status(),
             'driver_status': self.servo_driver.get_status() if self.servo_driver else None
         }
+    
+    def _on_manual_feeding_request(self, event_data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement pour une demande d'alimentation manuelle"""
+        try:
+            self.logger.info(f"Demande d'alimentation manuelle reçue: {event_data}")
+            
+            # Exécuter l'alimentation
+            if self.feed_now():
+                self.logger.info("Alimentation exécutée avec succès")
+            else:
+                self.logger.error("Échec de l'alimentation")
+                
+        except Exception as e:
+            self.logger.error(f"Erreur gestion événement alimentation: {e}")
+    
+    def _on_servo_position_request(self, event_data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement pour une demande de positionnement du servo"""
+        try:
+            angle = event_data.get('angle', 0)
+            duration = event_data.get('duration', 1.0)
+            self.logger.info(f"Demande de positionnement servo reçue: angle={angle}, duration={duration}")
+            
+            # Positionner le servo
+            if self.set_servo_angle(angle, duration):
+                self.logger.info(f"Servo positionné à {angle}°")
+            else:
+                self.logger.error(f"Échec positionnement servo à {angle}°")
+                
+        except Exception as e:
+            self.logger.error(f"Erreur gestion événement servo: {e}")
     
     def cleanup(self) -> None:
         """Nettoie le service d'alimentation"""
