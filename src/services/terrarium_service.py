@@ -50,10 +50,17 @@ class TerrariumService:
         """Charge tous les terrariums disponibles"""
         try:
             self.logger.info("Chargement des terrariums...")
+            self.logger.info(f"Répertoire terrariums: {self.terrariums_dir}")
+            self.logger.info(f"Répertoire existe: {self.terrariums_dir.exists()}")
             
             # Charger les configurations de terrariums
             if self.terrariums_dir.exists():
-                for config_file in self.terrariums_dir.glob('*.json'):
+                config_files = list(self.terrariums_dir.glob('*.json'))
+                self.logger.info(f"Fichiers de configuration trouvés: {len(config_files)}")
+                for config_file in config_files:
+                    self.logger.info(f"  - {config_file}")
+                
+                for config_file in config_files:
                     try:
                         with open(config_file, 'r', encoding='utf-8') as f:
                             terrarium_config = json.load(f)
@@ -74,18 +81,25 @@ class TerrariumService:
                                     'alerts': []
                                 }
                                 self.stats['terrariums_loaded'] += 1
+                                self.logger.info(f"Terrarium chargé: {terrarium_id}")
                                 
                     except Exception as e:
                         self.logger.error(f"Erreur chargement {config_file}: {e}")
                         self.stats['errors'] += 1
+            else:
+                self.logger.warning(f"Répertoire terrariums n'existe pas: {self.terrariums_dir}")
             
             # Créer un terrarium principal par défaut si aucun n'existe
             if not self.terrariums:
+                self.logger.info("Aucun terrarium trouvé, création du terrarium principal par défaut...")
                 self._create_default_terrarium()
+            else:
+                self.logger.info(f"Terrariums existants trouvés: {len(self.terrariums)}")
             
             # Définir le terrarium par défaut
             if self.terrariums and not self.current_terrarium:
                 self.current_terrarium = list(self.terrariums.keys())[0]
+                self.logger.info(f"Terrarium par défaut sélectionné: {self.current_terrarium}")
             
             self.logger.info(f"Terrariums chargés: {len(self.terrariums)}")
             

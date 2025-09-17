@@ -8,6 +8,12 @@
   "active": true,
   "controller_type": "raspberry_pi_zero_2w",
   "role": "central_supervisor",
+  "species": {
+    "species_id": "mantis_religiosa",
+    "common_name": "Mante religieuse",
+    "scientific_name": "Mantis religiosa",
+    "type": "insect"
+  },
   "managed_terrariums": [
     "terrarium_01",
     "terrarium_02", 
@@ -109,43 +115,48 @@
     "temperature": {
       "day_target": 25.0,
       "night_target": 20.0,
+      "min": 22.0,
+      "max": 28.0,
       "tolerance": 2.0,
       "hysteresis": 1.0,
       "unit": "celsius"
     },
     "humidity": {
-      "target": 60.0,
+      "target": 65.0,
+      "min": 50.0,
+      "max": 80.0,
       "tolerance": 5.0,
       "hysteresis": 3.0,
       "unit": "percent"
     },
     "lighting": {
       "photoperiod": {
-        "day_start": "08:00",
-        "day_end": "20:00"
+        "day_start": "10:00",
+        "day_end": "22:00"
       },
       "intensity": {
         "min": 20,
         "max": 80,
+        "optimal": 60,
         "default": 60
       },
       "fade": {
         "enabled": true,
-        "sunrise_duration": 30,
-        "sunset_duration": 30
+        "sunrise_duration": 45,
+        "sunset_duration": 45
       }
     },
     "ventilation": {
-      "base_speed": 30,
-      "max_speed": 80,
+      "base_speed": 25,
+      "max_speed": 60,
       "air_quality_threshold": 100
     }
   },
   "feeding_schedule": {
     "enabled": true,
     "frequency": "daily",
-    "times": ["09:00", "18:00"],
-    "portion_size": "medium",
+    "times": ["10:00", "19:00"],
+    "portion_size": "small",
     "safety_checks": {
       "water_level_min": 20,
       "temperature_range": [15, 35],
