@@ -338,7 +338,7 @@ class FeedingService:
     def _open_trap1(self) -> bool:
         """Ouvre la trappe 1"""
         try:
-            return self.servo_driver.set_angle(self.trap1_open_angle)
+            return self.servo_driver.write({"angle": self.trap1_open_angle, "duration": 1.0})
         except Exception as e:
             self.logger.error(f"Erreur ouverture trappe 1: {e}")
             return False
@@ -346,7 +346,7 @@ class FeedingService:
     def _close_trap1(self) -> bool:
         """Ferme la trappe 1"""
         try:
-            return self.servo_driver.set_angle(self.trap1_angle)
+            return self.servo_driver.write({"angle": self.trap1_angle, "duration": 1.0})
         except Exception as e:
             self.logger.error(f"Erreur fermeture trappe 1: {e}")
             return False
@@ -356,7 +356,7 @@ class FeedingService:
         try:
             # Note: Dans un système réel, il faudrait un deuxième servo
             # Pour l'instant, on simule avec le même servo
-            return self.servo_driver.set_angle(self.trap2_open_angle)
+            return self.servo_driver.write({"angle": self.trap2_open_angle, "duration": 1.0})
         except Exception as e:
             self.logger.error(f"Erreur ouverture trappe 2: {e}")
             return False
@@ -366,7 +366,7 @@ class FeedingService:
         try:
             # Note: Dans un système réel, il faudrait un deuxième servo
             # Pour l'instant, on simule avec le même servo
-            return self.servo_driver.set_angle(self.trap2_angle)
+            return self.servo_driver.write({"angle": self.trap2_angle, "duration": 1.0})
         except Exception as e:
             self.logger.error(f"Erreur fermeture trappe 2: {e}")
             return False
