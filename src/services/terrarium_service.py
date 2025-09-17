@@ -79,6 +79,10 @@ class TerrariumService:
                         self.logger.error(f"Erreur chargement {config_file}: {e}")
                         self.stats['errors'] += 1
             
+            # Créer un terrarium principal par défaut si aucun n'existe
+            if not self.terrariums:
+                self._create_default_terrarium()
+            
             # Définir le terrarium par défaut
             if self.terrariums and not self.current_terrarium:
                 self.current_terrarium = list(self.terrariums.keys())[0]
@@ -87,6 +91,92 @@ class TerrariumService:
             
         except Exception as e:
             self.logger.error(f"Erreur chargement terrariums: {e}")
+            self.stats['errors'] += 1
+    
+    def _create_default_terrarium(self) -> None:
+        """Crée un terrarium principal par défaut avec l'espèce mantis_religiosa"""
+        try:
+            self.logger.info("Création du terrarium principal par défaut...")
+            
+            # Charger la configuration de l'espèce mantis_religiosa
+            species_config = self.get_species_config('mantis_religiosa')
+            if not species_config:
+                self.logger.warning("Configuration mantis_religiosa non trouvée, création d'une configuration par défaut")
+                species_config = {
+                    'species_id': 'mantis_religiosa',
+                    'common_name': 'Mante religieuse',
+                    'scientific_name': 'Mantis religiosa',
+                    'type': 'insect'
+                }
+            
+            # Créer le terrarium principal
+            terrarium_id = 'terrarium_principal'
+            terrarium_config = {
+                'terrarium_id': terrarium_id,
+                'name': 'Terrarium Principal',
+                'description': 'Terrarium principal pour la mante religieuse',
+                'active': True,
+                'controller_type': 'raspberry_pi_zero_2w',
+                'created_date': time.strftime('%Y-%m-%d'),
+                'last_updated': time.strftime('%Y-%m-%d'),
+                'species': {
+                    'species_id': species_config.get('species_id', 'mantis_religiosa'),
+                    'common_name': species_config.get('common_name', 'Mante religieuse'),
+                    'scientific_name': species_config.get('scientific_name', 'Mantis religiosa'),
+                    'type': species_config.get('type', 'insect')
+                },
+                'environmental_settings': {
+                    'temperature': {
+                        'day_target': 25.0,
+                        'night_target': 20.0,
+                        'hysteresis': 1.0
+                    },
+                    'humidity': {
+                        'target': 65.0,
+                        'hysteresis': 5.0
+                    },
+                    'lighting': {
+                        'on_time': '08:00',
+                        'off_time': '20:00',
+                        'intensity': 60
+                    },
+                    'ventilation': {
+                        'base_speed': 25,
+                        'max_speed': 60
+                    }
+                },
+                'feeding_schedule': {
+                    'enabled': True,
+                    'times': ['10:00', '19:00'],
+                    'max_daily_feeds': 3
+                }
+            }
+            
+            # Sauvegarder la configuration
+            self.terrarium_configs[terrarium_id] = terrarium_config
+            config_file = self.terrariums_dir / f"{terrarium_id}.json"
+            with open(config_file, 'w', encoding='utf-8') as f:
+                json.dump(terrarium_config, f, indent=2, ensure_ascii=False)
+            
+            # Ajouter au dictionnaire des terrariums
+            self.terrariums[terrarium_id] = {
+                'id': terrarium_id,
+                'name': terrarium_config['name'],
+                'description': terrarium_config['description'],
+                'species': terrarium_config['species'],
+                'status': 'active',
+                'controller_type': terrarium_config['controller_type'],
+                'last_update': time.time(),
+                'sensors': {},
+                'actuators': {},
+                'alerts': []
+            }
+            
+            self.stats['terrariums_loaded'] += 1
+            self.logger.info(f"Terrarium principal créé: {terrarium_id}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur création terrarium par défaut: {e}")
             self.stats['errors'] += 1
     
     def get_terrariums(self) -> List[Dict[str, Any]]:

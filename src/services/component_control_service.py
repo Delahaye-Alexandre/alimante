@@ -59,23 +59,25 @@ class ComponentControlService:
     def _initialize_components(self) -> None:
         """Initialise les composants par défaut"""
         try:
-            # Composants de chauffage
+            # Composants de chauffage (paramètres pour mantis_religiosa)
             self.components[ComponentType.HEATING] = {
                 'enabled': True,
                 'current_state': False,
-                'target_temperature': 25.0,
+                'target_temperature': 25.0,  # Température optimale jour
                 'current_temperature': 20.0,
                 'power_level': 0,
+                'control_mode': 'automatic',
                 'last_update': time.time()
             }
             
-            # Composants d'éclairage
+            # Composants d'éclairage (paramètres pour mantis_religiosa)
             self.components[ComponentType.LIGHTING] = {
                 'enabled': True,
                 'current_state': False,
                 'brightness': 0,
-                'target_brightness': 80,
+                'target_brightness': 60,  # Intensité optimale
                 'color_temperature': 6500,
+                'control_mode': 'automatic',
                 'schedule': {
                     'on_time': '08:00',
                     'off_time': '20:00',
@@ -84,35 +86,38 @@ class ComponentControlService:
                 'last_update': time.time()
             }
             
-            # Composants d'humidification
+            # Composants d'humidification (paramètres pour mantis_religiosa)
             self.components[ComponentType.HUMIDIFICATION] = {
                 'enabled': True,
                 'current_state': False,
-                'target_humidity': 60.0,
+                'target_humidity': 65.0,  # Humidité optimale
                 'current_humidity': 45.0,
+                'control_mode': 'automatic',
                 'cycle_time': 300,  # 5 minutes
                 'last_update': time.time()
             }
             
-            # Composants de ventilation
+            # Composants de ventilation (paramètres pour mantis_religiosa)
             self.components[ComponentType.VENTILATION] = {
                 'enabled': True,
                 'current_state': False,
                 'fan_speed': 0,
-                'target_speed': 50,
+                'target_speed': 25,  # Vitesse de base
+                'control_mode': 'automatic',
                 'auto_mode': True,
                 'last_update': time.time()
             }
             
-            # Composants d'alimentation
+            # Composants d'alimentation (paramètres pour mantis_religiosa)
             self.components[ComponentType.FEEDING] = {
                 'enabled': True,
                 'current_state': False,
                 'servo_angle': 0,
-                'feeding_schedule': [],
+                'control_mode': 'automatic',
+                'feeding_schedule': ['10:00', '19:00'],  # Horaires d'alimentation
                 'last_feeding': None,
                 'daily_feeds': 0,
-                'max_daily_feeds': 3,
+                'max_daily_feeds': 3,  # Maximum quotidien
                 'last_update': time.time()
             }
             
@@ -121,7 +126,7 @@ class ComponentControlService:
                 self.control_modes[component_type] = ControlMode.AUTOMATIC
                 self.manual_controls[component_type] = False
             
-            self.logger.info("Composants initialisés")
+            self.logger.info("Composants initialisés avec paramètres mantis_religiosa")
             
         except Exception as e:
             self.logger.error(f"Erreur initialisation composants: {e}")
