@@ -65,6 +65,11 @@ class ControlService:
             self.event_bus.on('sensor_data_updated', self._on_sensor_data_updated)
             self.event_bus.on('control_mode_changed', self._on_control_mode_changed)
             self.event_bus.on('component_controlled', self._on_component_controlled)
+            
+            # Événements système supplémentaires
+            self.event_bus.on('system_mode_changed', self._on_system_mode_changed)
+            self.event_bus.on('sensor_data_request', self._on_sensor_data_request)
+            self.event_bus.on('screen_changed', self._on_screen_changed)
         
         # Statistiques
         self.stats = {
@@ -582,6 +587,51 @@ class ControlService:
             
         except Exception as e:
             self.logger.error(f"Erreur gestion component_controlled: {e}")
+    
+    def _on_system_mode_changed(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement system_mode_changed"""
+        try:
+            old_mode = data.get('old_mode', 'unknown')
+            new_mode = data.get('new_mode', 'unknown')
+            self.logger.info(f"Mode système changé: {old_mode} -> {new_mode}")
+            
+            # Mettre à jour le mode système
+            self.system_mode = new_mode
+            
+            # Loguer la décision
+            self._log_decision("system_mode_changed", f"{old_mode} -> {new_mode}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion system_mode_changed: {e}")
+    
+    def _on_sensor_data_request(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement sensor_data_request"""
+        try:
+            source = data.get('source', 'unknown')
+            self.logger.debug(f"Demande de données capteurs depuis: {source}")
+            
+            # Déclencher une lecture des capteurs
+            if self.sensor_service:
+                # Émettre une demande de lecture
+                self.event_bus.emit('sensor_read_request', {
+                    'timestamp': time.time(),
+                    'source': source
+                })
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion sensor_data_request: {e}")
+    
+    def _on_screen_changed(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement screen_changed"""
+        try:
+            screen = data.get('screen', 'unknown')
+            self.logger.debug(f"Écran changé: {screen}")
+            
+            # Loguer le changement d'écran
+            self._log_decision("screen_changed", f"Screen: {screen}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion screen_changed: {e}")
     
     def get_system_status(self) -> Dict[str, Any]:
         """

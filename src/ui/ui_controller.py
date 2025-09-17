@@ -252,6 +252,17 @@ class UIController:
             # Événements de cycle
             self.event_bus.on('main_loop_cycle', self._on_main_loop_cycle)
             
+            # Événements UI spécifiques
+            self.event_bus.on('ui_data_updated', self._on_ui_data_updated)
+            self.event_bus.on('refresh_sensor_data', self._on_refresh_sensor_data)
+            self.event_bus.on('toggle_control_mode', self._on_toggle_control_mode)
+            self.event_bus.on('enter_config_menu', self._on_enter_config_menu)
+            
+            # Événements de services supplémentaires
+            self.event_bus.on('feeding_executed', self._on_feeding_executed)
+            self.event_bus.on('lighting_intensity_changed', self._on_lighting_intensity_changed)
+            self.event_bus.on('ventilation_changed', self._on_ventilation_changed)
+            
             self.logger.info("Abonnements aux événements configurés")
             
         except Exception as e:
@@ -759,6 +770,139 @@ class UIController:
             
         except Exception as e:
             self.logger.error(f"Erreur gestion main_loop_cycle: {e}")
+    
+    # Gestionnaires d'événements UI spécifiques
+    def _on_ui_data_updated(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement ui_data_updated"""
+        try:
+            ui_data = data.get('data', {})
+            timestamp = data.get('timestamp', time.time())
+            self.logger.debug(f"Données UI mises à jour: {ui_data}")
+            
+            # Mettre à jour les données d'affichage
+            if 'sensors' in ui_data:
+                self.display_data['sensors'].update(ui_data['sensors'])
+            if 'controls' in ui_data:
+                self.display_data['controls'].update(ui_data['controls'])
+            if 'alerts' in ui_data:
+                self.display_data['alerts'] = ui_data['alerts']
+            
+            self.display_data['timestamp'] = timestamp
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion ui_data_updated: {e}")
+    
+    def _on_refresh_sensor_data(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement refresh_sensor_data"""
+        try:
+            self.logger.info("Actualisation des données capteurs demandée")
+            
+            # Émettre une demande de rafraîchissement
+            self.event_bus.emit('sensor_data_request', {
+                'timestamp': time.time(),
+                'source': 'ui_refresh'
+            })
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion refresh_sensor_data: {e}")
+    
+    def _on_toggle_control_mode(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement toggle_control_mode"""
+        try:
+            self.logger.info("Basculement du mode de contrôle demandé")
+            
+            # Basculer entre les modes
+            current_mode = self.display_data.get('system_status', 'auto')
+            if current_mode == 'auto':
+                new_mode = 'manual'
+            elif current_mode == 'manual':
+                new_mode = 'maintenance'
+            else:
+                new_mode = 'auto'
+            
+            self.display_data['system_status'] = new_mode
+            
+            # Émettre un événement de changement de mode
+            self.event_bus.emit('system_mode_changed', {
+                'old_mode': current_mode,
+                'new_mode': new_mode,
+                'timestamp': time.time()
+            })
+            
+            self.logger.info(f"Mode de contrôle basculé: {current_mode} -> {new_mode}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion toggle_control_mode: {e}")
+    
+    def _on_enter_config_menu(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement enter_config_menu"""
+        try:
+            self.logger.info("Entrée dans le menu de configuration")
+            
+            # Changer l'écran vers la configuration
+            self.current_screen = 'config'
+            
+            # Émettre un événement de changement d'écran
+            self.event_bus.emit('screen_changed', {
+                'screen': 'config',
+                'timestamp': time.time()
+            })
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion enter_config_menu: {e}")
+    
+    # Gestionnaires d'événements de services supplémentaires
+    def _on_feeding_executed(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement feeding_executed"""
+        try:
+            daily_feeds = data.get('daily_feeds', 0)
+            timestamp = data.get('timestamp', time.time())
+            self.logger.info(f"Alimentation exécutée: {daily_feeds} repas quotidiens")
+            
+            # Mettre à jour l'affichage
+            self.display_data['controls']['daily_feeds'] = daily_feeds
+            self.display_data['controls']['last_feeding'] = timestamp
+            
+            # Ajouter une notification
+            self.display_data['alerts'].append({
+                'type': 'feeding',
+                'message': f"Alimentation exécutée: {daily_feeds} repas",
+                'timestamp': timestamp,
+                'severity': 'info'
+            })
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion feeding_executed: {e}")
+    
+    def _on_lighting_intensity_changed(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement lighting_intensity_changed"""
+        try:
+            intensity = data.get('intensity', 0)
+            timestamp = data.get('timestamp', time.time())
+            self.logger.debug(f"Intensité éclairage changée: {intensity}%")
+            
+            # Mettre à jour l'affichage
+            self.display_data['controls']['lighting_intensity'] = intensity
+            self.display_data['controls']['lighting_intensity_timestamp'] = timestamp
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion lighting_intensity_changed: {e}")
+    
+    def _on_ventilation_changed(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement ventilation_changed"""
+        try:
+            speed = data.get('speed', 0)
+            is_ventilating = data.get('is_ventilating', False)
+            timestamp = data.get('timestamp', time.time())
+            self.logger.debug(f"Ventilation changée: {is_ventilating}, vitesse: {speed}%")
+            
+            # Mettre à jour l'affichage
+            self.display_data['controls']['ventilation'] = is_ventilating
+            self.display_data['controls']['ventilation_speed'] = speed
+            self.display_data['controls']['ventilation_timestamp'] = timestamp
+            
+        except Exception as e:
+            self.logger.error(f"Erreur gestion ventilation_changed: {e}")
     
     def cleanup(self) -> None:
         """Nettoie les ressources du contrôleur UI"""
