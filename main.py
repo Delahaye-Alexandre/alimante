@@ -38,6 +38,17 @@ def main():
     logger = logging.getLogger(__name__)
     
     try:
+        # Chargement de la configuration
+        import json
+        config = {}
+        try:
+            with open('config/config.json', 'r') as f:
+                config = json.load(f)
+            logger.info("Configuration chargée")
+        except Exception as e:
+            logger.warning(f"Erreur chargement configuration: {e}")
+            config = {}
+        
         # Initialisation du bus d'événements
         event_bus = EventBus()
         logger.info("Bus d'événements initialisé")
@@ -46,8 +57,8 @@ def main():
         safety_service = SafetyService(event_bus)
         logger.info("Service de sécurité initialisé")
         
-        # Initialiser l'interface utilisateur
-        ui_controller = UIController(event_bus)
+        # Initialiser l'interface utilisateur avec la configuration
+        ui_controller = UIController(event_bus, config)
         logger.info("Contrôleur UI initialisé")
         
         # Démarrage de la boucle principale

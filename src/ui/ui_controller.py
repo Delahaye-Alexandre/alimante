@@ -155,7 +155,20 @@ class UIController:
             
             # Service d'alimentation
             from services.feeding_service import FeedingService
-            self.feeding_service = FeedingService(self.config, self.event_bus)
+            # Charger la configuration GPIO
+            import json
+            try:
+                with open('config/gpio_config.json', 'r') as f:
+                    gpio_config = json.load(f)
+                # Ajouter la configuration GPIO à la config principale
+                feeding_config = self.config.copy()
+                feeding_config['gpio_config'] = gpio_config
+                feeding_config['safety_limits'] = self.config.get('safety', {})
+            except Exception as e:
+                self.logger.warning(f"Erreur chargement config GPIO: {e}")
+                feeding_config = self.config
+            
+            self.feeding_service = FeedingService(feeding_config, self.event_bus)
             if self.feeding_service.initialize():
                 self.logger.info("Service d'alimentation initialisé")
             else:
