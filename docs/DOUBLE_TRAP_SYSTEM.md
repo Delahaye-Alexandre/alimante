@@ -1,12 +1,17 @@
-# Système de Double Trappe Simultanée
+# Système de Double Trappe avec SAS
 
 ## 🎯 Principe de Fonctionnement
 
-Le système de double trappe simultanée utilise **un seul servomoteur** pour contrôler les deux trappes en opposition, garantissant qu'une seule trappe soit ouverte à la fois.
+Le système utilise **un seul servomoteur** qui actionne les deux trappes en même temps :
+
+- **Trappe 1** : Contrôle l'accès depuis la source de mouches vers le SAS
+- **Trappe 2** : Contrôle l'accès depuis le SAS vers le terrarium
+
+Les deux trappes sont **toujours en opposition** : quand l'une s'ouvre, l'autre se ferme automatiquement.
 
 ## 🔧 Mécanisme
 
-### Position 0° - Entrée Ouverte
+### Position 0° - SAS Ouvert (Entrée des mouches)
 
 ```
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
@@ -15,9 +20,12 @@ Le système de double trappe simultanée utilise **un seul servomoteur** pour co
 └─────────────┘    └─────────────┘    └─────────────┘
       ▲                   ▲                   ▲
    OUVERTE            FERMÉE              FERMÉE
+   (Trap 1)          (Trap 2)           (Trap 2)
 ```
 
-### Position 90° - Sortie Ouverte
+**État :** Les mouches peuvent entrer dans le SAS, mais ne peuvent pas sortir vers le terrarium.
+
+### Position 100° - SAS Fermé (Sortie vers terrarium)
 
 ```
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
@@ -25,25 +33,30 @@ Le système de double trappe simultanée utilise **un seul servomoteur** pour co
 │   (SOURCE)  │    │             │    │             │
 └─────────────┘    └─────────────┘    └─────────────┘
       ▲                   ▲                   ▲
-   FERMÉE            OUVERTE              FERMÉE
+   FERMÉE            OUVERTE              OUVERTE
+   (Trap 1)          (Trap 2)           (Trap 2)
 ```
+
+**État :** Les mouches ne peuvent plus entrer dans le SAS, mais peuvent sortir vers le terrarium.
 
 ## 📋 Séquence d'Alimentation
 
 1. **Phase d'entrée** (Position 0°)
 
-   - Entrée ouverte, sortie fermée
-   - Les mouches entrent dans le sas
+   - **Trappe 1** : OUVERTE (mouches entrent dans le SAS)
+   - **Trappe 2** : FERMÉE (pas d'accès au terrarium)
+   - Les mouches s'accumulent dans le SAS
    - Durée basée sur le nombre de mouches souhaitées
 
-2. **Phase de sortie** (Position 90°)
+2. **Phase de sortie** (Position 100°)
 
-   - Entrée fermée, sortie ouverte
+   - **Trappe 1** : FERMÉE (plus d'entrée de mouches)
+   - **Trappe 2** : OUVERTE (accès au terrarium)
    - Les mouches s'échappent vers le terrarium
-   - Délai de stabilisation pour vider le sas
+   - Délai de stabilisation pour vider le SAS
 
 3. **Phase de repos** (Position 0°)
-   - Retour à la position fermée
+   - Retour à la position d'entrée
    - Système prêt pour la prochaine alimentation
 
 ## ⚙️ Configuration
@@ -66,16 +79,17 @@ Le système de double trappe simultanée utilise **un seul servomoteur** pour co
 
 ## 🎛️ Positions du Servo
 
-- **0°** : `trap_entrance_open` - Entrée ouverte, sortie fermée
-- **90°** : `trap_entrance_closed` - Entrée fermée, sortie ouverte
+- **0°** : `trap1_open` - Trappe 1 ouverte (entrée SAS), Trappe 2 fermée (sortie terrarium)
+- **100°** : `trap2_open` - Trappe 1 fermée (entrée SAS), Trappe 2 ouverte (sortie terrarium)
 
 ## ✅ Avantages
 
-1. **Simplicité mécanique** : Un seul servomoteur
-2. **Fiabilité** : Impossible d'avoir les deux trappes ouvertes simultanément
-3. **Hygiène** : Aucune mouche ne reste dans le sas
-4. **Contrôle statistique** : Nombre de mouches basé sur la durée
-5. **Économie d'énergie** : Un seul actionneur
+1. **Simplicité mécanique** : Un seul servomoteur actionne les deux trappes
+2. **Sécurité** : Impossible d'avoir les deux trappes ouvertes simultanément
+3. **Contrôle du flux** : Les mouches sont d'abord piégées dans le SAS
+4. **Hygiène** : Aucune mouche ne reste dans le SAS après utilisation
+5. **Contrôle statistique** : Nombre de mouches basé sur la durée d'ouverture
+6. **Économie d'énergie** : Un seul actionneur pour deux fonctions
 
 ## 🔬 Calibration
 

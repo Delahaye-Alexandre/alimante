@@ -47,12 +47,11 @@ class FeedingService:
         self.feeding_count = 0
         self.today_feeding_count = 0  # Compteur pour aujourd'hui
         
-        # Système de double trappe
-        self.trap1_angle = 0    # Trappe 1 fermée
-        self.trap2_angle = 0    # Trappe 2 fermée
-        self.trap1_open_angle = 100   # Angle pour ouvrir la trappe 1 (+10°)
-        self.trap2_open_angle = 100   # Angle pour ouvrir la trappe 2 (+10°)
-        self.trap_delay = 1.0        # Délai entre l'ouverture des trappes
+        # Système de double trappe avec un seul servomoteur
+        # Les deux trappes sont actionnées simultanément par le même servo
+        self.trap1_open_angle = 0     # Position 0° : Trappe 1 ouverte (entrée SAS), Trappe 2 fermée (sortie terrarium)
+        self.trap2_open_angle = 100   # Position 100° : Trappe 1 fermée (entrée SAS), Trappe 2 ouverte (sortie terrarium)
+        self.trap_delay = 1.0         # Délai entre les phases d'alimentation
         
         # Statistiques
         self.stats = {
@@ -268,39 +267,35 @@ class FeedingService:
             self.is_feeding = True
             self.stats['total_feedings'] += 1
             
-            # Étape 1: Ouvrir la trappe 1
-            self.logger.info("Ouverture trappe 1...")
-            if not self._open_trap1():
-                self.logger.error("Échec ouverture trappe 1")
+            # Phase 1: Position 0° - SAS ouvert (entrée des mouches)
+            # Trappe 1 ouverte (entrée SAS), Trappe 2 fermée (sortie terrarium)
+            self.logger.info("Phase 1: Ouverture SAS pour entrée des mouches...")
+            if not self._set_servo_position(self.trap1_open_angle):
+                self.logger.error("Échec positionnement servo phase 1")
                 self.is_feeding = False
                 return False
             
-            # Attendre le délai
+            # Attendre que les mouches entrent dans le SAS
+            self.logger.info(f"Attente entrée des mouches ({trap_delay}s)...")
             time.sleep(trap_delay)
             
-            # Étape 2: Ouvrir la trappe 2
-            self.logger.info("Ouverture trappe 2...")
-            if not self._open_trap2():
-                self.logger.error("Échec ouverture trappe 2")
-                self._close_trap1()
+            # Phase 2: Position 100° - SAS fermé (sortie vers terrarium)
+            # Trappe 1 fermée (entrée SAS), Trappe 2 ouverte (sortie terrarium)
+            self.logger.info("Phase 2: Fermeture SAS et ouverture sortie terrarium...")
+            if not self._set_servo_position(self.trap2_open_angle):
+                self.logger.error("Échec positionnement servo phase 2")
                 self.is_feeding = False
                 return False
             
-            # Attendre que les mouches tombent
+            # Attendre que les mouches sortent vers le terrarium
+            self.logger.info("Attente sortie des mouches vers terrarium...")
             time.sleep(2.0)
             
-            # Étape 3: Fermer la trappe 2
-            self.logger.info("Fermeture trappe 2...")
-            if not self._close_trap2():
-                self.logger.error("Échec fermeture trappe 2")
-            
-            # Attendre le délai
-            time.sleep(trap_delay)
-            
-            # Étape 4: Fermer la trappe 1
-            self.logger.info("Fermeture trappe 1...")
-            if not self._close_trap1():
-                self.logger.error("Échec fermeture trappe 1")
+            # Phase 3: Retour position 0° - SAS fermé (repos)
+            # Trappe 1 fermée (entrée SAS), Trappe 2 fermée (sortie terrarium)
+            self.logger.info("Phase 3: Retour position repos...")
+            if not self._set_servo_position(0):
+                self.logger.error("Échec retour position repos")
             
             # Mettre à jour les statistiques
             current_time = time.time()
@@ -341,44 +336,32 @@ class FeedingService:
             
             return False
     
-    def _open_trap1(self) -> bool:
-        """Ouvre la trappe 1"""
+    def _set_servo_position(self, angle: float) -> bool:
+        """
+        Positionne le servomoteur à l'angle spécifié
+        
+        Args:
+            angle: Angle en degrés (0° ou 100°)
+            
+        Returns:
+            True si succès, False sinon
+        """
         try:
-            self.logger.info(f"Ouverture trappe 1 à {self.trap1_open_angle}°")
-            return self.servo_driver.write({"angle": self.trap1_open_angle, "duration": 1.0})
+            if not self.servo_driver:
+                return False
+            
+            # Positionner le servo à l'angle spécifié
+            success = self.servo_driver.write({"angle": angle, "duration": 1.0})
+            if success:
+                if angle == self.trap1_open_angle:
+                    self.logger.info("Position 0°: Trappe 1 ouverte (entrée SAS), Trappe 2 fermée (sortie terrarium)")
+                elif angle == self.trap2_open_angle:
+                    self.logger.info("Position 100°: Trappe 1 fermée (entrée SAS), Trappe 2 ouverte (sortie terrarium)")
+                else:
+                    self.logger.info(f"Position {angle}°: Système en position de repos")
+            return success
         except Exception as e:
-            self.logger.error(f"Erreur ouverture trappe 1: {e}")
-            return False
-    
-    def _close_trap1(self) -> bool:
-        """Ferme la trappe 1"""
-        try:
-            self.logger.info(f"Fermeture trappe 1 à {self.trap1_angle}°")
-            return self.servo_driver.write({"angle": self.trap1_angle, "duration": 1.0})
-        except Exception as e:
-            self.logger.error(f"Erreur fermeture trappe 1: {e}")
-            return False
-    
-    def _open_trap2(self) -> bool:
-        """Ouvre la trappe 2"""
-        try:
-            # Note: Dans un système réel, il faudrait un deuxième servo
-            # Pour l'instant, on simule avec le même servo
-            self.logger.info(f"Ouverture trappe 2 à {self.trap2_open_angle}°")
-            return self.servo_driver.write({"angle": self.trap2_open_angle, "duration": 1.0})
-        except Exception as e:
-            self.logger.error(f"Erreur ouverture trappe 2: {e}")
-            return False
-    
-    def _close_trap2(self) -> bool:
-        """Ferme la trappe 2"""
-        try:
-            # Note: Dans un système réel, il faudrait un deuxième servo
-            # Pour l'instant, on simule avec le même servo
-            self.logger.info(f"Fermeture trappe 2 à {self.trap2_angle}°")
-            return self.servo_driver.write({"angle": self.trap2_angle, "duration": 1.0})
-        except Exception as e:
-            self.logger.error(f"Erreur fermeture trappe 2: {e}")
+            self.logger.error(f"Erreur positionnement servo à {angle}°: {e}")
             return False
     
     def stop_feeding(self) -> None:
@@ -387,9 +370,8 @@ class FeedingService:
             if self.is_feeding:
                 self.logger.info("Arrêt alimentation en cours...")
                 
-                # Fermer les trappes
-                self._close_trap1()
-                self._close_trap2()
+                # Retourner le servo en position de repos (0°)
+                self._set_servo_position(0)
                 
                 self.is_feeding = False
                 self.logger.info("Alimentation arrêtée")
