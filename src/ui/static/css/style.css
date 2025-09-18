@@ -21,6 +21,9 @@
     --shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.15);
     --border-radius: 8px;
     --transition: all 0.3s ease;
+    --override-warning-bg: #FFF3CD;
+    --override-warning-border: #FFEAA7;
+    --override-warning-text: #856404;
 }
 
 /* Reset et base */
@@ -1051,33 +1054,81 @@ input:checked+.slider:before {
         flex-direction: column;
         align-items: stretch;
     }
-    
+
     .terrarium-controls {
         justify-content: center;
     }
-    
+
     .terrarium-dropdown {
         min-width: auto;
         flex: 1;
     }
-    
+
     .controls-header {
         flex-direction: column;
         align-items: stretch;
         gap: 1rem;
     }
-    
+
     .terrariums-header {
         flex-direction: column;
         align-items: stretch;
         gap: 1rem;
     }
-    
+
     .terrariums-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .terrarium-details {
         padding: 1rem;
+    }
+}
+
+/* Override Warning Styles */
+.override-warning {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: var(--override-warning-bg);
+    border: 2px solid var(--override-warning-border);
+    border-radius: var(--border-radius);
+    animation: slideDown 0.3s ease-out;
+}
+
+.warning-content {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    color: var(--override-warning-text);
+    font-weight: 600;
+}
+
+.warning-content i {
+    margin-right: 0.5rem;
+    font-size: 1.2em;
+}
+
+.override-checkbox {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    color: var(--override-warning-text);
+    font-size: 0.9em;
+}
+
+.override-checkbox input[type="checkbox"] {
+    margin-right: 0.5rem;
+    transform: scale(1.2);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }

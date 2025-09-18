@@ -388,10 +388,54 @@ class AlimanteApp {
 
     // Mettre à jour les alimentations d'aujourd'hui
     const dailyFeedsElement = document.getElementById("dailyFeeds");
+    const overrideWarning = document.getElementById("overrideWarning");
+    const overrideCheckbox = document.getElementById("overrideCheckbox");
+
     if (dailyFeedsElement) {
       const todayCount = feedingData.today_feeding_count || 0;
-      const maxFeeds = 3; // Nombre maximum d'alimentations par jour
-      dailyFeedsElement.textContent = `${todayCount}/${maxFeeds}`;
+      dailyFeedsElement.textContent = `${todayCount}`;
+
+      // Afficher l'avertissement si plus de 3 alimentations
+      if (todayCount > 3) {
+        dailyFeedsElement.style.color = "#ff6b6b";
+        dailyFeedsElement.title =
+          "Attention: Plus de 3 alimentations aujourd'hui";
+        if (overrideWarning) {
+          overrideWarning.style.display = "block";
+        }
+      } else {
+        dailyFeedsElement.style.color = "";
+        dailyFeedsElement.title = "";
+        if (overrideWarning) {
+          overrideWarning.style.display = "none";
+        }
+        if (overrideCheckbox) {
+          overrideCheckbox.checked = false;
+        }
+      }
+    }
+  }
+
+  handleFeedingRequest() {
+    const feedingData = this.data.controls?.feeding;
+    const todayCount = feedingData?.today_feeding_count || 0;
+    const overrideCheckbox = document.getElementById("overrideCheckbox");
+
+    // Vérifier si plus de 3 alimentations et si l'override n'est pas coché
+    if (todayCount > 3 && (!overrideCheckbox || !overrideCheckbox.checked)) {
+      // Afficher une alerte
+      alert(
+        `Attention: Vous avez déjà effectué ${todayCount} alimentations aujourd'hui.\n\nCochez la case de confirmation pour continuer.`
+      );
+      return;
+    }
+
+    // Exécuter l'alimentation
+    this.controlComponent("feeding", { feed: true });
+
+    // Décocher la case d'override après utilisation
+    if (overrideCheckbox) {
+      overrideCheckbox.checked = false;
     }
   }
 
@@ -1025,7 +1069,7 @@ class AlimanteApp {
 
     // Bouton d'alimentation
     document.getElementById("feedNowBtn")?.addEventListener("click", () => {
-      this.controlComponent("feeding", { feed: true });
+      this.handleFeedingRequest();
     });
 
     // Fermeture des détails de terrarium

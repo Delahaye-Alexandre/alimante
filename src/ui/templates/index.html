@@ -476,6 +476,22 @@
                   <button class="btn btn-primary" id="feedNowBtn">
                     <i class="fas fa-utensils"></i> Nourrir maintenant
                   </button>
+                  <div
+                    class="override-warning"
+                    id="overrideWarning"
+                    style="display: none"
+                  >
+                    <div class="warning-content">
+                      <i class="fas fa-exclamation-triangle"></i>
+                      <span
+                        >Attention: Plus de 3 alimentations aujourd'hui</span
+                      >
+                    </div>
+                    <label class="override-checkbox">
+                      <input type="checkbox" id="overrideCheckbox" />
+                      Je confirme vouloir nourrir
+                    </label>
+                  </div>
                 </div>
                 <div class="control-info">
                   <span class="label">Dernière alimentation:</span>
@@ -483,7 +499,7 @@
                 </div>
                 <div class="control-info">
                   <span class="label">Alimentations aujourd'hui:</span>
-                  <span class="value" id="dailyFeeds">0/3</span>
+                  <span class="value" id="dailyFeeds">0</span>
                 </div>
               </div>
             </div>

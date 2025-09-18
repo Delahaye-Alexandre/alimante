@@ -153,6 +153,14 @@ class UIController:
             self.component_control_service = ComponentControlService(self.event_bus)
             self.logger.info("Service de contrôle des composants initialisé")
             
+            # Service d'alimentation
+            from services.feeding_service import FeedingService
+            self.feeding_service = FeedingService(self.config, self.event_bus)
+            if self.feeding_service.initialize():
+                self.logger.info("Service d'alimentation initialisé")
+            else:
+                self.logger.warning("Échec initialisation service d'alimentation")
+            
         except Exception as e:
             self.logger.error(f"Erreur initialisation services: {e}")
             self.stats['errors'] += 1
@@ -400,9 +408,8 @@ class UIController:
         """Met à jour les données d'alimentation depuis le service"""
         try:
             # Demander les données d'alimentation au service
-            if hasattr(self, 'services') and 'feeding' in self.services:
-                feeding_service = self.services['feeding']
-                feeding_status = feeding_service.get_feeding_status()
+            if hasattr(self, 'feeding_service') and self.feeding_service:
+                feeding_status = self.feeding_service.get_feeding_status()
                 
                 # Mettre à jour les données d'affichage
                 if 'feeding' not in self.display_data['controls']:
