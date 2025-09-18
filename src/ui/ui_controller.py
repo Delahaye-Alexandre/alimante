@@ -149,26 +149,13 @@ class UIController:
             self.component_control_service = ComponentControlService(self.event_bus)
             self.logger.info("Service de contrôle des composants initialisé")
             
-            # Service d'alimentation
-            from services.feeding_service import FeedingService
-            # Charger la configuration GPIO
-            import json
-            try:
-                with open('config/gpio_config.json', 'r') as f:
-                    gpio_config = json.load(f)
-                # Ajouter la configuration GPIO à la config principale
-                feeding_config = self.config.copy()
-                feeding_config['gpio_config'] = gpio_config
-                feeding_config['safety_limits'] = self.config.get('safety', {})
-            except Exception as e:
-                self.logger.warning(f"Erreur chargement config GPIO: {e}")
-                feeding_config = self.config
-            
-            self.feeding_service = FeedingService(feeding_config, self.event_bus)
-            if self.feeding_service.initialize():
-                self.logger.info("Service d'alimentation initialisé")
+            # Service de contrôle principal (contient FeedingService)
+            from services.control_service import ControlService
+            self.control_service = ControlService(self.config, self.event_bus)
+            if self.control_service.initialize():
+                self.logger.info("Service de contrôle principal initialisé")
             else:
-                self.logger.warning("Échec initialisation service d'alimentation")
+                self.logger.warning("Échec initialisation service de contrôle principal")
             
         except Exception as e:
             self.logger.error(f"Erreur initialisation services: {e}")
@@ -402,9 +389,13 @@ class UIController:
     def _update_feeding_data(self) -> None:
         """Met à jour les données d'alimentation depuis le service"""
         try:
-            # Demander les données d'alimentation au service
-            if hasattr(self, 'feeding_service') and self.feeding_service:
-                feeding_status = self.feeding_service.get_feeding_status()
+            # Récupérer le service d'alimentation depuis ControlService
+            feeding_service = None
+            if hasattr(self, 'control_service') and self.control_service:
+                feeding_service = getattr(self.control_service, 'feeding_service', None)
+            
+            if feeding_service:
+                feeding_status = feeding_service.get_feeding_status()
                 
                 # Mettre à jour les données d'affichage
                 if 'feeding' not in self.display_data['controls']:
