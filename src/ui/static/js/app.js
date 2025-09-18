@@ -342,6 +342,9 @@ class AlimanteApp {
     this.updateControlToggle("humidificationToggle", controls.humidification);
     this.updateControlToggle("ventilationToggle", controls.ventilation);
     this.updateControlToggle("feedingToggle", controls.feeding);
+
+    // Mettre à jour les statistiques d'alimentation
+    this.updateFeedingStats(controls.feeding);
   }
 
   updateControlStatus(controlName, isActive) {
@@ -364,6 +367,31 @@ class AlimanteApp {
     const toggle = document.getElementById(toggleId);
     if (toggle) {
       toggle.checked = isActive || false;
+    }
+  }
+
+  updateFeedingStats(feedingData) {
+    if (!feedingData) return;
+
+    // Mettre à jour la dernière alimentation
+    const lastFeedingElement = document.getElementById("lastFeeding");
+    if (lastFeedingElement && feedingData.last_feeding_time) {
+      const lastFeedingDate = new Date(feedingData.last_feeding_time * 1000);
+      const timeString = lastFeedingDate.toLocaleTimeString("fr-FR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      lastFeedingElement.textContent = timeString;
+    } else if (lastFeedingElement) {
+      lastFeedingElement.textContent = "--";
+    }
+
+    // Mettre à jour les alimentations d'aujourd'hui
+    const dailyFeedsElement = document.getElementById("dailyFeeds");
+    if (dailyFeedsElement) {
+      const todayCount = feedingData.today_feeding_count || 0;
+      const maxFeeds = 3; // Nombre maximum d'alimentations par jour
+      dailyFeedsElement.textContent = `${todayCount}/${maxFeeds}`;
     }
   }
 

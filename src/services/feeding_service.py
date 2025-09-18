@@ -45,12 +45,13 @@ class FeedingService:
         self.feeding_schedule = []
         self.last_feeding_time = 0
         self.feeding_count = 0
+        self.today_feeding_count = 0  # Compteur pour aujourd'hui
         
         # Système de double trappe
         self.trap1_angle = 0    # Trappe 1 fermée
         self.trap2_angle = 0    # Trappe 2 fermée
-        self.trap1_open_angle = 90   # Angle pour ouvrir la trappe 1
-        self.trap2_open_angle = 90   # Angle pour ouvrir la trappe 2
+        self.trap1_open_angle = 100   # Angle pour ouvrir la trappe 1 (+10°)
+        self.trap2_open_angle = 100   # Angle pour ouvrir la trappe 2 (+10°)
         self.trap_delay = 1.0        # Délai entre l'ouverture des trappes
         
         # Statistiques
@@ -59,7 +60,8 @@ class FeedingService:
             'successful_feedings': 0,
             'failed_feedings': 0,
             'last_feeding_time': 0,
-            'flies_delivered': 0
+            'flies_delivered': 0,
+            'today_feeding_count': 0
         }
         
         # S'abonner aux événements de contrôle
@@ -300,11 +302,14 @@ class FeedingService:
                 self.logger.error("Échec fermeture trappe 1")
             
             # Mettre à jour les statistiques
+            current_time = time.time()
             self.stats['successful_feedings'] += 1
-            self.stats['last_feeding_time'] = time.time()
+            self.stats['last_feeding_time'] = current_time
             self.stats['flies_delivered'] += fly_count
-            self.last_feeding_time = time.time()
+            self.stats['today_feeding_count'] += 1
+            self.last_feeding_time = current_time
             self.feeding_count += 1
+            self.today_feeding_count += 1
             
             self.is_feeding = False
             
@@ -398,14 +403,37 @@ class FeedingService:
         Returns:
             Dictionnaire du statut
         """
+        # Vérifier si c'est un nouveau jour et réinitialiser le compteur
+        self._check_daily_reset()
+        
         return {
             'is_feeding': self.is_feeding,
             'feeding_schedule': self.feeding_schedule.copy(),
             'last_feeding_time': self.last_feeding_time,
             'feeding_count': self.feeding_count,
+            'today_feeding_count': self.today_feeding_count,
             'trap_delay': self.trap_delay,
             'stats': self.stats.copy()
         }
+    
+    def _check_daily_reset(self) -> None:
+        """
+        Vérifie si c'est un nouveau jour et réinitialise le compteur quotidien
+        """
+        try:
+            current_time = time.time()
+            current_date = time.strftime("%Y-%m-%d", time.localtime(current_time))
+            
+            # Vérifier si la dernière alimentation était d'un jour différent
+            if self.last_feeding_time > 0:
+                last_feeding_date = time.strftime("%Y-%m-%d", time.localtime(self.last_feeding_time))
+                if last_feeding_date != current_date:
+                    # Nouveau jour, réinitialiser le compteur
+                    self.today_feeding_count = 0
+                    self.stats['today_feeding_count'] = 0
+                    self.logger.info("Nouveau jour détecté, compteur d'alimentation réinitialisé")
+        except Exception as e:
+            self.logger.error(f"Erreur vérification réinitialisation quotidienne: {e}")
     
     def get_status(self) -> Dict[str, Any]:
         """

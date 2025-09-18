@@ -383,6 +383,9 @@ class UIController:
             if hasattr(self, 'component_control_service') and self.component_control_service:
                 self.display_data['components'] = self.component_control_service.get_all_components_status()
             
+            # Mettre à jour les données d'alimentation
+            self._update_feeding_data()
+            
             # Émettre un événement de mise à jour
             self.event_bus.emit('ui_data_updated', {
                 'data': self.display_data,
@@ -392,6 +395,26 @@ class UIController:
         except Exception as e:
             self.logger.error(f"Erreur mise à jour données affichage: {e}")
             self.stats['errors'] += 1
+    
+    def _update_feeding_data(self) -> None:
+        """Met à jour les données d'alimentation depuis le service"""
+        try:
+            # Demander les données d'alimentation au service
+            if hasattr(self, 'services') and 'feeding' in self.services:
+                feeding_service = self.services['feeding']
+                feeding_status = feeding_service.get_feeding_status()
+                
+                # Mettre à jour les données d'affichage
+                if 'feeding' not in self.display_data['controls']:
+                    self.display_data['controls']['feeding'] = {}
+                
+                self.display_data['controls']['feeding'].update({
+                    'today_feeding_count': feeding_status.get('today_feeding_count', 0),
+                    'last_feeding_time': feeding_status.get('last_feeding_time', 0),
+                    'is_feeding': feeding_status.get('is_feeding', False)
+                })
+        except Exception as e:
+            self.logger.error(f"Erreur mise à jour données alimentation: {e}")
     
     def _on_sensor_data_updated(self, data: Dict[str, Any]) -> None:
         """Gestionnaire d'événement : données des capteurs mises à jour"""
@@ -860,8 +883,10 @@ class UIController:
             self.logger.info(f"Alimentation exécutée: {daily_feeds} repas quotidiens")
             
             # Mettre à jour l'affichage
-            self.display_data['controls']['daily_feeds'] = daily_feeds
-            self.display_data['controls']['last_feeding'] = timestamp
+            self.display_data['controls']['feeding'] = {
+                'today_feeding_count': daily_feeds,
+                'last_feeding_time': timestamp
+            }
             
             # Ajouter une notification
             self.display_data['alerts'].append({
