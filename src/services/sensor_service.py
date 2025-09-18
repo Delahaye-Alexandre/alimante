@@ -97,12 +97,8 @@ class SensorService:
             )
             
             # Récupérer le pin depuis la configuration GPIO
-            gpio_pin = 4  # Pin par défaut pour DHT22
-            if 'gpio_config' in self.config:
-                gpio_pins = self.config['gpio_config'].get('gpio_pins', {})
-                sensors = gpio_pins.get('sensors', {})
-                dht22_config = sensors.get('dht22_temperature_humidity', {})
-                gpio_pin = dht22_config.get('pin', 4)
+            from utils.gpio_config import get_sensor_pin
+            gpio_pin = get_sensor_pin('dht22_temperature_humidity')
             
             self.sensors['dht22'] = DHT22Sensor(config, gpio_pin)
             
@@ -128,12 +124,8 @@ class SensorService:
             )
             
             # Récupérer le pin depuis la configuration GPIO
-            gpio_pin = 5  # Pin par défaut pour qualité d'air
-            if 'gpio_config' in self.config:
-                gpio_pins = self.config['gpio_config'].get('gpio_pins', {})
-                sensors = gpio_pins.get('sensors', {})
-                air_quality_config = sensors.get('air_quality', {})
-                gpio_pin = air_quality_config.get('pin', 5)
+            from utils.gpio_config import get_sensor_pin
+            gpio_pin = get_sensor_pin('air_quality')
             
             self.sensors['air_quality'] = AirQualitySensor(config, gpio_pin)
             
@@ -159,12 +151,8 @@ class SensorService:
             )
             
             # Récupérer le pin depuis la configuration GPIO
-            gpio_pin = 21  # Pin par défaut pour niveau d'eau
-            if 'gpio_config' in self.config:
-                gpio_pins = self.config['gpio_config'].get('gpio_pins', {})
-                sensors = gpio_pins.get('sensors', {})
-                water_config = sensors.get('water_level', {})
-                gpio_pin = water_config.get('pin', 21)
+            from utils.gpio_config import get_sensor_pin
+            gpio_pin = get_sensor_pin('water_level')
             
             self.sensors['water_level'] = TenflyerWaterSensor(config, gpio_pin)
             

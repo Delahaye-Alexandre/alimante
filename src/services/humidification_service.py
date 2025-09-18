@@ -90,7 +90,8 @@ class HumidificationService:
                 retry_delay=1.0
             )
             
-            relay_pin = humidifier_config.get('relay_pin', 5)
+            from utils.gpio_config import get_actuator_pin
+            relay_pin = get_actuator_pin('humidifier', 'relay_pin')
             self.humidifier_driver = RelayDriver(driver_config, relay_pin)
             
             if not self.humidifier_driver.initialize():

@@ -181,9 +181,15 @@ class ComponentControlService:
             else:
                 self.logger.warning("Configuration GPIO non trouvée, utilisation des valeurs par défaut")
                 gpio_config = {
-                    'servo': {'pin': 18, 'frequency': 50},
-                    'relay': {'heating': 19, 'humidification': 5},
-                    'pwm': {'lighting': 12, 'ventilation': 13}
+                    'gpio_pins': {
+                        'actuators': {
+                            'feeder_servo': {'pwm_pin': 18, 'frequency': 50},
+                            'heater': {'relay_pin': 19},
+                            'humidifier': {'relay_pin': 5},
+                            'lighting': {'pwm_pin': 12, 'frequency': 1000},
+                            'fan_4': {'pwm_pin': 13, 'frequency': 1000}
+                        }
+                    }
                 }
             
             # Note: Le servomoteur est géré par FeedingService, pas besoin de l'initialiser ici

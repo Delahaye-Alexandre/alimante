@@ -98,7 +98,8 @@ class VentilationService:
                 retry_delay=1.0
             )
             
-            pwm_pin = fan_config.get('pwm_pin', 13)
+            from utils.gpio_config import get_actuator_pin
+            pwm_pin = get_actuator_pin('fan_4', 'pwm_pin')
             frequency = fan_config.get('frequency', 1000)
             
             self.fan_driver = PWMDriver(driver_config, pwm_pin, frequency)

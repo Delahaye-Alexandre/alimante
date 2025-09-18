@@ -86,7 +86,8 @@ class HeatingService:
                 retry_delay=1.0
             )
             
-            relay_pin = heater_config.get('relay_pin', 19)
+            from utils.gpio_config import get_actuator_pin
+            relay_pin = get_actuator_pin('heater', 'relay_pin')
             self.heater_driver = RelayDriver(driver_config, relay_pin)
             
             if not self.heater_driver.initialize():

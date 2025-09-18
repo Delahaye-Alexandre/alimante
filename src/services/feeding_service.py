@@ -105,7 +105,8 @@ class FeedingService:
                     retry_delay=1.0
                 )
                 
-                pwm_pin = servo_config.get('pwm_pin', 18)
+                from utils.gpio_config import get_actuator_pin
+                pwm_pin = get_actuator_pin('feeder_servo', 'pwm_pin')
                 frequency = servo_config.get('frequency', 50)
                 
                 self.servo_driver = ServoDriver(driver_config, pwm_pin, frequency)

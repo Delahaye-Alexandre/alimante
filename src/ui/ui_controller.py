@@ -109,10 +109,7 @@ class UIController:
                 }
             },
             'encoder': {
-                'enabled': True,
-                'pin_a': 20,
-                'pin_b': 21,
-                'pin_btn': 16
+                'enabled': True
             }
         }
     

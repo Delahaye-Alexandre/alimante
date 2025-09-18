@@ -40,13 +40,12 @@ class EncoderInterface:
         self.logger = logging.getLogger(__name__)
         
         # Charger la configuration GPIO depuis le fichier JSON
-        gpio_config = self._load_gpio_config()
-        ui_pins = gpio_config.get('gpio_pins', {}).get('ui', {})
+        from utils.gpio_config import get_ui_pin
         
         # Configuration GPIO depuis la configuration JSON
-        self.pin_a = ui_pins.get('encoder_clk', {}).get('pin', 17)  # CLK
-        self.pin_b = ui_pins.get('encoder_dt', {}).get('pin', 27)   # DT
-        self.pin_btn = ui_pins.get('encoder_sw', {}).get('pin', 22) # SW (bouton)
+        self.pin_a = get_ui_pin('encoder_clk')  # CLK
+        self.pin_b = get_ui_pin('encoder_dt')   # DT
+        self.pin_btn = get_ui_pin('encoder_sw') # SW (bouton)
         
         # État de l'interface
         self.is_running = False
@@ -76,25 +75,6 @@ class EncoderInterface:
         # Initialiser GPIO
         self._initialize_gpio()
     
-    def _load_gpio_config(self) -> Dict[str, Any]:
-        """Charge la configuration GPIO depuis le fichier JSON"""
-        try:
-            import json
-            config_path = os.path.join(os.path.dirname(__file__), '..', '..', 'config', 'gpio_config.json')
-            with open(config_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except Exception as e:
-            self.logger.warning(f"Impossible de charger gpio_config.json: {e}")
-            # Configuration par défaut
-            return {
-                'gpio_pins': {
-                    'ui': {
-                        'encoder_clk': {'pin': 17},
-                        'encoder_dt': {'pin': 27},
-                        'encoder_sw': {'pin': 22}
-                    }
-                }
-            }
     
     def _initialize_gpio(self) -> None:
         """Initialise les pins GPIO"""

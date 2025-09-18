@@ -108,13 +108,12 @@ class LCDInterface:
                 return
             
             # Charger la configuration GPIO depuis le fichier JSON
-            gpio_config = self._load_gpio_config()
-            ui_pins = gpio_config.get('gpio_pins', {}).get('ui', {})
+            from utils.gpio_config import get_ui_pin
             
             # Configuration des pins depuis la configuration JSON
-            reset_pin = ui_pins.get('st7735_rst', {}).get('pin', 24)
-            a0_pin = ui_pins.get('st7735_dc', {}).get('pin', 25)
-            cs_pin = ui_pins.get('st7735_cs', {}).get('pin', 8)
+            reset_pin = get_ui_pin('st7735_rst')
+            a0_pin = get_ui_pin('st7735_dc')
+            cs_pin = get_ui_pin('st7735_cs')
             
             # Initialiser directement avec st7735 (comme dans alimante_menu_improved.py)
             self.lcd_driver = st7735.ST7735(
@@ -138,25 +137,6 @@ class LCDInterface:
             self.stats['errors'] += 1
             self.lcd_driver = None
     
-    def _load_gpio_config(self) -> Dict[str, Any]:
-        """Charge la configuration GPIO depuis le fichier JSON"""
-        try:
-            import json
-            config_path = os.path.join(os.path.dirname(__file__), '..', '..', 'config', 'gpio_config.json')
-            with open(config_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except Exception as e:
-            self.logger.warning(f"Impossible de charger gpio_config.json: {e}")
-            # Configuration par défaut
-            return {
-                'gpio_pins': {
-                    'ui': {
-                        'st7735_rst': {'pin': 24},
-                        'st7735_dc': {'pin': 25},
-                        'st7735_cs': {'pin': 8}
-                    }
-                }
-            }
     
     def start(self) -> bool:
         """

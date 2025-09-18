@@ -87,7 +87,8 @@ class LightingService:
                 retry_delay=1.0
             )
             
-            pwm_pin = lighting_config.get('pwm_pin', 12)
+            from utils.gpio_config import get_actuator_pin
+            pwm_pin = get_actuator_pin('lighting', 'pwm_pin')
             frequency = lighting_config.get('frequency', 1000)
             
             self.lighting_driver = PWMDriver(driver_config, pwm_pin, frequency)
