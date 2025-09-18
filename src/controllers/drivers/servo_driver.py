@@ -168,7 +168,12 @@ class ServoDriver(BaseDriver):
             duty_cycle = self._pulse_width_to_duty_cycle(pulse_width)
             
             if RASPBERRY_PI and self.pwm_object:
+                # Appliquer le signal PWM
                 self.pwm_object.ChangeDutyCycle(duty_cycle)
+                # Attendre que le servo atteigne la position
+                time.sleep(0.1)
+                # Arrêter le PWM pour éviter les micromouvements
+                self.pwm_object.ChangeDutyCycle(0)
             
             self.current_angle = angle
             self.logger.debug(f"Servo pin {self.gpio_pin} défini à {angle}°")
@@ -191,7 +196,7 @@ class ServoDriver(BaseDriver):
         """
         try:
             start_angle = self.current_angle
-            steps = 20  # Nombre d'étapes
+            steps = max(10, int(duration * 10))  # Plus d'étapes pour plus de fluidité
             step_delay = duration / steps
             step_size = (target_angle - start_angle) / steps
             
@@ -199,11 +204,20 @@ class ServoDriver(BaseDriver):
             
             for i in range(steps + 1):
                 current_angle = start_angle + (step_size * i)
-                self._set_angle(current_angle)
+                # Appliquer l'angle sans arrêter le PWM pendant le mouvement
+                pulse_width = self._angle_to_pulse_width(current_angle)
+                duty_cycle = self._pulse_width_to_duty_cycle(pulse_width)
+                
+                if RASPBERRY_PI and self.pwm_object:
+                    self.pwm_object.ChangeDutyCycle(duty_cycle)
+                
                 time.sleep(step_delay)
             
-            # S'assurer d'atteindre l'angle exact
-            self._set_angle(target_angle)
+            # Arrêter le PWM à la fin du mouvement
+            if RASPBERRY_PI and self.pwm_object:
+                self.pwm_object.ChangeDutyCycle(0)
+            
+            self.current_angle = target_angle
             return True
             
         except Exception as e:
@@ -467,6 +481,67 @@ class ServoDriver(BaseDriver):
             'max_angle': self.max_angle
         }
     
+    def calibrate(self, min_angle: float = 0, max_angle: float = 180, 
+                  min_pulse: float = 1.0, max_pulse: float = 2.0) -> bool:
+        """
+        Calibre le servo pour améliorer la précision
+        
+        Args:
+            min_angle: Angle minimum en degrés
+            max_angle: Angle maximum en degrés
+            min_pulse: Largeur d'impulsion minimum en ms
+            max_pulse: Largeur d'impulsion maximum en ms
+            
+        Returns:
+            True si succès, False sinon
+        """
+        try:
+            self.logger.info("Calibration du servo...")
+            
+            # Définir les nouvelles limites
+            self.set_limits(min_angle, max_angle)
+            self.set_pulse_limits(min_pulse, max_pulse)
+            
+            # Test de précision
+            test_angles = [0, 45, 90, 135, 180]
+            for angle in test_angles:
+                if min_angle <= angle <= max_angle:
+                    self.logger.info(f"Test angle {angle}°")
+                    self._set_angle(angle)
+                    time.sleep(0.5)
+            
+            # Retour à la position fermée
+            self._set_angle(min_angle)
+            
+            self.logger.info("Calibration terminée")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Erreur calibration servo: {e}")
+            return False
+    
+    def hold_position(self, duration: float = 0.1) -> bool:
+        """
+        Maintient la position actuelle en envoyant des impulsions
+        
+        Args:
+            duration: Durée de maintien en secondes
+            
+        Returns:
+            True si succès, False sinon
+        """
+        try:
+            if RASPBERRY_PI and self.pwm_object:
+                pulse_width = self._angle_to_pulse_width(self.current_angle)
+                duty_cycle = self._pulse_width_to_duty_cycle(pulse_width)
+                self.pwm_object.ChangeDutyCycle(duty_cycle)
+                time.sleep(duration)
+                self.pwm_object.ChangeDutyCycle(0)
+            return True
+        except Exception as e:
+            self.logger.error(f"Erreur maintien position: {e}")
+            return False
+
     def cleanup(self) -> None:
         """
         Nettoie les ressources du servo

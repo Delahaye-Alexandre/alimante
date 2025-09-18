@@ -51,20 +51,6 @@ alimante/
 - Raspberry Pi (recommandé)
 - Matériel de terrarium (capteurs, actionneurs, etc.)
 
-### Installation sur Windows (développement)
-
-```bash
-# Cloner le projet
-git clone <repository-url>
-cd alimante
-
-# Installer les dépendances
-pip install -r requirements.txt
-
-# Lancer l'application
-python main.py
-```
-
 ### Installation sur Raspberry Pi
 
 ```bash
@@ -94,20 +80,6 @@ chmod +x scripts/install_raspberry.sh
 - Configuration à distance
 - Monitoring en temps réel
 - Historique des données
-
-## 🔧 Développement
-
-Le projet suit un plan de développement séquentiel :
-
-1. ✅ Structure du projet
-2. ⏳ Configurations initiales
-3. ⏳ Développement des drivers
-4. ⏳ Développement des controllers
-5. ⏳ Développement des services
-6. ⏳ Interface utilisateur
-7. ⏳ Boucles principales
-8. ⏳ Tests et validation
-9. ⏳ Documentation
 
 ## 📊 Espèces supportées
 
