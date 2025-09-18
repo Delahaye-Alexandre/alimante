@@ -149,13 +149,8 @@ class UIController:
             self.component_control_service = ComponentControlService(self.event_bus)
             self.logger.info("Service de contrôle des composants initialisé")
             
-            # Service de contrôle principal (contient FeedingService)
-            from services.control_service import ControlService
-            self.control_service = ControlService(self.config, self.event_bus)
-            if self.control_service.initialize():
-                self.logger.info("Service de contrôle principal initialisé")
-            else:
-                self.logger.warning("Échec initialisation service de contrôle principal")
+            # Service de contrôle principal - sera initialisé par MainLoop
+            # Pas besoin de l'initialiser ici pour éviter les conflits
             
         except Exception as e:
             self.logger.error(f"Erreur initialisation services: {e}")
@@ -201,6 +196,9 @@ class UIController:
             
             # Événements système
             self.event_bus.on('system_status_changed', self._on_system_status_changed)
+            
+            # Événements d'alimentation
+            self.event_bus.on('feeding_status_updated', self._on_feeding_status_updated)
             
             # Événements de l'encodeur
             if self.encoder_interface:
@@ -389,25 +387,13 @@ class UIController:
     def _update_feeding_data(self) -> None:
         """Met à jour les données d'alimentation depuis le service"""
         try:
-            # Récupérer le service d'alimentation depuis ControlService
-            feeding_service = None
-            if hasattr(self, 'control_service') and self.control_service:
-                feeding_service = getattr(self.control_service, 'feeding_service', None)
-            
-            if feeding_service:
-                feeding_status = feeding_service.get_feeding_status()
-                
-                # Mettre à jour les données d'affichage
-                if 'feeding' not in self.display_data['controls']:
-                    self.display_data['controls']['feeding'] = {}
-                
-                self.display_data['controls']['feeding'].update({
-                    'today_feeding_count': feeding_status.get('today_feeding_count', 0),
-                    'last_feeding_time': feeding_status.get('last_feeding_time', 0),
-                    'is_feeding': feeding_status.get('is_feeding', False)
-                })
+            # Demander les données d'alimentation via le bus d'événements
+            self.event_bus.emit('feeding_status_request', {
+                'timestamp': time.time(),
+                'source': 'ui_controller'
+            })
         except Exception as e:
-            self.logger.error(f"Erreur mise à jour données alimentation: {e}")
+            self.logger.error(f"Erreur demande données alimentation: {e}")
     
     def _on_sensor_data_updated(self, data: Dict[str, Any]) -> None:
         """Gestionnaire d'événement : données des capteurs mises à jour"""
@@ -458,6 +444,26 @@ class UIController:
             self.logger.debug(f"Statut système: {self.display_data['system_status']}")
         except Exception as e:
             self.logger.error(f"Erreur traitement statut système: {e}")
+            self.stats['errors'] += 1
+    
+    def _on_feeding_status_updated(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement : statut d'alimentation mis à jour"""
+        try:
+            feeding_status = data.get('data', {})
+            
+            # Mettre à jour les données d'affichage
+            if 'feeding' not in self.display_data['controls']:
+                self.display_data['controls']['feeding'] = {}
+            
+            self.display_data['controls']['feeding'].update({
+                'today_feeding_count': feeding_status.get('today_feeding_count', 0),
+                'last_feeding_time': feeding_status.get('last_feeding_time', 0),
+                'is_feeding': feeding_status.get('is_feeding', False)
+            })
+            
+            self.logger.debug(f"Données alimentation mises à jour: {feeding_status}")
+        except Exception as e:
+            self.logger.error(f"Erreur traitement statut alimentation: {e}")
             self.stats['errors'] += 1
     
     def _on_encoder_turned(self, data: Dict[str, Any]) -> None:

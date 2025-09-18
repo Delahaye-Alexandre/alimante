@@ -70,6 +70,7 @@ class ControlService:
             self.event_bus.on('system_mode_changed', self._on_system_mode_changed)
             self.event_bus.on('sensor_data_request', self._on_sensor_data_request)
             self.event_bus.on('screen_changed', self._on_screen_changed)
+            self.event_bus.on('feeding_status_request', self._on_feeding_status_request)
         
         # Statistiques
         self.stats = {
@@ -632,6 +633,26 @@ class ControlService:
             
         except Exception as e:
             self.logger.error(f"Erreur gestion screen_changed: {e}")
+    
+    def _on_feeding_status_request(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement feeding_status_request"""
+        try:
+            if self.feeding_service:
+                feeding_status = self.feeding_service.get_feeding_status()
+                
+                # Émettre les données d'alimentation
+                self.event_bus.emit('feeding_status_updated', {
+                    'data': feeding_status,
+                    'timestamp': time.time(),
+                    'source': 'control_service'
+                })
+                
+                self.logger.debug("Données d'alimentation envoyées")
+            else:
+                self.logger.warning("Service d'alimentation non disponible")
+                
+        except Exception as e:
+            self.logger.error(f"Erreur gestion feeding_status_request: {e}")
     
     def get_system_status(self) -> Dict[str, Any]:
         """
