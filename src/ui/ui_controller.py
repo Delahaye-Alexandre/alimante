@@ -374,11 +374,11 @@ class UIController:
             if hasattr(self, 'component_control_service') and self.component_control_service:
                 self.display_data['components'] = self.component_control_service.get_all_components_status()
             
-        # Mettre à jour les données d'alimentation
-        self._update_feeding_data()
-        
-        # Mettre à jour les données d'humidification
-        self._update_humidification_data()
+            # Mettre à jour les données d'alimentation
+            self._update_feeding_data()
+            
+            # Mettre à jour les données d'humidification
+            self._update_humidification_data()
             
             # Émettre un événement de mise à jour
             self.event_bus.emit('ui_data_updated', {
