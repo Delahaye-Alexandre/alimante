@@ -541,6 +541,59 @@ class ServoDriver(BaseDriver):
         except Exception as e:
             self.logger.error(f"Erreur maintien position: {e}")
             return False
+    
+    def move_to_stable_position(self, angle: float, hold_duration: float = 0.3) -> bool:
+        """
+        Déplace le servo vers une position et la maintient de manière stable
+        
+        Args:
+            angle: Angle cible en degrés
+            hold_duration: Durée de maintien de la position
+            
+        Returns:
+            True si succès, False sinon
+        """
+        try:
+            self.logger.info(f"Déplacement stable vers {angle}°")
+            
+            # Déplacer vers la position
+            if not self._set_angle(angle):
+                return False
+            
+            # Maintenir la position avec des impulsions répétées
+            if RASPBERRY_PI and self.pwm_object:
+                pulse_width = self._angle_to_pulse_width(angle)
+                duty_cycle = self._pulse_width_to_duty_cycle(pulse_width)
+                
+                # Envoyer plusieurs impulsions pour maintenir la position
+                for _ in range(int(hold_duration * 10)):  # 10 impulsions par seconde
+                    self.pwm_object.ChangeDutyCycle(duty_cycle)
+                    time.sleep(0.05)
+                    self.pwm_object.ChangeDutyCycle(0)
+                    time.sleep(0.05)
+            
+            self.logger.info(f"Position {angle}° stabilisée")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Erreur position stable: {e}")
+            return False
+    
+    def lock_position(self) -> bool:
+        """
+        Verrouille le servo dans sa position actuelle (arrêt complet du PWM)
+        
+        Returns:
+            True si succès, False sinon
+        """
+        try:
+            if RASPBERRY_PI and self.pwm_object:
+                self.pwm_object.stop()
+                self.logger.debug("Position servo verrouillée")
+            return True
+        except Exception as e:
+            self.logger.error(f"Erreur verrouillage position: {e}")
+            return False
 
     def cleanup(self) -> None:
         """

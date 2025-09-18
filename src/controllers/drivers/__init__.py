@@ -12,7 +12,7 @@ from .relay_driver import RelayDriver
 from .servo_driver import ServoDriver
 from .st7735_driver import ST7735Driver
 from .rotary_encoder_driver import RotaryEncoderDriver
-from .test_drivers import DriverTester
+# from .test_drivers import DriverTester  # Fichier non existant
 
 __all__ = [
     'BaseDriver',
@@ -27,7 +27,7 @@ __all__ = [
     'ServoDriver',
     'ST7735Driver',
     'RotaryEncoderDriver',
-    'DriverTester'
+    # 'DriverTester'  # Fichier non existant
 ]
 
 # Version du package
