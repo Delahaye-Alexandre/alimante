@@ -71,6 +71,7 @@ class ControlService:
             self.event_bus.on('sensor_data_request', self._on_sensor_data_request)
             self.event_bus.on('screen_changed', self._on_screen_changed)
             self.event_bus.on('feeding_status_request', self._on_feeding_status_request)
+            self.event_bus.on('feeding_request', self._on_feeding_request)
         
         # Statistiques
         self.stats = {
@@ -653,6 +654,32 @@ class ControlService:
                 
         except Exception as e:
             self.logger.error(f"Erreur gestion feeding_status_request: {e}")
+    
+    def _on_feeding_request(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement feeding_request"""
+        try:
+            fly_count = data.get('fly_count', 5)
+            source = data.get('source', 'unknown')
+            
+            self.logger.info(f"Demande d'alimentation: {fly_count} mouches depuis {source}")
+            
+            if self.feeding_service:
+                # Déclencher l'alimentation
+                success = self.feeding_service.feed_animals_double_trap(fly_count)
+                
+                if success:
+                    self.logger.info(f"Alimentation réussie: {fly_count} mouches")
+                    self.stats['decisions_made'] += 1
+                else:
+                    self.logger.error("Échec de l'alimentation")
+                    self.stats['errors_count'] += 1
+            else:
+                self.logger.warning("Service d'alimentation non disponible")
+                self.stats['errors_count'] += 1
+                
+        except Exception as e:
+            self.logger.error(f"Erreur gestion feeding_request: {e}")
+            self.stats['errors_count'] += 1
     
     def get_system_status(self) -> Dict[str, Any]:
         """

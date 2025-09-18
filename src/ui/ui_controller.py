@@ -768,7 +768,27 @@ class UIController:
         try:
             component = data.get('component', 'unknown')
             command = data.get('command', {})
-            self.logger.debug(f"Contrôle composant: {component} - {command}")
+            self.logger.info(f"Contrôle composant: {component} - {command}")
+            
+            # Transmettre la commande au ComponentControlService
+            if hasattr(self, 'component_control_service') and self.component_control_service:
+                if component == 'feeding':
+                    # Gérer l'alimentation spécialement
+                    if command.get('feed', False):
+                        self.logger.info("Déclenchement de l'alimentation...")
+                        # Émettre un événement d'alimentation
+                        self.event_bus.emit('feeding_request', {
+                            'fly_count': 5,  # Nombre par défaut
+                            'timestamp': time.time(),
+                            'source': 'web_interface'
+                        })
+                    else:
+                        self.logger.warning(f"Commande d'alimentation non reconnue: {command}")
+                else:
+                    # Autres composants
+                    self.component_control_service.control_component(component, command)
+            else:
+                self.logger.warning("ComponentControlService non disponible")
             
         except Exception as e:
             self.logger.error(f"Erreur gestion component_control: {e}")
