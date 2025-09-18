@@ -41,6 +41,9 @@ class WebServer:
         self.api = AlimanteAPI(event_bus, config)
         self.app = self.api.get_app()
         
+        # Configurer les chemins des templates et fichiers statiques
+        self._configure_paths()
+        
         # Ajouter la route principale
         self._add_main_routes()
         
@@ -51,6 +54,21 @@ class WebServer:
             'updates': 0,
             'errors': 0
         }
+    
+    def _configure_paths(self):
+        """Configure les chemins des templates et fichiers statiques"""
+        import os
+        
+        # Chemin vers les templates
+        template_dir = os.path.join(os.path.dirname(__file__), '..', 'ui', 'templates')
+        self.app.template_folder = template_dir
+        
+        # Chemin vers les fichiers statiques
+        static_dir = os.path.join(os.path.dirname(__file__), '..', 'ui', 'static')
+        self.app.static_folder = static_dir
+        
+        self.logger.info(f"Templates: {template_dir}")
+        self.logger.info(f"Statiques: {static_dir}")
     
     def _add_main_routes(self):
         """Ajoute les routes principales de l'interface web"""
@@ -64,12 +82,16 @@ class WebServer:
         @self.app.route('/static/<path:filename>')
         def static_files(filename):
             """Fichiers statiques"""
-            return send_from_directory('src/ui/static', filename)
+            import os
+            static_dir = os.path.join(os.path.dirname(__file__), '..', 'ui', 'static')
+            return send_from_directory(static_dir, filename)
         
         @self.app.route('/favicon.ico')
         def favicon():
             """Favicon"""
-            return send_from_directory('src/ui/static', 'favicon.ico')
+            import os
+            static_dir = os.path.join(os.path.dirname(__file__), '..', 'ui', 'static')
+            return send_from_directory(static_dir, 'favicon.ico')
     
     def start(self) -> bool:
         """
