@@ -72,6 +72,8 @@ class ControlService:
             self.event_bus.on('screen_changed', self._on_screen_changed)
             self.event_bus.on('feeding_status_request', self._on_feeding_status_request)
             self.event_bus.on('feeding_request', self._on_feeding_request)
+            self.event_bus.on('humidification_control', self._on_humidification_control)
+            self.event_bus.on('humidification_status_request', self._on_humidification_status_request)
         
         # Statistiques
         self.stats = {
@@ -680,6 +682,55 @@ class ControlService:
         except Exception as e:
             self.logger.error(f"Erreur gestion feeding_request: {e}")
             self.stats['errors_count'] += 1
+    
+    def _on_humidification_control(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement humidification_control"""
+        try:
+            enabled = data.get('enabled', False)
+            target_humidity = data.get('target_humidity', 60)
+            source = data.get('source', 'unknown')
+            
+            self.logger.info(f"Contrôle humidification: {'ON' if enabled else 'OFF'} (cible: {target_humidity}%) depuis {source}")
+            
+            if self.humidification_service:
+                # Utiliser set_humidification pour activer/désactiver
+                success = self.humidification_service.set_humidification(enabled)
+                if success:
+                    if enabled:
+                        self.logger.info(f"Humidification activée (cible: {target_humidity}%)")
+                    else:
+                        self.logger.info("Humidification désactivée")
+                    self.stats['decisions_made'] += 1
+                else:
+                    self.logger.error(f"Échec {'activation' if enabled else 'désactivation'} humidification")
+                    self.stats['errors_count'] += 1
+            else:
+                self.logger.warning("Service d'humidification non disponible")
+                self.stats['errors_count'] += 1
+                
+        except Exception as e:
+            self.logger.error(f"Erreur gestion humidification_control: {e}")
+            self.stats['errors_count'] += 1
+    
+    def _on_humidification_status_request(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement humidification_status_request"""
+        try:
+            if self.humidification_service:
+                humidification_status = self.humidification_service.get_humidification_status()
+                
+                # Émettre les données d'humidification
+                self.event_bus.emit('humidification_status_updated', {
+                    'data': humidification_status,
+                    'timestamp': time.time(),
+                    'source': 'control_service'
+                })
+                
+                self.logger.debug("Données d'humidification envoyées")
+            else:
+                self.logger.warning("Service d'humidification non disponible")
+                
+        except Exception as e:
+            self.logger.error(f"Erreur gestion humidification_status_request: {e}")
     
     def get_system_status(self) -> Dict[str, Any]:
         """

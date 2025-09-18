@@ -200,6 +200,9 @@ class UIController:
             # Événements d'alimentation
             self.event_bus.on('feeding_status_updated', self._on_feeding_status_updated)
             
+            # Événements d'humidification
+            self.event_bus.on('humidification_status_updated', self._on_humidification_status_updated)
+            
             # Événements de l'encodeur
             if self.encoder_interface:
                 self.event_bus.on('encoder_turned', self._on_encoder_turned)
@@ -371,8 +374,11 @@ class UIController:
             if hasattr(self, 'component_control_service') and self.component_control_service:
                 self.display_data['components'] = self.component_control_service.get_all_components_status()
             
-            # Mettre à jour les données d'alimentation
-            self._update_feeding_data()
+        # Mettre à jour les données d'alimentation
+        self._update_feeding_data()
+        
+        # Mettre à jour les données d'humidification
+        self._update_humidification_data()
             
             # Émettre un événement de mise à jour
             self.event_bus.emit('ui_data_updated', {
@@ -394,6 +400,17 @@ class UIController:
             })
         except Exception as e:
             self.logger.error(f"Erreur demande données alimentation: {e}")
+    
+    def _update_humidification_data(self) -> None:
+        """Met à jour les données d'humidification depuis le service"""
+        try:
+            # Demander les données d'humidification via le bus d'événements
+            self.event_bus.emit('humidification_status_request', {
+                'timestamp': time.time(),
+                'source': 'ui_controller'
+            })
+        except Exception as e:
+            self.logger.error(f"Erreur demande données humidification: {e}")
     
     def _on_sensor_data_updated(self, data: Dict[str, Any]) -> None:
         """Gestionnaire d'événement : données des capteurs mises à jour"""
@@ -464,6 +481,27 @@ class UIController:
             self.logger.debug(f"Données alimentation mises à jour: {feeding_status}")
         except Exception as e:
             self.logger.error(f"Erreur traitement statut alimentation: {e}")
+            self.stats['errors'] += 1
+    
+    def _on_humidification_status_updated(self, data: Dict[str, Any]) -> None:
+        """Gestionnaire d'événement : statut d'humidification mis à jour"""
+        try:
+            humidification_status = data.get('data', {})
+            
+            # Mettre à jour les données d'affichage
+            if 'humidification' not in self.display_data['controls']:
+                self.display_data['controls']['humidification'] = {}
+            
+            self.display_data['controls']['humidification'].update({
+                'enabled': humidification_status.get('enabled', False),
+                'target_humidity': humidification_status.get('target_humidity', 60),
+                'current_humidity': humidification_status.get('current_humidity', 0),
+                'is_running': humidification_status.get('is_running', False)
+            })
+            
+            self.logger.debug(f"Données humidification mises à jour: {humidification_status}")
+        except Exception as e:
+            self.logger.error(f"Erreur traitement statut humidification: {e}")
             self.stats['errors'] += 1
     
     def _on_encoder_turned(self, data: Dict[str, Any]) -> None:
@@ -784,6 +822,19 @@ class UIController:
                         })
                     else:
                         self.logger.warning(f"Commande d'alimentation non reconnue: {command}")
+                elif component == 'humidification':
+                    # Gérer l'humidification spécialement
+                    if 'toggle' in command:
+                        self.logger.info(f"Contrôle humidification: {'ON' if command['toggle'] else 'OFF'}")
+                        # Émettre un événement d'humidification
+                        self.event_bus.emit('humidification_control', {
+                            'enabled': command['toggle'],
+                            'target_humidity': command.get('target_humidity', 60),
+                            'timestamp': time.time(),
+                            'source': 'web_interface'
+                        })
+                    else:
+                        self.logger.warning(f"Commande d'humidification non reconnue: {command}")
                 else:
                     # Autres composants
                     self.component_control_service.control_component(component, command)
