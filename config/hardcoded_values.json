@@ -1,0 +1,228 @@
+{
+  "services": {
+    "camera": {
+      "capture_interval": 300,
+      "max_captures": 1000,
+      "quality": 80,
+      "streaming_port": 8080,
+      "streaming_quality": 60,
+      "motion_threshold": 0.1,
+      "motion_sensitivity": 0.5,
+      "motion_cooldown": 30
+    },
+    "streaming": {
+      "port": 8080,
+      "host": "0.0.0.0",
+      "max_clients": 10,
+      "width": 640,
+      "height": 480,
+      "fps": 30,
+      "quality": 80,
+      "recording_duration": 3600,
+      "format": "mjpeg"
+    },
+    "snapshots": {
+      "max_snapshots": 1000,
+      "retention_days": 30,
+      "width": 1280,
+      "height": 720,
+      "quality": 90,
+      "format": "jpg",
+      "annotate": true,
+      "show_timestamp": true,
+      "show_sensors": true,
+      "show_terrarium": true
+    },
+    "alerts": {
+      "max_alerts": 1000,
+      "retention_days": 30,
+      "auto_acknowledge_delay": 3600,
+      "notifications_enabled": true,
+      "email_enabled": false,
+      "sms_enabled": false,
+      "webhook_enabled": false
+    },
+    "scheduler": {
+      "check_interval": 1.0,
+      "max_concurrent_tasks": 5,
+      "max_retries": 3
+    },
+    "sync": {
+      "sync_interval": 3600,
+      "retry_interval": 300,
+      "max_retries": 3
+    },
+    "ui": {
+      "refresh_interval": 1.0,
+      "lcd_enabled": true,
+      "encoder_enabled": true,
+      "auto_refresh": true
+    }
+  },
+  "controllers": {
+    "heater": {
+      "max_temperature": 35.0,
+      "hysteresis": 1.0,
+      "safety_enabled": true
+    },
+    "humidifier": {
+      "max_humidity": 95.0,
+      "hysteresis": 5.0,
+      "min_cycle_time": 300,
+      "max_cycle_duration": 1800,
+      "safety_enabled": true
+    },
+    "fan": {
+      "min_speed": 20,
+      "max_speed": 100,
+      "ramp_time": 5.0,
+      "auto_mode": true,
+      "air_quality_thresholds": {
+        "excellent": 0,
+        "good": 30,
+        "moderate": 60,
+        "poor": 80,
+        "hazardous": 100
+      }
+    },
+    "feeder_sas": {
+      "positions": {
+        "closed": 0,
+        "half_open": 45,
+        "open": 90,
+        "full_open": 135
+      },
+      "safety_lock": true,
+      "max_daily_feeds": 3,
+      "min_feeding_interval": 3600,
+      "feeding_duration": 5.0,
+      "max_feeding_duration": 30.0,
+      "servo_config": {
+        "min_pulse_width": 500,
+        "max_pulse_width": 2500,
+        "frequency": 50
+      }
+    }
+  },
+  "drivers": {
+    "camera": {
+      "width": 640,
+      "height": 480,
+      "fps": 30,
+      "quality": 80,
+      "capture_format": "jpg",
+      "max_captures": 1000,
+      "motion_threshold": 0.1,
+      "motion_sensitivity": 0.5
+    },
+    "mosfet": {
+      "frequency": 1000,
+      "min_duty_cycle": 0,
+      "max_duty_cycle": 100,
+      "fade_enabled": true,
+      "fade_duration": 2.0,
+      "fade_steps": 100,
+      "thermal_protection": true,
+      "max_temperature": 80.0,
+      "current_limit": 2.0
+    },
+    "i2c_lcd": {
+      "i2c_address": "0x27",
+      "i2c_bus": 1,
+      "rows": 4,
+      "cols": 20,
+      "backlight": true,
+      "cursor_visible": false,
+      "cursor_blink": false,
+      "enable_bit": 4,
+      "read_write_bit": 2,
+      "register_select_bit": 1,
+      "lcd_commands": {
+        "CLEARDISPLAY": 1,
+        "RETURNHOME": 2,
+        "ENTRYMODESET": 4,
+        "DISPLAYCONTROL": 8,
+        "CURSORSHIFT": 16,
+        "FUNCTIONSET": 32,
+        "SETCGRAMADDR": 64,
+        "SETDDRAMADDR": 128
+      },
+      "lcd_flags": {
+        "DISPLAYON": 4,
+        "DISPLAYOFF": 0,
+        "CURSORON": 2,
+        "CURSOROFF": 0,
+        "BLINKON": 1,
+        "BLINKOFF": 0,
+        "ENTRYRIGHT": 0,
+        "ENTRYLEFT": 2,
+        "ENTRYSHIFTINCREMENT": 1,
+        "ENTRYSHIFTDECREMENT": 0,
+        "8BITMODE": 16,
+        "4BITMODE": 0,
+        "2LINE": 8,
+        "1LINE": 0,
+        "5x10DOTS": 4,
+        "5x8DOTS": 0
+      }
+    }
+  },
+  "timeouts": {
+    "thread_join": 5,
+    "cleanup_wait": 3600,
+    "error_retry": 60,
+    "camera_retry": 5,
+    "ui_retry": 1,
+    "sync_timeout": 10,
+    "http_timeout": 30,
+    "sas_activation": 0.1,
+    "sas_deactivation": 0.5,
+    "servo_stabilization": 0.1
+  },
+  "intervals": {
+    "capture_loop": 0.1,
+    "streaming_loop": 0.01,
+    "ui_loop": 0.1,
+    "encoder_loop": 0.01,
+    "scheduler_check": 1.0,
+    "cleanup_interval": 3600,
+    "auto_acknowledge_check": 3600
+  },
+  "paths": {
+    "captures": "data/captures",
+    "snapshots": "data/snapshots",
+    "recordings": "data/recordings",
+    "sync": "data/sync",
+    "database": "data/alimante.db"
+  },
+  "network": {
+    "default_host": "0.0.0.0",
+    "default_port": 8080,
+    "max_connections": 10,
+    "connection_timeout": 30
+  },
+  "hardware": {
+    "servo_positions": {
+      "closed": 0,
+      "half_open": 45,
+      "open": 90,
+      "full_open": 135
+    },
+    "pwm_frequencies": {
+      "servo": 50,
+      "led": 1000,
+      "fan": 1000
+    },
+    "pulse_widths": {
+      "servo_min": 500,
+      "servo_max": 2500
+    },
+    "i2c_addresses": {
+      "lcd": "0x27"
+    },
+    "display_sizes": {
+      "lcd_rows": 4,
+      "lcd_cols": 20
+    }
+  }
+}

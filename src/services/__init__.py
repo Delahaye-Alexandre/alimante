@@ -17,6 +17,10 @@ from .camera_service import CameraService
 from .scheduler_service import SchedulerService, TaskType, TaskStatus, ScheduledTask
 from .sync_service import SyncService, SyncStatus, SyncType
 from .ui_service import UIService, UIMode, UIScreen
+from .streaming_service import StreamingService, StreamFormat, StreamQuality
+from .snapshot_service import SnapshotService, SnapshotType
+from .alert_service import AlertService, AlertSeverity, AlertStatus, Alert
+from .config_service import ConfigService
 
 __all__ = [
     'SensorService',
@@ -41,5 +45,15 @@ __all__ = [
     'SyncType',
     'UIService',
     'UIMode',
-    'UIScreen'
+    'UIScreen',
+    'StreamingService',
+    'StreamFormat',
+    'StreamQuality',
+    'SnapshotService',
+    'SnapshotType',
+    'AlertService',
+    'AlertSeverity',
+    'AlertStatus',
+    'Alert',
+    'ConfigService'
 ]
