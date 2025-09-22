@@ -15,6 +15,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 from src.loops.main_loop import MainLoop
 from src.utils.event_bus import EventBus
 from src.services.safety_service import SafetyService
+from src.services.config_service import ConfigService
+from src.services.camera_service import CameraService
+from src.services.streaming_service import StreamingService
+from src.services.snapshot_service import SnapshotService
+from src.services.alert_service import AlertService
 from src.ui.ui_controller import UIController
 
 def setup_logging():
@@ -53,9 +58,39 @@ def main():
         event_bus = EventBus()
         logger.info("Bus d'événements initialisé")
         
+        # Initialisation du service de configuration
+        config_service = ConfigService()
+        all_configs = config_service.load_all_configs()
+        logger.info("Service de configuration initialisé")
+        
         # Initialisation du service de sécurité
         safety_service = SafetyService(event_bus)
         logger.info("Service de sécurité initialisé")
+        
+        # Initialisation des services de caméra et streaming
+        camera_service = CameraService(all_configs.get('main', {}), event_bus)
+        if camera_service.initialize():
+            logger.info("Service de caméra initialisé")
+        else:
+            logger.warning("Échec initialisation service de caméra")
+        
+        streaming_service = StreamingService(all_configs.get('main', {}), event_bus)
+        if streaming_service.initialize():
+            logger.info("Service de streaming initialisé")
+        else:
+            logger.warning("Échec initialisation service de streaming")
+        
+        snapshot_service = SnapshotService(all_configs.get('main', {}), event_bus)
+        if snapshot_service.initialize():
+            logger.info("Service de snapshots initialisé")
+        else:
+            logger.warning("Échec initialisation service de snapshots")
+        
+        alert_service = AlertService(all_configs.get('main', {}), event_bus)
+        if alert_service.initialize():
+            logger.info("Service d'alertes initialisé")
+        else:
+            logger.warning("Échec initialisation service d'alertes")
         
         # Initialiser l'interface utilisateur avec la configuration
         ui_controller = UIController(event_bus, config)
@@ -71,6 +106,27 @@ def main():
             main_loop.main_controller.persistence_service = persistence_service
             logger.info("Service de persistance connecté au MainController")
         
+        # Démarrer les services de caméra et streaming
+        if camera_service.start():
+            logger.info("Service de caméra démarré")
+        else:
+            logger.warning("Échec démarrage service de caméra")
+        
+        if streaming_service.start():
+            logger.info("Service de streaming démarré")
+        else:
+            logger.warning("Échec démarrage service de streaming")
+        
+        if snapshot_service.start():
+            logger.info("Service de snapshots démarré")
+        else:
+            logger.warning("Échec démarrage service de snapshots")
+        
+        if alert_service.start():
+            logger.info("Service d'alertes démarré")
+        else:
+            logger.warning("Échec démarrage service d'alertes")
+        
         # Démarrer l'interface utilisateur
         if ui_controller.start():
             logger.info("Interface utilisateur démarrée")
@@ -80,6 +136,7 @@ def main():
         print("✅ Système Alimante démarré avec succès")
         print("📊 Surveillance du ou des terrariums en cours...")
         print("🌐 Interface web disponible sur http://localhost:8080")
+        print("📷 Services de caméra et streaming actifs")
         print("🛑 Appuyez sur Ctrl+C pour arrêter")
         
         # Lancement de la boucle principale
@@ -95,13 +152,41 @@ def main():
         sys.exit(1)
         
     finally:
-        # Arrêter l'interface utilisateur
+        # Arrêter tous les services
         try:
             if 'ui_controller' in locals():
                 ui_controller.stop()
                 logger.info("Interface utilisateur arrêtée")
         except Exception as e:
             logger.error(f"Erreur arrêt interface utilisateur: {e}")
+        
+        try:
+            if 'camera_service' in locals():
+                camera_service.stop()
+                logger.info("Service de caméra arrêté")
+        except Exception as e:
+            logger.error(f"Erreur arrêt service de caméra: {e}")
+        
+        try:
+            if 'streaming_service' in locals():
+                streaming_service.stop()
+                logger.info("Service de streaming arrêté")
+        except Exception as e:
+            logger.error(f"Erreur arrêt service de streaming: {e}")
+        
+        try:
+            if 'snapshot_service' in locals():
+                snapshot_service.stop()
+                logger.info("Service de snapshots arrêté")
+        except Exception as e:
+            logger.error(f"Erreur arrêt service de snapshots: {e}")
+        
+        try:
+            if 'alert_service' in locals():
+                alert_service.stop()
+                logger.info("Service d'alertes arrêté")
+        except Exception as e:
+            logger.error(f"Erreur arrêt service d'alertes: {e}")
         
         logger.info("Arrêt du système Alimante")
         print("👋 Au revoir !")

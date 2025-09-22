@@ -8,6 +8,18 @@ import time
 from typing import Dict, Any, Optional, List
 from enum import Enum
 
+# Imports des nouveaux drivers
+try:
+    from controllers.drivers.camera_driver import CameraDriver
+    from controllers.drivers.mosfet_driver import MosfetDriver
+    from controllers.drivers.i2c_lcd_driver import I2CLCDDriver
+    NEW_DRIVERS_AVAILABLE = True
+except ImportError:
+    NEW_DRIVERS_AVAILABLE = False
+    CameraDriver = None
+    MosfetDriver = None
+    I2CLCDDriver = None
+
 class ComponentType(Enum):
     """Types de composants"""
     HEATING = "heating"
@@ -16,6 +28,9 @@ class ComponentType(Enum):
     VENTILATION = "ventilation"
     FEEDING = "feeding"
     WATER = "water"
+    CAMERA = "camera"
+    LED_STRIP = "led_strip"
+    I2C_LCD = "i2c_lcd"
 
 class ControlMode(Enum):
     """Modes de contrôle"""
@@ -212,8 +227,65 @@ class ComponentControlService:
             # pour éviter les conflits de PWM
             self.drivers[ComponentType.VENTILATION] = None
             
+            # Initialiser les nouveaux drivers si disponibles
+            if NEW_DRIVERS_AVAILABLE:
+                self._initialize_new_drivers(gpio_config)
+            
         except Exception as e:
             self.logger.error(f"Erreur initialisation drivers: {e}")
+            self.stats['errors'] += 1
+    
+    def _initialize_new_drivers(self, gpio_config: Dict[str, Any]) -> None:
+        """Initialise les nouveaux drivers"""
+        try:
+            from controllers.drivers.base_driver import DriverConfig
+            
+            # Driver de caméra
+            if CameraDriver:
+                camera_config = DriverConfig(
+                    name="camera_driver",
+                    enabled=True,
+                    update_interval=1.0
+                )
+                self.drivers[ComponentType.CAMERA] = CameraDriver(camera_config)
+                if self.drivers[ComponentType.CAMERA].initialize():
+                    self.logger.info("Driver caméra initialisé")
+                else:
+                    self.logger.warning("Échec initialisation driver caméra")
+                    self.drivers[ComponentType.CAMERA] = None
+            
+            # Driver MOSFET pour LED
+            if MosfetDriver:
+                mosfet_config = DriverConfig(
+                    name="mosfet_driver",
+                    enabled=True,
+                    update_interval=1.0
+                )
+                self.drivers[ComponentType.LED_STRIP] = MosfetDriver(mosfet_config)
+                if self.drivers[ComponentType.LED_STRIP].initialize():
+                    self.logger.info("Driver MOSFET initialisé")
+                else:
+                    self.logger.warning("Échec initialisation driver MOSFET")
+                    self.drivers[ComponentType.LED_STRIP] = None
+            
+            # Driver LCD I2C
+            if I2CLCDDriver:
+                lcd_config = DriverConfig(
+                    name="i2c_lcd_driver",
+                    enabled=True,
+                    update_interval=1.0
+                )
+                self.drivers[ComponentType.I2C_LCD] = I2CLCDDriver(lcd_config)
+                if self.drivers[ComponentType.I2C_LCD].initialize():
+                    self.logger.info("Driver LCD I2C initialisé")
+                else:
+                    self.logger.warning("Échec initialisation driver LCD I2C")
+                    self.drivers[ComponentType.I2C_LCD] = None
+            
+            self.logger.info("Nouveaux drivers initialisés")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur initialisation nouveaux drivers: {e}")
             self.stats['errors'] += 1
     
     def _load_default_species_config(self) -> Dict[str, Any]:

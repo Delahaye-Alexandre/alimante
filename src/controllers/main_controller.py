@@ -11,6 +11,7 @@ from .base_controller import BaseController, ControllerConfig, ControllerState, 
 from .sensor_controller import SensorController
 from .actuator_controller import ActuatorController
 from .device_controller import DeviceController
+from .actuators import HeaterController, HumidifierController, FanController, FeederSASController
 
 class MainController(BaseController):
     """
@@ -34,6 +35,12 @@ class MainController(BaseController):
         self.sensor_controller = None
         self.actuator_controller = None
         self.device_controller = None
+        
+        # Contrôleurs d'actionneurs spécialisés
+        self.heater_controller = None
+        self.humidifier_controller = None
+        self.fan_controller = None
+        self.feeder_controller = None
         
         # Configuration
         self.gpio_config = config_files.get("gpio_config", {})
@@ -143,12 +150,103 @@ class MainController(BaseController):
                 self.logger.error("Échec démarrage contrôleur périphériques")
                 return False
             
+            # Initialiser les contrôleurs d'actionneurs spécialisés
+            self._initialize_specialized_controllers()
+            
             self.logger.info("Contrôleur principal initialisé avec succès")
             return True
             
         except Exception as e:
             self.logger.error(f"Erreur initialisation contrôleur principal: {e}")
             return False
+    
+    def _initialize_specialized_controllers(self) -> None:
+        """Initialise les contrôleurs d'actionneurs spécialisés"""
+        try:
+            self.logger.info("Initialisation des contrôleurs d'actionneurs spécialisés...")
+            
+            # Contrôleur de chauffage
+            heater_config = ControllerConfig(
+                name="heater_controller",
+                enabled=True,
+                update_interval=1.0,
+                auto_start=False
+            )
+            self.heater_controller = HeaterController(
+                heater_config,
+                self.gpio_config,
+                self.event_bus
+            )
+            if self.heater_controller.initialize():
+                self.logger.info("Contrôleur de chauffage initialisé")
+            else:
+                self.logger.warning("Échec initialisation contrôleur de chauffage")
+            
+            # Contrôleur d'humidification
+            humidifier_config = ControllerConfig(
+                name="humidifier_controller",
+                enabled=True,
+                update_interval=1.0,
+                auto_start=False
+            )
+            self.humidifier_controller = HumidifierController(
+                humidifier_config,
+                self.gpio_config,
+                self.event_bus
+            )
+            if self.humidifier_controller.initialize():
+                self.logger.info("Contrôleur d'humidification initialisé")
+            else:
+                self.logger.warning("Échec initialisation contrôleur d'humidification")
+            
+            # Contrôleur de ventilation
+            fan_config = ControllerConfig(
+                name="fan_controller",
+                enabled=True,
+                update_interval=1.0,
+                auto_start=False
+            )
+            self.fan_controller = FanController(
+                fan_config,
+                self.gpio_config,
+                self.event_bus
+            )
+            if self.fan_controller.initialize():
+                self.logger.info("Contrôleur de ventilation initialisé")
+            else:
+                self.logger.warning("Échec initialisation contrôleur de ventilation")
+            
+            # Contrôleur d'alimentation
+            feeder_config = ControllerConfig(
+                name="feeder_controller",
+                enabled=True,
+                update_interval=1.0,
+                auto_start=False
+            )
+            self.feeder_controller = FeederSASController(
+                feeder_config,
+                self.gpio_config,
+                self.event_bus
+            )
+            if self.feeder_controller.initialize():
+                self.logger.info("Contrôleur d'alimentation initialisé")
+            else:
+                self.logger.warning("Échec initialisation contrôleur d'alimentation")
+            
+            # Démarrer les contrôleurs spécialisés
+            if self.heater_controller:
+                self.heater_controller.start()
+            if self.humidifier_controller:
+                self.humidifier_controller.start()
+            if self.fan_controller:
+                self.fan_controller.start()
+            if self.feeder_controller:
+                self.feeder_controller.start()
+            
+            self.logger.info("Contrôleurs d'actionneurs spécialisés initialisés")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur initialisation contrôleurs spécialisés: {e}")
     
     def _setup_encoder_callbacks(self) -> None:
         """Configure les callbacks de l'encodeur pour la navigation"""
