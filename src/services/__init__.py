@@ -24,6 +24,10 @@ from .config_service import ConfigService
 from .monitoring_service import MonitoringService, MetricType, HealthStatus
 from .recovery_service import RecoveryService, RecoveryStrategy, RecoveryStatus
 from .health_check_service import HealthCheckService, HealthCheckType
+from .auth_service import AuthService, UserRole, AuthStatus, AuthToken
+from .notification_service import NotificationService, NotificationChannel, NotificationPriority, NotificationStatus
+from .backup_service import BackupService, BackupType, BackupStatus, SyncStatus
+from .analytics_service import AnalyticsService, ReportType, MetricType, DataPoint, Report
 
 __all__ = [
     'SensorService',
@@ -66,5 +70,22 @@ __all__ = [
     'RecoveryStrategy',
     'RecoveryStatus',
     'HealthCheckService',
-    'HealthCheckType'
+    'HealthCheckType',
+    'AuthService',
+    'UserRole',
+    'AuthStatus',
+    'AuthToken',
+    'NotificationService',
+    'NotificationChannel',
+    'NotificationPriority',
+    'NotificationStatus',
+    'BackupService',
+    'BackupType',
+    'BackupStatus',
+    'SyncStatus',
+    'AnalyticsService',
+    'ReportType',
+    'MetricType',
+    'DataPoint',
+    'Report'
 ]
