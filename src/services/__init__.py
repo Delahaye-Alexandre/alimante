@@ -13,6 +13,10 @@ from .feeding_service import FeedingService
 from .safety_service import SafetyService
 from .terrarium_service import TerrariumService
 from .component_control_service import ComponentControlService, ComponentType, ControlMode
+from .camera_service import CameraService
+from .scheduler_service import SchedulerService, TaskType, TaskStatus, ScheduledTask
+from .sync_service import SyncService, SyncStatus, SyncType
+from .ui_service import UIService, UIMode, UIScreen
 
 __all__ = [
     'SensorService',
@@ -26,5 +30,16 @@ __all__ = [
     'TerrariumService',
     'ComponentControlService',
     'ComponentType',
-    'ControlMode'
+    'ControlMode',
+    'CameraService',
+    'SchedulerService',
+    'TaskType',
+    'TaskStatus',
+    'ScheduledTask',
+    'SyncService',
+    'SyncStatus',
+    'SyncType',
+    'UIService',
+    'UIMode',
+    'UIScreen'
 ]
