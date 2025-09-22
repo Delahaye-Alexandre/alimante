@@ -9,6 +9,14 @@ from .actuator_controller import ActuatorController
 from .device_controller import DeviceController
 from .main_controller import MainController
 
+# Import des contrôleurs d'actionneurs
+from .actuators import (
+    HeaterController,
+    HumidifierController,
+    FanController,
+    FeederSASController
+)
+
 __all__ = [
     "BaseController",
     "ControllerConfig", 
@@ -17,5 +25,9 @@ __all__ = [
     "SensorController",
     "ActuatorController", 
     "DeviceController",
-    "MainController"
+    "MainController",
+    "HeaterController",
+    "HumidifierController",
+    "FanController",
+    "FeederSASController"
 ]
