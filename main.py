@@ -20,6 +20,9 @@ from src.services.camera_service import CameraService
 from src.services.streaming_service import StreamingService
 from src.services.snapshot_service import SnapshotService
 from src.services.alert_service import AlertService
+from src.services.monitoring_service import MonitoringService
+from src.services.recovery_service import RecoveryService
+from src.services.health_check_service import HealthCheckService
 from src.ui.ui_controller import UIController
 
 def setup_logging():
@@ -92,6 +95,25 @@ def main():
         else:
             logger.warning("Échec initialisation service d'alertes")
         
+        # Initialisation des services de Phase 1 (gestion d'erreurs, monitoring, récupération)
+        monitoring_service = MonitoringService(all_configs.get('main', {}), event_bus)
+        if monitoring_service.initialize():
+            logger.info("Service de monitoring initialisé")
+        else:
+            logger.warning("Échec initialisation service de monitoring")
+        
+        recovery_service = RecoveryService(all_configs.get('main', {}), event_bus)
+        if recovery_service.initialize():
+            logger.info("Service de récupération initialisé")
+        else:
+            logger.warning("Échec initialisation service de récupération")
+        
+        health_check_service = HealthCheckService(all_configs.get('main', {}), event_bus)
+        if health_check_service.initialize():
+            logger.info("Service de vérification de santé initialisé")
+        else:
+            logger.warning("Échec initialisation service de vérification de santé")
+        
         # Initialiser l'interface utilisateur avec la configuration
         ui_controller = UIController(event_bus, config)
         logger.info("Contrôleur UI initialisé")
@@ -126,6 +148,22 @@ def main():
             logger.info("Service d'alertes démarré")
         else:
             logger.warning("Échec démarrage service d'alertes")
+        
+        # Démarrer les services de Phase 1
+        if monitoring_service.start():
+            logger.info("Service de monitoring démarré")
+        else:
+            logger.warning("Échec démarrage service de monitoring")
+        
+        if recovery_service.start():
+            logger.info("Service de récupération démarré")
+        else:
+            logger.warning("Échec démarrage service de récupération")
+        
+        if health_check_service.start():
+            logger.info("Service de vérification de santé démarré")
+        else:
+            logger.warning("Échec démarrage service de vérification de santé")
         
         # Démarrer l'interface utilisateur
         if ui_controller.start():
@@ -187,6 +225,28 @@ def main():
                 logger.info("Service d'alertes arrêté")
         except Exception as e:
             logger.error(f"Erreur arrêt service d'alertes: {e}")
+        
+        # Arrêter les services de Phase 1
+        try:
+            if 'monitoring_service' in locals():
+                monitoring_service.stop()
+                logger.info("Service de monitoring arrêté")
+        except Exception as e:
+            logger.error(f"Erreur arrêt service de monitoring: {e}")
+        
+        try:
+            if 'recovery_service' in locals():
+                recovery_service.stop()
+                logger.info("Service de récupération arrêté")
+        except Exception as e:
+            logger.error(f"Erreur arrêt service de récupération: {e}")
+        
+        try:
+            if 'health_check_service' in locals():
+                health_check_service.stop()
+                logger.info("Service de vérification de santé arrêté")
+        except Exception as e:
+            logger.error(f"Erreur arrêt service de vérification de santé: {e}")
         
         logger.info("Arrêt du système Alimante")
         print("👋 Au revoir !")

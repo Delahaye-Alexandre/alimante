@@ -21,6 +21,9 @@ from .streaming_service import StreamingService, StreamFormat, StreamQuality
 from .snapshot_service import SnapshotService, SnapshotType
 from .alert_service import AlertService, AlertSeverity, AlertStatus, Alert
 from .config_service import ConfigService
+from .monitoring_service import MonitoringService, MetricType, HealthStatus
+from .recovery_service import RecoveryService, RecoveryStrategy, RecoveryStatus
+from .health_check_service import HealthCheckService, HealthCheckType
 
 __all__ = [
     'SensorService',
@@ -55,5 +58,13 @@ __all__ = [
     'AlertSeverity',
     'AlertStatus',
     'Alert',
-    'ConfigService'
+    'ConfigService',
+    'MonitoringService',
+    'MetricType',
+    'HealthStatus',
+    'RecoveryService',
+    'RecoveryStrategy',
+    'RecoveryStatus',
+    'HealthCheckService',
+    'HealthCheckType'
 ]
