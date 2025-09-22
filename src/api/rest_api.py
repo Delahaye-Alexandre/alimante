@@ -335,6 +335,76 @@ class AlimanteAPI:
                 self.logger.error(f"Erreur API changement espèce: {e}")
                 return jsonify({'error': str(e)}), 500
         
+        @self.app.route('/api/terrariums/<terrarium_id>/history/sensors')
+        def api_get_sensor_history(terrarium_id):
+            """API : Historique des données de capteurs"""
+            self.stats['requests'] += 1
+            try:
+                hours = request.args.get('hours', 24, type=int)
+                
+                if hasattr(self, 'persistence_service') and self.persistence_service:
+                    history = self.persistence_service.get_sensor_history(terrarium_id, hours)
+                    return jsonify({
+                        'terrarium_id': terrarium_id,
+                        'hours': hours,
+                        'data_points': len(history),
+                        'history': history
+                    })
+                else:
+                    return jsonify({'error': 'Service de persistance non disponible'}), 503
+                    
+            except Exception as e:
+                self.stats['errors'] += 1
+                return jsonify({'error': str(e)}), 500
+        
+        @self.app.route('/api/terrariums/<terrarium_id>/history/feeding')
+        def api_get_feeding_history(terrarium_id):
+            """API : Historique des alimentations"""
+            self.stats['requests'] += 1
+            try:
+                days = request.args.get('days', 30, type=int)
+                
+                if hasattr(self, 'persistence_service') and self.persistence_service:
+                    history = self.persistence_service.get_feeding_history(terrarium_id, days)
+                    return jsonify({
+                        'terrarium_id': terrarium_id,
+                        'days': days,
+                        'feedings': len(history),
+                        'history': history
+                    })
+                else:
+                    return jsonify({'error': 'Service de persistance non disponible'}), 503
+                    
+            except Exception as e:
+                self.stats['errors'] += 1
+                return jsonify({'error': str(e)}), 500
+        
+        @self.app.route('/api/terrariums/<terrarium_id>/alerts')
+        def api_get_alerts(terrarium_id):
+            """API : Alertes d'un terrarium"""
+            self.stats['requests'] += 1
+            try:
+                severity = request.args.get('severity')
+                acknowledged = request.args.get('acknowledged', 'false').lower() == 'true'
+                
+                if hasattr(self, 'persistence_service') and self.persistence_service:
+                    alerts = self.persistence_service.get_alerts(
+                        terrarium_id=terrarium_id,
+                        severity=severity,
+                        acknowledged=acknowledged
+                    )
+                    return jsonify({
+                        'terrarium_id': terrarium_id,
+                        'alerts_count': len(alerts),
+                        'alerts': alerts
+                    })
+                else:
+                    return jsonify({'error': 'Service de persistance non disponible'}), 503
+                    
+            except Exception as e:
+                self.stats['errors'] += 1
+                return jsonify({'error': str(e)}), 500
+        
         @self.app.route('/api/health')
         def api_health():
             """API : Santé du système"""

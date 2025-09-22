@@ -54,6 +54,9 @@ class SensorService:
         self.last_update_time = 0
         self.update_interval = 1.0  # Mise à jour toutes les secondes
         
+        # Service de persistance (sera injecté)
+        self.persistence_service = None
+        
     def initialize(self) -> bool:
         """
         Initialise le service de capteurs
@@ -240,6 +243,12 @@ class SensorService:
             
             # Ajouter à l'historique
             self._add_to_history(new_data)
+            
+            # Stocker dans la base de données
+            if self.persistence_service:
+                # Récupérer l'ID du terrarium actuel (à adapter selon votre logique)
+                terrarium_id = getattr(self, 'current_terrarium_id', 'default')
+                self.persistence_service.store_sensor_data(terrarium_id, new_data)
             
             # Émettre un événement
             if self.event_bus:

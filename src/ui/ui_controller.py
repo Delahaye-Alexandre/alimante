@@ -142,6 +142,12 @@ class UIController:
     def _initialize_services(self) -> None:
         """Initialise les services de gestion"""
         try:
+            # Service de persistance
+            from services.persistence_service import PersistenceService
+            self.persistence_service = PersistenceService(self.config, self.event_bus)
+            self.persistence_service.initialize()
+            self.logger.info("Service de persistance initialisé")
+            
             # Service de gestion des terrariums
             from services.terrarium_service import TerrariumService
             self.terrarium_service = TerrariumService(self.event_bus)
@@ -167,9 +173,41 @@ class UIController:
                 self.web_interface.set_terrarium_service(self.terrarium_service)
                 self.logger.info("Service de terrariums connecté à l'API web")
             
+            # Connecter le service de persistance à l'API web
+            if hasattr(self, 'persistence_service') and self.persistence_service and self.web_interface:
+                self.web_interface.set_persistence_service(self.persistence_service)
+                self.logger.info("Service de persistance connecté à l'API web")
+            
+            # Injecter le service de persistance dans les autres services
+            self._inject_persistence_service()
+            
         except Exception as e:
             self.logger.error(f"Erreur connexion services: {e}")
             self.stats['errors'] += 1
+    
+    def _inject_persistence_service(self) -> None:
+        """Injecte le service de persistance dans les autres services"""
+        try:
+            if not hasattr(self, 'persistence_service') or not self.persistence_service:
+                return
+            
+            # Injecter dans le service de terrariums
+            if hasattr(self, 'terrarium_service') and self.terrarium_service:
+                self.terrarium_service.persistence_service = self.persistence_service
+                self.logger.info("Service de persistance injecté dans TerrariumService")
+            
+            # Injecter dans le service de contrôle des composants
+            if hasattr(self, 'component_control_service') and self.component_control_service:
+                self.component_control_service.persistence_service = self.persistence_service
+                self.logger.info("Service de persistance injecté dans ComponentControlService")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur injection service persistance: {e}")
+            self.stats['errors'] += 1
+    
+    def get_persistence_service(self):
+        """Retourne le service de persistance"""
+        return getattr(self, 'persistence_service', None)
     
     
     def _initialize_components(self) -> None:

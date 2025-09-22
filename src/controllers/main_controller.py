@@ -515,12 +515,25 @@ class MainController(BaseController):
             self.decision_history.pop(0)
         
         self.logger.info(f"Décision: {decision_type} - {reason}")
+        
+        # Stocker la décision dans la base de données
+        if hasattr(self, 'persistence_service') and self.persistence_service:
+            self.persistence_service.store_control_decision(
+                terrarium_id=self.current_terrarium_id,
+                decision_type=decision_type,
+                component=component,
+                action=action,
+                value=value,
+                reason=reason,
+                success=True
+            )
     
     def _get_last_feeding_date(self) -> Optional[str]:
         """Récupère la date de la dernière alimentation"""
         try:
-            # Implémentation simple avec fichier
-            # Dans une version complète, utiliser une base de données
+            # Utiliser le service de persistance si disponible
+            if hasattr(self, 'persistence_service') and self.persistence_service:
+                return self.persistence_service.get_last_feeding_date(self.current_terrarium_id)
             return None
         except Exception:
             return None
@@ -528,9 +541,15 @@ class MainController(BaseController):
     def _set_last_feeding_date(self, date: str) -> None:
         """Définit la date de la dernière alimentation"""
         try:
-            # Implémentation simple avec fichier
-            # Dans une version complète, utiliser une base de données
-            pass
+            # Utiliser le service de persistance si disponible
+            if hasattr(self, 'persistence_service') and self.persistence_service:
+                # Récupérer l'espèce actuelle du terrarium
+                species_id = getattr(self, 'current_species_id', 'unknown')
+                self.persistence_service.set_last_feeding_date(
+                    self.current_terrarium_id, 
+                    species_id,
+                    notes=f"Alimentation automatique - {date}"
+                )
         except Exception as e:
             self.logger.error(f"Erreur sauvegarde date alimentation: {e}")
     

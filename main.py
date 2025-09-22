@@ -65,6 +65,12 @@ def main():
         main_loop = MainLoop(event_bus, safety_service)
         logger.info("Boucle principale initialisée")
         
+        # Connecter le service de persistance au MainController
+        persistence_service = ui_controller.get_persistence_service()
+        if persistence_service and hasattr(main_loop, 'main_controller') and main_loop.main_controller:
+            main_loop.main_controller.persistence_service = persistence_service
+            logger.info("Service de persistance connecté au MainController")
+        
         # Démarrer l'interface utilisateur
         if ui_controller.start():
             logger.info("Interface utilisateur démarrée")

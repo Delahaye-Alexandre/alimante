@@ -174,6 +174,17 @@ class WebServer:
         self.api.terrarium_service = terrarium_service
         self.logger.info("Service de terrariums connecté à l'API")
     
+    def set_persistence_service(self, persistence_service) -> None:
+        """
+        Définit le service de persistance pour l'API
+        
+        Args:
+            persistence_service: Instance du PersistenceService
+        """
+        self.persistence_service = persistence_service
+        self.api.persistence_service = persistence_service
+        self.logger.info("Service de persistance connecté à l'API")
+    
     def update_data(self, data: Dict[str, Any]) -> None:
         """
         Met à jour les données partagées
