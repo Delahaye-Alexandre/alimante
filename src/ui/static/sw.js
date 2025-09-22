@@ -20,7 +20,7 @@ const STATIC_FILES = [
 // Fichiers à ignorer pour le cache dynamique
 const IGNORE_FILES = [
   "/api/status",
-  "/api/sensors
+  "/api/sensors",
   "/api/controls",
   "/api/alerts",
 ];
