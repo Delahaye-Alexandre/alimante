@@ -39,6 +39,8 @@ class ScreenType(Enum):
     CONTROLS = "controls"
     CONFIG = "config"
     ALERTS = "alerts"
+    TERRARIUMS = "terrariums"
+    SPECIES = "species"
 
 class LCDInterface:
     """
@@ -62,6 +64,12 @@ class LCDInterface:
         self.current_screen = ScreenType.HOME
         self.display_data = {}
         self.last_update = 0
+        
+        # Navigation
+        self.terrarium_index = 0
+        self.species_index = 0
+        self.terrariums = []
+        self.species = []
         
         # Configuration d'affichage
         self.width = config.get('width', 128)
@@ -245,6 +253,96 @@ class LCDInterface:
             self.logger.error(f"Erreur changement écran: {e}")
             self.stats['errors'] += 1
     
+    def navigate_terrarium(self, direction: int) -> None:
+        """
+        Navigue entre les terrariums
+        
+        Args:
+            direction: 1 pour suivant, -1 pour précédent
+        """
+        try:
+            terrariums = self.display_data.get('terrariums', [])
+            if not terrariums:
+                return
+            
+            self.terrarium_index = (self.terrarium_index + direction) % len(terrariums)
+            if self.terrarium_index < 0:
+                self.terrarium_index = len(terrariums) - 1
+            
+            self.logger.debug(f"Navigation terrarium: {self.terrarium_index}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur navigation terrarium: {e}")
+            self.stats['errors'] += 1
+    
+    def navigate_species(self, direction: int) -> None:
+        """
+        Navigue entre les espèces
+        
+        Args:
+            direction: 1 pour suivant, -1 pour précédent
+        """
+        try:
+            species = self.display_data.get('species', [])
+            if not species:
+                return
+            
+            self.species_index = (self.species_index + direction) % len(species)
+            if self.species_index < 0:
+                self.species_index = len(species) - 1
+            
+            self.logger.debug(f"Navigation espèce: {self.species_index}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur navigation espèce: {e}")
+            self.stats['errors'] += 1
+    
+    def select_current_terrarium(self) -> None:
+        """Sélectionne le terrarium actuellement affiché"""
+        try:
+            terrariums = self.display_data.get('terrariums', [])
+            if not terrariums or self.terrarium_index >= len(terrariums):
+                return
+            
+            terrarium = terrariums[self.terrarium_index]
+            terrarium_id = terrarium.get('id')
+            
+            if terrarium_id and self.event_bus:
+                # Émettre un événement de sélection de terrarium
+                self.event_bus.emit('terrarium_select_request', {
+                    'terrarium_id': terrarium_id,
+                    'timestamp': time.time()
+                })
+                
+                self.logger.info(f"Terrarium sélectionné: {terrarium_id}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur sélection terrarium: {e}")
+            self.stats['errors'] += 1
+    
+    def select_current_species(self) -> None:
+        """Sélectionne l'espèce actuellement affichée"""
+        try:
+            species = self.display_data.get('species', [])
+            if not species or self.species_index >= len(species):
+                return
+            
+            species_item = species[self.species_index]
+            species_id = species_item.get('id')
+            
+            if species_id and self.event_bus:
+                # Émettre un événement de sélection d'espèce
+                self.event_bus.emit('species_select_request', {
+                    'species_id': species_id,
+                    'timestamp': time.time()
+                })
+                
+                self.logger.info(f"Espèce sélectionnée: {species_id}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur sélection espèce: {e}")
+            self.stats['errors'] += 1
+    
     def _update_display(self) -> None:
         """Met à jour l'affichage selon l'écran actuel"""
         try:
@@ -261,6 +359,10 @@ class LCDInterface:
                 self._display_config_screen()
             elif self.current_screen == ScreenType.ALERTS:
                 self._display_alerts_screen()
+            elif self.current_screen == ScreenType.TERRARIUMS:
+                self._display_terrariums_screen()
+            elif self.current_screen == ScreenType.SPECIES:
+                self._display_species_screen()
                 
         except Exception as e:
             self.logger.error(f"Erreur mise à jour affichage: {e}")
@@ -462,8 +564,8 @@ class LCDInterface:
             self.lcd_driver.hline(0, 25, self.width, self.colors['gray'])
             
             # Options de configuration
-            self.lcd_driver.text("1. Terrarium", 5, 35, self.colors['white'])
-            self.lcd_driver.text("2. Espece", 5, 55, self.colors['white'])
+            self.lcd_driver.text("1. Terrariums", 5, 35, self.colors['white'])
+            self.lcd_driver.text("2. Especes", 5, 55, self.colors['white'])
             self.lcd_driver.text("3. Capteurs", 5, 75, self.colors['white'])
             self.lcd_driver.text("4. Reseau", 5, 95, self.colors['white'])
             self.lcd_driver.text("5. Systeme", 5, 115, self.colors['white'])
@@ -527,6 +629,111 @@ class LCDInterface:
             
         except Exception as e:
             self.logger.error(f"Erreur affichage écran alertes: {e}")
+            self.stats['errors'] += 1
+    
+    def _display_terrariums_screen(self) -> None:
+        """Affiche l'écran de sélection des terrariums"""
+        try:
+            if not self.lcd_driver:
+                return
+            
+            # Effacer l'écran
+            self.lcd_driver.fill(self.colors['black'])
+            
+            # Titre
+            self.lcd_driver.text("TERRARIUMS", 10, 5, self.colors['white'], size=2)
+            
+            # Ligne de séparation
+            self.lcd_driver.hline(0, 25, self.width, self.colors['gray'])
+            
+            # Récupérer les terrariums depuis les données d'affichage
+            terrariums = self.display_data.get('terrariums', [])
+            if not terrariums:
+                self.lcd_driver.text("Aucun terrarium", 5, 35, self.colors['red'])
+                return
+            
+            # Afficher le terrarium actuel
+            if 0 <= self.terrarium_index < len(terrariums):
+                terrarium = terrariums[self.terrarium_index]
+                
+                # Nom du terrarium
+                name = terrarium.get('name', 'Inconnu')[:15]  # Limiter la longueur
+                self.lcd_driver.text(f"> {name}", 5, 35, self.colors['yellow'])
+                
+                # Espèce
+                species = terrarium.get('species', {})
+                species_name = species.get('common_name', 'Non défini')[:15]
+                self.lcd_driver.text(f"  {species_name}", 5, 55, self.colors['white'])
+                
+                # Statut
+                status = terrarium.get('status', 'inactive')
+                status_color = self.colors['green'] if status == 'active' else self.colors['red']
+                self.lcd_driver.text(f"  {status.upper()}", 5, 75, status_color)
+                
+                # Indicateur de position
+                self.lcd_driver.text(f"{self.terrarium_index + 1}/{len(terrariums)}", 5, 95, self.colors['gray'])
+            
+            # Navigation
+            self.lcd_driver.text("Tourner: naviguer", 5, 115, self.colors['gray'], size=1)
+            self.lcd_driver.text("Appuyer: selectionner", 5, 130, self.colors['gray'], size=1)
+            
+            # Mettre à jour l'affichage
+            self.lcd_driver.show()
+            
+        except Exception as e:
+            self.logger.error(f"Erreur affichage écran terrariums: {e}")
+            self.stats['errors'] += 1
+    
+    def _display_species_screen(self) -> None:
+        """Affiche l'écran de sélection des espèces"""
+        try:
+            if not self.lcd_driver:
+                return
+            
+            # Effacer l'écran
+            self.lcd_driver.fill(self.colors['black'])
+            
+            # Titre
+            self.lcd_driver.text("ESPECES", 10, 5, self.colors['white'], size=2)
+            
+            # Ligne de séparation
+            self.lcd_driver.hline(0, 25, self.width, self.colors['gray'])
+            
+            # Récupérer les espèces depuis les données d'affichage
+            species = self.display_data.get('species', [])
+            if not species:
+                self.lcd_driver.text("Aucune espece", 5, 35, self.colors['red'])
+                return
+            
+            # Afficher l'espèce actuelle
+            if 0 <= self.species_index < len(species):
+                species_item = species[self.species_index]
+                
+                # Nom de l'espèce
+                name = species_item.get('name', 'Inconnue')[:15]
+                self.lcd_driver.text(f"> {name}", 5, 35, self.colors['yellow'])
+                
+                # Nom scientifique
+                scientific = species_item.get('scientific_name', '')[:15]
+                self.lcd_driver.text(f"  {scientific}", 5, 55, self.colors['white'])
+                
+                # Type
+                species_type = species_item.get('type', 'unknown')
+                type_color = self.colors['cyan'] if species_type == 'insect' else self.colors['magenta']
+                self.lcd_driver.text(f"  {species_type.upper()}", 5, 75, type_color)
+                
+                # Indicateur de position
+                self.lcd_driver.text(f"{self.species_index + 1}/{len(species)}", 5, 95, self.colors['gray'])
+            
+            # Navigation
+            self.lcd_driver.text("Tourner: naviguer", 5, 115, self.colors['gray'], size=1)
+            self.lcd_driver.text("Appuyer: selectionner", 5, 130, self.colors['gray'], size=1)
+            
+            # Mettre à jour l'affichage
+            self.lcd_driver.show()
+            
+        except Exception as e:
+            self.logger.error(f"Erreur affichage écran espèces: {e}")
             self.stats['errors'] += 1
     
     def is_running(self) -> bool:

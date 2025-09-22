@@ -185,6 +185,156 @@ class AlimanteAPI:
                 'timestamp': time.time()
             })
         
+        @self.app.route('/api/species')
+        def api_species():
+            """API : Liste des espèces disponibles"""
+            self.stats['requests'] += 1
+            try:
+                # Récupérer les espèces depuis le service de terrariums
+                if hasattr(self, 'terrarium_service') and self.terrarium_service:
+                    species = self.terrarium_service.get_species_list()
+                else:
+                    # Fallback : espèces par défaut
+                    species = [
+                        {'id': 'mantis_religiosa', 'name': 'Mante religieuse', 'scientific_name': 'Mantis religiosa', 'type': 'insect'},
+                        {'id': 'template_insect', 'name': 'Template Insect', 'scientific_name': 'Template', 'type': 'insect'},
+                        {'id': 'template_reptile', 'name': 'Template Reptile', 'scientific_name': 'Template', 'type': 'reptile'}
+                    ]
+                
+                return jsonify({
+                    'species': species,
+                    'timestamp': time.time()
+                })
+            except Exception as e:
+                self.stats['errors'] += 1
+                self.logger.error(f"Erreur API espèces: {e}")
+                return jsonify({'error': str(e)}), 500
+        
+        @self.app.route('/api/species/<species_id>')
+        def api_species_details(species_id):
+            """API : Détails d'une espèce"""
+            self.stats['requests'] += 1
+            try:
+                if hasattr(self, 'terrarium_service') and self.terrarium_service:
+                    species_config = self.terrarium_service.get_species_config(species_id)
+                else:
+                    species_config = None
+                
+                if not species_config:
+                    return jsonify({'error': 'Espèce non trouvée'}), 404
+                
+                return jsonify({
+                    'species': species_config,
+                    'timestamp': time.time()
+                })
+            except Exception as e:
+                self.stats['errors'] += 1
+                self.logger.error(f"Erreur API espèce {species_id}: {e}")
+                return jsonify({'error': str(e)}), 500
+        
+        @self.app.route('/api/terrariums/current')
+        def api_current_terrarium():
+            """API : Terrarium actuellement sélectionné"""
+            self.stats['requests'] += 1
+            try:
+                if hasattr(self, 'terrarium_service') and self.terrarium_service:
+                    current_terrarium = self.terrarium_service.get_current_terrarium()
+                else:
+                    current_terrarium = None
+                
+                return jsonify({
+                    'current_terrarium': current_terrarium,
+                    'timestamp': time.time()
+                })
+            except Exception as e:
+                self.stats['errors'] += 1
+                self.logger.error(f"Erreur API terrarium actuel: {e}")
+                return jsonify({'error': str(e)}), 500
+        
+        @self.app.route('/api/terrariums/<terrarium_id>/select', methods=['POST'])
+        def api_select_terrarium(terrarium_id):
+            """API : Sélectionner un terrarium"""
+            self.stats['requests'] += 1
+            try:
+                if hasattr(self, 'terrarium_service') and self.terrarium_service:
+                    success = self.terrarium_service.set_current_terrarium(terrarium_id)
+                    
+                    if success:
+                        return jsonify({
+                            'success': True,
+                            'message': f'Terrarium {terrarium_id} sélectionné',
+                            'terrarium_id': terrarium_id,
+                            'timestamp': time.time()
+                        })
+                    else:
+                        return jsonify({'error': 'Échec de la sélection du terrarium'}), 400
+                else:
+                    return jsonify({'error': 'Service de terrariums non disponible'}), 503
+                    
+            except Exception as e:
+                self.stats['errors'] += 1
+                self.logger.error(f"Erreur API sélection terrarium: {e}")
+                return jsonify({'error': str(e)}), 500
+        
+        @self.app.route('/api/terrariums/<terrarium_id>/species', methods=['POST'])
+        def api_set_terrarium_species(terrarium_id):
+            """API : Définir l'espèce d'un terrarium"""
+            self.stats['requests'] += 1
+            try:
+                data = request.get_json()
+                if not data or 'species_id' not in data:
+                    return jsonify({'error': 'species_id requis'}), 400
+                
+                species_id = data['species_id']
+                
+                if hasattr(self, 'terrarium_service') and self.terrarium_service:
+                    # Récupérer la configuration de l'espèce
+                    species_config = self.terrarium_service.get_species_config(species_id)
+                    if not species_config:
+                        return jsonify({'error': 'Espèce non trouvée'}), 404
+                    
+                    # Mettre à jour la configuration du terrarium
+                    terrarium_config = self.terrarium_service.get_terrarium_config(terrarium_id)
+                    if not terrarium_config:
+                        return jsonify({'error': 'Terrarium non trouvé'}), 404
+                    
+                    # Mettre à jour l'espèce dans la configuration
+                    terrarium_config['species'] = {
+                        'species_id': species_config['species_id'],
+                        'common_name': species_config['common_name'],
+                        'scientific_name': species_config['scientific_name'],
+                        'type': species_config['category']
+                    }
+                    
+                    # Sauvegarder la configuration
+                    success = self.terrarium_service.update_terrarium_config(terrarium_id, terrarium_config)
+                    
+                    if success:
+                        # Émettre un événement de changement d'espèce
+                        self.event_bus.emit('species_changed', {
+                            'terrarium_id': terrarium_id,
+                            'species_id': species_id,
+                            'species_config': species_config,
+                            'timestamp': time.time()
+                        })
+                        
+                        return jsonify({
+                            'success': True,
+                            'message': f'Espèce {species_id} définie pour le terrarium {terrarium_id}',
+                            'terrarium_id': terrarium_id,
+                            'species_id': species_id,
+                            'timestamp': time.time()
+                        })
+                    else:
+                        return jsonify({'error': 'Échec de la mise à jour du terrarium'}), 500
+                else:
+                    return jsonify({'error': 'Service de terrariums non disponible'}), 503
+                    
+            except Exception as e:
+                self.stats['errors'] += 1
+                self.logger.error(f"Erreur API changement espèce: {e}")
+                return jsonify({'error': str(e)}), 500
+        
         @self.app.route('/api/health')
         def api_health():
             """API : Santé du système"""

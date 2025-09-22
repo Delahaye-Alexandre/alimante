@@ -41,6 +41,9 @@ class WebServer:
         self.api = AlimanteAPI(event_bus, config)
         self.app = self.api.get_app()
         
+        # Référence au service de terrariums (sera définie plus tard)
+        self.terrarium_service = None
+        
         # Configurer les chemins des templates et fichiers statiques
         self._configure_paths()
         
@@ -159,6 +162,17 @@ class WebServer:
         except Exception as e:
             self.logger.error(f"Erreur arrêt serveur web: {e}")
             self.stats['errors'] += 1
+    
+    def set_terrarium_service(self, terrarium_service) -> None:
+        """
+        Définit le service de terrariums pour l'API
+        
+        Args:
+            terrarium_service: Instance du TerrariumService
+        """
+        self.terrarium_service = terrarium_service
+        self.api.terrarium_service = terrarium_service
+        self.logger.info("Service de terrariums connecté à l'API")
     
     def update_data(self, data: Dict[str, Any]) -> None:
         """

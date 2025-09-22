@@ -85,6 +85,9 @@ class UIController:
         # Initialiser les services (après les composants)
         self._initialize_services()
         
+        # Connecter le service de terrariums à l'API web
+        self._connect_services()
+        
         # S'abonner aux événements
         self._subscribe_to_events()
     
@@ -154,6 +157,18 @@ class UIController:
             
         except Exception as e:
             self.logger.error(f"Erreur initialisation services: {e}")
+            self.stats['errors'] += 1
+    
+    def _connect_services(self) -> None:
+        """Connecte les services entre eux"""
+        try:
+            # Connecter le service de terrariums à l'API web
+            if hasattr(self, 'terrarium_service') and self.terrarium_service and self.web_interface:
+                self.web_interface.set_terrarium_service(self.terrarium_service)
+                self.logger.info("Service de terrariums connecté à l'API web")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur connexion services: {e}")
             self.stats['errors'] += 1
     
     

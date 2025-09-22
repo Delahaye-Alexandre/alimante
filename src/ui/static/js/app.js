@@ -671,9 +671,73 @@ class AlimanteApp {
       if (response.ok) {
         const data = await response.json();
         this.species = data.species || [];
+        this.updateSpeciesSelector();
       }
     } catch (error) {
       console.error("Erreur chargement espèces:", error);
+    }
+  }
+
+  updateSpeciesSelector() {
+    const speciesSelect = document.getElementById("speciesSelect");
+    if (!speciesSelect) return;
+
+    // Vider le sélecteur
+    speciesSelect.innerHTML =
+      '<option value="">Sélectionner une espèce...</option>';
+
+    // Ajouter les espèces
+    this.species.forEach((species) => {
+      const option = document.createElement("option");
+      option.value = species.id;
+      option.textContent = `${species.name} (${species.scientific_name})`;
+      speciesSelect.appendChild(option);
+    });
+
+    // Sélectionner l'espèce du terrarium actuel
+    if (this.currentTerrarium && this.currentTerrarium.species) {
+      speciesSelect.value = this.currentTerrarium.species.species_id || "";
+    }
+  }
+
+  async selectSpecies(speciesId) {
+    if (!speciesId || !this.currentTerrarium) {
+      console.warn("Aucune espèce ou terrarium sélectionné");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${this.apiBase}/api/terrariums/${this.currentTerrarium.id}/species`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ species_id: speciesId }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Espèce changée:", data);
+
+        // Mettre à jour l'affichage
+        this.updateTerrariumInfo();
+
+        // Recharger les données
+        this.loadTerrariums();
+
+        // Afficher une notification
+        this.showNotification(`Espèce changée vers ${speciesId}`, "success");
+      } else {
+        const error = await response.json();
+        console.error("Erreur changement espèce:", error);
+        this.showNotification(`Erreur: ${error.error}`, "error");
+      }
+    } catch (error) {
+      console.error("Erreur changement espèce:", error);
+      this.showNotification("Erreur de connexion", "error");
     }
   }
 
@@ -776,9 +840,15 @@ class AlimanteApp {
       );
 
       if (response.ok) {
-        this.currentTerrarium = terrariumId;
+        // Récupérer les détails du terrarium sélectionné
+        const terrarium = this.terrariums.find((t) => t.id === terrariumId);
+        this.currentTerrarium = terrarium;
+
+        // Mettre à jour l'interface
         this.updateTerrariumSelector();
         this.updateTerrariumsGrid();
+        this.updateSpeciesSelector(); // Mettre à jour le sélecteur d'espèces
+
         this.showNotification("Terrarium sélectionné", "success");
       }
     } catch (error) {
@@ -1020,6 +1090,15 @@ class AlimanteApp {
       .getElementById("refreshTerrariumsBtn")
       ?.addEventListener("click", () => {
         this.loadTerrariums();
+      });
+
+    // Sélecteur d'espèce
+    document
+      .getElementById("speciesSelect")
+      ?.addEventListener("change", (e) => {
+        if (e.target.value) {
+          this.selectSpecies(e.target.value);
+        }
       });
 
     // Contrôles des composants
