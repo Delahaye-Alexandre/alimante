@@ -21,12 +21,23 @@ try:
     import base64
     STREAMING_AVAILABLE = True
 except ImportError:
-    # Mode simulation pour Windows
-    STREAMING_AVAILABLE = False
-    cv2 = None
-    np = None
-    Image = None
-    base64 = None
+    # Essayer d'utiliser l'OpenCV système
+    try:
+        import sys
+        sys.path.append('/usr/lib/python3/dist-packages')
+        import cv2
+        import numpy as np
+        from PIL import Image
+        import base64
+        STREAMING_AVAILABLE = True
+        print("Using system OpenCV for streaming")
+    except ImportError:
+        # Mode simulation pour Windows
+        STREAMING_AVAILABLE = False
+        cv2 = None
+        np = None
+        Image = None
+        base64 = None
 
 class StreamFormat(Enum):
     """Formats de streaming"""

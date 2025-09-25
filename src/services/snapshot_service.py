@@ -18,13 +18,23 @@ try:
     from PIL import Image, ImageDraw, ImageFont
     SNAPSHOT_AVAILABLE = True
 except ImportError:
-    # Mode simulation pour Windows
-    SNAPSHOT_AVAILABLE = False
-    cv2 = None
-    np = None
-    Image = None
-    ImageDraw = None
-    ImageFont = None
+    # Essayer d'utiliser l'OpenCV système
+    try:
+        import sys
+        sys.path.append('/usr/lib/python3/dist-packages')
+        import cv2
+        import numpy as np
+        from PIL import Image, ImageDraw, ImageFont
+        SNAPSHOT_AVAILABLE = True
+        print("Using system OpenCV for snapshots")
+    except ImportError:
+        # Mode simulation pour Windows
+        SNAPSHOT_AVAILABLE = False
+        cv2 = None
+        np = None
+        Image = None
+        ImageDraw = None
+        ImageFont = None
 
 class SnapshotType(Enum):
     """Types de snapshots"""

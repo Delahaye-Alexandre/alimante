@@ -14,14 +14,24 @@ try:
     import numpy as np
     from PIL import Image
     CAMERA_AVAILABLE = True
-except ImportError as e:
-    # Mode simulation si OpenCV/numpy non disponible
-    CAMERA_AVAILABLE = False
-    cv2 = None
-    np = None
-    Image = None
-    print(f"Warning: Camera dependencies not available: {e}")
-    print("Camera functionality will run in simulation mode.")
+except ImportError:
+    # Essayer d'utiliser l'OpenCV système
+    try:
+        import sys
+        sys.path.append('/usr/lib/python3/dist-packages')
+        import cv2
+        import numpy as np
+        from PIL import Image
+        CAMERA_AVAILABLE = True
+        print("Using system OpenCV")
+    except ImportError as e:
+        # Mode simulation si OpenCV/numpy non disponible
+        CAMERA_AVAILABLE = False
+        cv2 = None
+        np = None
+        Image = None
+        print(f"Warning: Camera dependencies not available: {e}")
+        print("Camera functionality will run in simulation mode.")
 
 class CameraDriver(BaseDriver):
     """
