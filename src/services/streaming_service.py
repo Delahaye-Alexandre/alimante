@@ -306,7 +306,7 @@ class StreamingService:
             self.logger.error(f"Erreur critique dans la boucle de streaming: {e}")
             self.stats['errors'] += 1
     
-    def _process_frame(self, frame: np.ndarray) -> np.ndarray:
+    def _process_frame(self, frame: 'np.ndarray') -> 'np.ndarray':
         """Traite une frame pour le streaming"""
         try:
             # Redimensionner si nécessaire
@@ -328,7 +328,7 @@ class StreamingService:
             self.logger.error(f"Erreur traitement frame: {e}")
             return frame
     
-    def _encode_frame(self, frame: np.ndarray) -> Optional[bytes]:
+    def _encode_frame(self, frame: 'np.ndarray') -> Optional[bytes]:
         """Encode une frame selon le format"""
         try:
             if self.format == StreamFormat.MJPEG:
@@ -388,7 +388,7 @@ class StreamingService:
             self.logger.error(f"Erreur envoi clients: {e}")
             self.stats['errors'] += 1
     
-    def _record_frame(self, frame: np.ndarray) -> None:
+    def _record_frame(self, frame: 'np.ndarray') -> None:
         """Enregistre une frame pour l'enregistrement vidéo"""
         try:
             if not self.video_writer:

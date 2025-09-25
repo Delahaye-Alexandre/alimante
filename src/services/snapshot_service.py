@@ -302,8 +302,8 @@ class SnapshotService:
             self.stats['errors'] += 1
             return None
     
-    def _annotate_image(self, frame: np.ndarray, snapshot_type: SnapshotType, 
-                       metadata: Dict[str, Any] = None) -> np.ndarray:
+    def _annotate_image(self, frame: 'np.ndarray', snapshot_type: SnapshotType, 
+                       metadata: Dict[str, Any] = None) -> 'np.ndarray':
         """Annote une image avec des informations"""
         try:
             if not SNAPSHOT_AVAILABLE:

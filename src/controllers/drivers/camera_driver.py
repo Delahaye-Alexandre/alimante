@@ -14,12 +14,14 @@ try:
     import numpy as np
     from PIL import Image
     CAMERA_AVAILABLE = True
-except ImportError:
-    # Mode simulation pour Windows
+except ImportError as e:
+    # Mode simulation si OpenCV/numpy non disponible
     CAMERA_AVAILABLE = False
     cv2 = None
     np = None
     Image = None
+    print(f"Warning: Camera dependencies not available: {e}")
+    print("Camera functionality will run in simulation mode.")
 
 class CameraDriver(BaseDriver):
     """
