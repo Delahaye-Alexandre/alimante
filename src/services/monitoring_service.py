@@ -14,7 +14,7 @@ from enum import Enum
 import json
 import os
 
-from ..utils.error_handler import ErrorHandler, ErrorSeverity, ErrorCategory
+from src.utils.error_handler import ErrorHandler, ErrorSeverity, ErrorCategory
 
 class MetricType(Enum):
     """Types de métriques"""

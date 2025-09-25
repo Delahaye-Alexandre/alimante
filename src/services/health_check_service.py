@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
 
-from ..utils.error_handler import ErrorHandler, ErrorSeverity, ErrorCategory
+from src.utils.error_handler import ErrorHandler, ErrorSeverity, ErrorCategory
 
 class HealthCheckType(Enum):
     """Types de vérifications de santé"""

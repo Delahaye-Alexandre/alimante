@@ -17,7 +17,7 @@ import os
 import base64
 import hmac
 
-from ..utils.error_handler import ErrorHandler, ErrorSeverity, ErrorCategory
+from src.utils.error_handler import ErrorHandler, ErrorSeverity, ErrorCategory
 
 class UserRole(Enum):
     """Rôles utilisateur"""

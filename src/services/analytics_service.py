@@ -15,7 +15,7 @@ from enum import Enum
 import os
 import statistics
 
-from ..utils.error_handler import ErrorHandler, ErrorSeverity, ErrorCategory
+from src.utils.error_handler import ErrorHandler, ErrorSeverity, ErrorCategory
 
 class ReportType(Enum):
     """Types de rapports"""

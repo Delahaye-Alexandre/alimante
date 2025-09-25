@@ -16,7 +16,7 @@ from enum import Enum
 import os
 import re
 
-from ..utils.error_handler import ErrorHandler, ErrorSeverity, ErrorCategory
+from src.utils.error_handler import ErrorHandler, ErrorSeverity, ErrorCategory
 
 class NotificationChannel(Enum):
     """Canaux de notification"""

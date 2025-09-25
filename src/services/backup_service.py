@@ -17,7 +17,7 @@ from enum import Enum
 import hashlib
 import sqlite3
 
-from ..utils.error_handler import ErrorHandler, ErrorSeverity, ErrorCategory
+from src.utils.error_handler import ErrorHandler, ErrorSeverity, ErrorCategory
 
 class BackupType(Enum):
     """Types de sauvegarde"""
