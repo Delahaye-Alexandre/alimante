@@ -219,7 +219,7 @@ class CameraDriver(BaseDriver):
             self.logger.error(f"Erreur capture d'image: {e}")
             return False
     
-    def _process_frame(self, frame: np.ndarray, data: Dict[str, Any]) -> np.ndarray:
+    def _process_frame(self, frame: 'np.ndarray', data: Dict[str, Any]) -> 'np.ndarray':
         """Traite une frame (redimensionnement, filtres, etc.)"""
         try:
             # Redimensionner si nécessaire
@@ -247,7 +247,7 @@ class CameraDriver(BaseDriver):
             self.logger.error(f"Erreur traitement frame: {e}")
             return frame
     
-    def _detect_motion(self, frame: np.ndarray) -> None:
+    def _detect_motion(self, frame: 'np.ndarray') -> None:
         """Détecte le mouvement dans la frame"""
         try:
             # Convertir en niveaux de gris
