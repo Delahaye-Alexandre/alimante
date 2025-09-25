@@ -102,8 +102,8 @@ class CameraService:
             # Configuration du driver caméra
             driver_config = DriverConfig(
                 name="camera_service",
-                capture_format='jpg',
-                quality=self.capture_quality
+                enabled=True,
+                timeout=10.0
             )
             
             # Initialiser le driver caméra
