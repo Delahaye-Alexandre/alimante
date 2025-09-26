@@ -92,35 +92,22 @@ class CameraDriver(BaseDriver):
             # Créer le répertoire de capture
             os.makedirs(self.capture_path, exist_ok=True)
             
-            # Essayer d'abord libcamera (Raspberry Pi moderne)
+            # Essayer V4L2 avec timeout court
             camera_found = False
+            self.logger.info("Recherche de caméra V4L2...")
             
-            # Méthode 1: Essayer libcamera avec pipeline GStreamer
-            try:
-                # Pipeline GStreamer pour libcamera
-                pipeline = "libcamerasrc ! video/x-raw,width=640,height=480,framerate=30/1 ! videoconvert ! appsink"
-                self.camera = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
-                if self.camera.isOpened():
-                    ret, frame = self.camera.read()
-                    if ret:
-                        self.logger.info("Caméra trouvée via libcamera (GStreamer)")
-                        camera_found = True
-                    else:
-                        self.camera.release()
-                        self.camera = None
-            except Exception as e:
-                self.logger.debug(f"libcamera GStreamer échoué: {e}")
-                if self.camera:
-                    self.camera.release()
-                    self.camera = None
-            
-            # Méthode 2: Essayer V4L2 si libcamera échoue
-            if not camera_found:
-                for index in [0, 10, 11, 12, 13, 14, 15, 16, 18, 20, 21, 22, 23, 31]:
+            for index in [0, 10, 11, 12, 13, 14, 15, 16, 18, 20, 21, 22, 23, 31]:
+                try:
                     self.camera = cv2.VideoCapture(index)
+                    # Timeout court de 2 secondes par index
+                    import time
+                    start_time = time.time()
+                    while not self.camera.isOpened() and (time.time() - start_time) < 2:
+                        time.sleep(0.1)
+                    
                     if self.camera.isOpened():
                         ret, frame = self.camera.read()
-                        if ret:
+                        if ret and frame is not None:
                             self.camera_index = index
                             self.logger.info(f"Caméra trouvée à l'index V4L2 {index}")
                             camera_found = True
@@ -128,6 +115,15 @@ class CameraDriver(BaseDriver):
                         else:
                             self.camera.release()
                             self.camera = None
+                    else:
+                        if self.camera:
+                            self.camera.release()
+                            self.camera = None
+                except Exception as e:
+                    self.logger.debug(f"Erreur index {index}: {e}")
+                    if self.camera:
+                        self.camera.release()
+                        self.camera = None
             
             if not camera_found:
                 self.logger.warning("Aucune caméra disponible trouvée - mode simulation")
