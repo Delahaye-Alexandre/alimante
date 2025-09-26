@@ -9,29 +9,24 @@ import os
 from typing import Dict, Any, Optional, Tuple
 from .base_driver import BaseDriver, DriverConfig, DriverState
 
+# Forcer l'utilisation de l'OpenCV système (apt)
+import sys
+sys.path.insert(0, '/usr/lib/python3/dist-packages')
+
 try:
     import cv2
     import numpy as np
     from PIL import Image
     CAMERA_AVAILABLE = True
-except ImportError:
-    # Essayer d'utiliser l'OpenCV système
-    try:
-        import sys
-        sys.path.append('/usr/lib/python3/dist-packages')
-        import cv2
-        import numpy as np
-        from PIL import Image
-        CAMERA_AVAILABLE = True
-        print("Using system OpenCV")
-    except ImportError as e:
-        # Mode simulation si OpenCV/numpy non disponible
-        CAMERA_AVAILABLE = False
-        cv2 = None
-        np = None
-        Image = None
-        print(f"Warning: Camera dependencies not available: {e}")
-        print("Camera functionality will run in simulation mode.")
+    print("Using system OpenCV (apt)")
+except ImportError as e:
+    # Mode simulation si OpenCV/numpy non disponible
+    CAMERA_AVAILABLE = False
+    cv2 = None
+    np = None
+    Image = None
+    print(f"Warning: Camera dependencies not available: {e}")
+    print("Camera functionality will run in simulation mode.")
 
 class CameraDriver(BaseDriver):
     """
@@ -97,11 +92,23 @@ class CameraDriver(BaseDriver):
             # Créer le répertoire de capture
             os.makedirs(self.capture_path, exist_ok=True)
             
-            # Initialiser la caméra
-            self.camera = cv2.VideoCapture(self.camera_index)
+            # Essayer de trouver une caméra disponible
+            camera_found = False
+            for index in [self.camera_index, 10, 11, 12, 13, 14, 15, 16, 18, 20, 21, 22, 23, 31]:
+                self.camera = cv2.VideoCapture(index)
+                if self.camera.isOpened():
+                    ret, frame = self.camera.read()
+                    if ret:
+                        self.camera_index = index
+                        self.logger.info(f"Caméra trouvée à l'index {index}")
+                        camera_found = True
+                        break
+                    else:
+                        self.camera.release()
+                        self.camera = None
             
-            if not self.camera.isOpened():
-                self.logger.error(f"Impossible d'ouvrir la caméra {self.camera_index}")
+            if not camera_found:
+                self.logger.error("Aucune caméra disponible trouvée")
                 self.state = DriverState.ERROR
                 return False
             

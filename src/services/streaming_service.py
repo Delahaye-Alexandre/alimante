@@ -14,30 +14,24 @@ from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
 
+# Forcer l'utilisation de l'OpenCV système (apt)
+import sys
+sys.path.insert(0, '/usr/lib/python3/dist-packages')
+
 try:
     import cv2
     import numpy as np
     from PIL import Image
     import base64
     STREAMING_AVAILABLE = True
+    print("Using system OpenCV for streaming")
 except ImportError:
-    # Essayer d'utiliser l'OpenCV système
-    try:
-        import sys
-        sys.path.append('/usr/lib/python3/dist-packages')
-        import cv2
-        import numpy as np
-        from PIL import Image
-        import base64
-        STREAMING_AVAILABLE = True
-        print("Using system OpenCV for streaming")
-    except ImportError:
-        # Mode simulation pour Windows
-        STREAMING_AVAILABLE = False
-        cv2 = None
-        np = None
-        Image = None
-        base64 = None
+    # Mode simulation pour Windows
+    STREAMING_AVAILABLE = False
+    cv2 = None
+    np = None
+    Image = None
+    base64 = None
 
 class StreamFormat(Enum):
     """Formats de streaming"""
